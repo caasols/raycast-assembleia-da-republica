@@ -1,28 +1,13 @@
-import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
+import { Action, ActionPanel, Icon, List } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { listVotacoes } from "./lib/openar-client";
 import { displayDate, todayInLisbon } from "./lib/dates";
 import { RequestEmptyView } from "./components/request-empty-view";
+import { voteResultIcon } from "./components/vote-result-icon";
 import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
-import type { VotacaoListItem } from "./lib/types";
 
 /** The API caps `limit` at 200; a single sitting day never approaches that. */
 const MAX_VOTES_PER_DAY = 200;
-
-/**
- * Colour the outcome rather than only naming it, so a day's results are
- * scannable. `Prejudicado` — the vote fell because something else made it moot
- * — is neither a pass nor a defeat, so it gets neither green nor red.
- */
-function resultIcon(vote: VotacaoListItem) {
-  if (vote.resultado === "Aprovado") {
-    return { source: Icon.CheckCircle, tintColor: Color.Green };
-  }
-  if (vote.resultado === "Rejeitado") {
-    return { source: Icon.XMarkCircle, tintColor: Color.Red };
-  }
-  return { source: Icon.MinusCircle, tintColor: Color.SecondaryText };
-}
 
 /**
  * Today's plenary votes in the Assembleia da República.
@@ -68,7 +53,7 @@ export default function Command() {
         // is the pair — two initiatives can each carry a vote called "1".
         <List.Item
           key={`${vote.iniciativaId}:${vote.id}`}
-          icon={resultIcon(vote)}
+          icon={voteResultIcon(vote)}
           title={vote.iniciativaTitulo}
           subtitle={initiativeReference(vote)}
           keywords={[vote.iniciativaNumero, vote.resultado, ...vote.aFavor, ...vote.contra]}

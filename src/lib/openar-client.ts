@@ -8,7 +8,7 @@
  */
 import { OpenArError, parseRetryAfterSeconds } from "./errors";
 import { buildQueryString, clampLimit, clampPage, isQueryStringWithinLimit, truncateQ } from "./query";
-import type { Iniciativa, Paginated, VotacaoListItem } from "./types";
+import type { Comissao, Carreiras, Deputado, Iniciativa, Meta, Paginated, Peticao, VotacaoListItem } from "./types";
 import type { QueryValue } from "./query";
 
 /**
@@ -201,6 +201,158 @@ export async function listIniciativas(
     signal,
   );
   return asPaginated<Iniciativa>(payload);
+}
+
+/**
+ * The values filters are built from. Cacheable for an hour — the longest
+ * `max-age` openAR sets — so this is cheap to call at the top of a command.
+ */
+export async function getMeta(legislatura?: string, signal?: AbortSignal): Promise<Meta> {
+  const payload = (await request("/meta", { legislatura }, signal)) as Partial<Meta> | null;
+  if (!payload) {
+    throw new OpenArError("openAR returned an unexpected response shape", 500);
+  }
+  return {
+    legislaturas: payload.legislaturas ?? [],
+    grupos: payload.grupos ?? [],
+    tipos: payload.tipos ?? [],
+    estados: payload.estados ?? [],
+  };
+}
+
+/**
+ * The five institutional authors that `/meta` prefixes onto `grupos`. They are
+ * valid for `/iniciativas` and `/votacoes` but rejected by `/deputados`.
+ */
+export const INSTITUTIONAL_AUTHORS = ["Governo", "PAR", "Madeira", "Açores", "Mesa"] as const;
+
+/**
+ * Just the parliamentary groups, with the institutional authors removed.
+ *
+ * Needed wherever a dropdown feeds `/deputados?grupo=`, which 400s on the
+ * institutional five. Kept as a filter over the live list rather than a
+ * hardcoded set of parties, so a new party appearing in the data still works.
+ */
+export function parliamentaryGroups(grupos: string[]): string[] {
+  return grupos.filter((grupo) => !INSTITUTIONAL_AUTHORS.includes(grupo as (typeof INSTITUTIONAL_AUTHORS)[number]));
+}
+
+export interface ListPeticoesParams {
+  legislatura?: string;
+  situacao?: string;
+  q?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  sort?: "desc" | "asc";
+  page?: number;
+  limit?: number;
+}
+
+/** List petitions to parliament. */
+export async function listPeticoes(params: ListPeticoesParams = {}, signal?: AbortSignal): Promise<Paginated<Peticao>> {
+  const payload = await request(
+    "/peticoes",
+    {
+      legislatura: params.legislatura,
+      situacao: params.situacao,
+      q: params.q === undefined ? undefined : truncateQ(params.q),
+      data_inicio: params.dataInicio,
+      data_fim: params.dataFim,
+      sort: params.sort,
+      page: params.page === undefined ? undefined : clampPage(params.page),
+      limit: params.limit === undefined ? undefined : clampLimit(params.limit),
+    },
+    signal,
+  );
+  return asPaginated<Peticao>(payload);
+}
+
+export interface ListDeputadosParams {
+  legislatura?: string;
+  /** A party sigla only — the institutional authors are rejected here. */
+  grupo?: string;
+  q?: string;
+  /** `ativo` is a shortcut for the 230 sitting seats. */
+  situacao?: string;
+  sort?: "asc" | "desc";
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * List deputies. A deputy appears once, carrying their most recent mandate
+ * that matches the filters — not once per mandate.
+ */
+export async function listDeputados(
+  params: ListDeputadosParams = {},
+  signal?: AbortSignal,
+): Promise<Paginated<Deputado>> {
+  const payload = await request(
+    "/deputados",
+    {
+      legislatura: params.legislatura,
+      grupo: params.grupo,
+      q: params.q === undefined ? undefined : truncateQ(params.q),
+      situacao: params.situacao,
+      sort: params.sort,
+      page: params.page === undefined ? undefined : clampPage(params.page),
+      limit: params.limit === undefined ? undefined : clampLimit(params.limit),
+    },
+    signal,
+  );
+  return asPaginated<Deputado>(payload);
+}
+
+/**
+ * The URL of a deputy's official photo.
+ *
+ * Built rather than fetched: `/deputados/{id}/foto` is a 302 to the CDN, and an
+ * `<img>` — or Raycast's icon loader — follows that itself. Existence is not
+ * checked, so a deputy with no photo yields a CDN 404 and the caller needs a
+ * fallback.
+ */
+export function deputadoPhotoUrl(id: number): string {
+  return `${BASE_URL}/deputados/${id}/foto`;
+}
+
+/** Ranking of deputies by number of legislatures served. */
+export async function listCarreiras(limit?: number, signal?: AbortSignal): Promise<Carreiras> {
+  const payload = (await request(
+    "/deputados/carreiras",
+    { limit: limit === undefined ? undefined : clampLimit(limit) },
+    signal,
+  )) as Partial<Carreiras> | null;
+  if (!payload || !Array.isArray(payload.data)) {
+    throw new OpenArError("openAR returned an unexpected response shape", 500);
+  }
+  return { data: payload.data, stats: payload.stats ?? null };
+}
+
+export interface ListComissoesParams {
+  legislatura?: string;
+  q?: string;
+  sort?: "asc" | "desc";
+  page?: number;
+  limit?: number;
+}
+
+/** List parliamentary committees, each with a stable numeric id. */
+export async function listComissoes(
+  params: ListComissoesParams = {},
+  signal?: AbortSignal,
+): Promise<Paginated<Comissao>> {
+  const payload = await request(
+    "/comissoes",
+    {
+      legislatura: params.legislatura,
+      q: params.q === undefined ? undefined : truncateQ(params.q),
+      sort: params.sort,
+      page: params.page === undefined ? undefined : clampPage(params.page),
+      limit: params.limit === undefined ? undefined : clampLimit(params.limit),
+    },
+    signal,
+  );
+  return asPaginated<Comissao>(payload);
 }
 
 /** Re-exported so callers get the length rule with the search parameter. */

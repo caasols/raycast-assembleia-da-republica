@@ -1,5 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { BASE_URL, listIniciativas, listVotacoes, request } from "./openar-client";
+import {
+  BASE_URL,
+  deputadoPhotoUrl,
+  getMeta,
+  INSTITUTIONAL_AUTHORS,
+  listCarreiras,
+  listComissoes,
+  listDeputados,
+  listIniciativas,
+  listPeticoes,
+  listVotacoes,
+  parliamentaryGroups,
+  request,
+} from "./openar-client";
 import { OpenArError } from "./errors";
 import type { VotacaoListItem } from "./types";
 
@@ -292,5 +305,211 @@ describe("listIniciativas", () => {
   it("throws a typed error when the envelope is malformed", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ total: 3 }));
     await expect(listIniciativas()).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("getMeta", () => {
+  it("returns the four filter vocabularies", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        legislaturas: ["XVII"],
+        grupos: ["PS"],
+        tipos: [{ tipo: "J", tipoDesc: "Projeto de Lei" }],
+        estados: ["Lei"],
+      }),
+    );
+    const meta = await getMeta();
+    expect(meta.legislaturas).toEqual(["XVII"]);
+    expect(meta.tipos[0].tipoDesc).toBe("Projeto de Lei");
+  });
+
+  it("scopes to a legislature when asked", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({}));
+    await getMeta("XVII");
+    expect(requestedUrl().searchParams.get("legislatura")).toBe("XVII");
+  });
+
+  it("defaults every vocabulary to empty rather than undefined", async () => {
+    // A dropdown mapping over `undefined` throws; an empty dropdown does not.
+    fetchMock.mockResolvedValue(jsonResponse({}));
+    expect(await getMeta()).toEqual({ legislaturas: [], grupos: [], tipos: [], estados: [] });
+  });
+
+  it("throws when the payload is null", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null));
+    await expect(getMeta()).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("parliamentaryGroups", () => {
+  it("drops the five institutional authors, which /deputados rejects", () => {
+    const grupos = [...INSTITUTIONAL_AUTHORS, "PS", "PSD", "CH"];
+    expect(parliamentaryGroups(grupos)).toEqual(["PS", "PSD", "CH"]);
+  });
+
+  it("keeps a party it has never seen, rather than matching a hardcoded list", () => {
+    expect(parliamentaryGroups(["PS", "NOVO"])).toEqual(["PS", "NOVO"]);
+  });
+
+  it("returns nothing when the list is only institutional authors", () => {
+    expect(parliamentaryGroups([...INSTITUTIONAL_AUTHORS])).toEqual([]);
+  });
+});
+
+describe("listPeticoes", () => {
+  it("returns the envelope's rows", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [{ id: 1 }], total: 1, page: 1, limit: 50 }));
+    expect((await listPeticoes()).data).toHaveLength(1);
+  });
+
+  it("maps its parameters onto the API's names", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listPeticoes({
+      legislatura: "XVII",
+      situacao: "Admitida",
+      q: "saúde",
+      dataInicio: "2026-01-01",
+      dataFim: "2026-12-31",
+      sort: "asc",
+      page: 0,
+      limit: 900,
+    });
+    const params = requestedUrl().searchParams;
+    expect(Object.fromEntries(params)).toMatchObject({
+      legislatura: "XVII",
+      situacao: "Admitida",
+      q: "saúde",
+      data_inicio: "2026-01-01",
+      data_fim: "2026-12-31",
+      sort: "asc",
+      page: "1",
+      limit: "200",
+    });
+  });
+
+  it("truncates an over-long query", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listPeticoes({ q: "x".repeat(200) });
+    expect(requestedUrl().searchParams.get("q")).toHaveLength(100);
+  });
+
+  it("throws on a malformed envelope", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({}));
+    await expect(listPeticoes()).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("listDeputados", () => {
+  it("returns the envelope's rows", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [{ id: 7 }], total: 1, page: 1, limit: 50 }));
+    expect((await listDeputados()).data).toHaveLength(1);
+  });
+
+  it("passes its filters through, including the 230-seat shortcut", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listDeputados({
+      legislatura: "XVII",
+      grupo: "PS",
+      q: "Pedro",
+      situacao: "ativo",
+      sort: "asc",
+      page: 2,
+      limit: 30,
+    });
+    expect(Object.fromEntries(requestedUrl().searchParams)).toMatchObject({
+      legislatura: "XVII",
+      grupo: "PS",
+      q: "Pedro",
+      situacao: "ativo",
+      sort: "asc",
+      page: "2",
+      limit: "30",
+    });
+  });
+
+  it("truncates an over-long name search", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listDeputados({ q: "y".repeat(180) });
+    expect(requestedUrl().searchParams.get("q")).toHaveLength(100);
+  });
+
+  it("throws on a malformed envelope", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: "nope" }));
+    await expect(listDeputados()).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("deputadoPhotoUrl", () => {
+  it("points at the redirecting endpoint, which the image loader follows itself", () => {
+    expect(deputadoPhotoUrl(4321)).toBe(`${BASE_URL}/deputados/4321/foto`);
+  });
+});
+
+describe("listCarreiras", () => {
+  it("returns the ranking and the aggregate stats", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ data: [{ id: 1, totalLegs: 9 }], stats: { totalDeputies: 3000, singleTerm: 1200, avgLegs: 1.8 } }),
+    );
+    const result = await listCarreiras();
+    expect(result.data[0].totalLegs).toBe(9);
+    // Stats cover every deputy, not just the returned page.
+    expect(result.stats?.totalDeputies).toBe(3000);
+  });
+
+  it("clamps the limit", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [] }));
+    await listCarreiras(9000);
+    expect(requestedUrl().searchParams.get("limit")).toBe("200");
+  });
+
+  it("sends no limit when none was asked for", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [] }));
+    await listCarreiras();
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/deputados/carreiras`);
+  });
+
+  it("returns null stats rather than undefined when the API omits them", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [] }));
+    expect((await listCarreiras()).stats).toBeNull();
+  });
+
+  it("throws when the ranking is missing", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ stats: {} }));
+    await expect(listCarreiras()).rejects.toThrow(OpenArError);
+  });
+
+  it("throws when the payload is null", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null));
+    await expect(listCarreiras()).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("listComissoes", () => {
+  it("returns the envelope's rows", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [{ id: 42, sigla: "CACDLG" }], total: 1, page: 1, limit: 50 }));
+    expect((await listComissoes()).data[0].sigla).toBe("CACDLG");
+  });
+
+  it("passes its filters through", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listComissoes({ legislatura: "XVII", q: "saúde", sort: "asc", page: 3, limit: 10 });
+    expect(Object.fromEntries(requestedUrl().searchParams)).toMatchObject({
+      legislatura: "XVII",
+      q: "saúde",
+      sort: "asc",
+      page: "3",
+      limit: "10",
+    });
+  });
+
+  it("truncates an over-long query", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listComissoes({ q: "z".repeat(150) });
+    expect(requestedUrl().searchParams.get("q")).toHaveLength(100);
+  });
+
+  it("throws on a malformed envelope", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({}));
+    await expect(listComissoes()).rejects.toThrow(OpenArError);
   });
 });

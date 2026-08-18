@@ -105,6 +105,65 @@ export function __resetLocalStorage(): void {
   localStorageData.clear();
 }
 
+/* --------------------------------------------------------------------- Cache */
+
+/**
+ * An in-memory stand-in for Raycast's `Cache`, which `useCachedPromise` from
+ * @raycast/utils constructs on mount. Without it every command using that hook
+ * dies with "Cache is not a constructor" before rendering anything.
+ *
+ * `subscribe` returns its unsubscriber and notifies on write, because the hook
+ * relies on both to re-render when a cached value lands.
+ */
+type CacheSubscriber = (key: string | undefined, data: string | undefined) => void;
+
+export class Cache {
+  private readonly store = new Map<string, string>();
+  private readonly subscribers = new Set<CacheSubscriber>();
+
+  constructor(_options?: { namespace?: string; capacity?: number }) {}
+
+  // Arrow properties rather than prototype methods: useCachedPromise pulls
+  // these off the instance and calls them detached, which would leave `this`
+  // undefined on a normal method.
+  private readonly notify = (key: string | undefined, data: string | undefined): void => {
+    for (const subscriber of this.subscribers) {
+      subscriber(key, data);
+    }
+  };
+
+  readonly get = (key: string): string | undefined => this.store.get(key);
+
+  readonly has = (key: string): boolean => this.store.has(key);
+
+  readonly set = (key: string, data: string): void => {
+    this.store.set(key, data);
+    this.notify(key, data);
+  };
+
+  readonly remove = (key: string): boolean => {
+    const existed = this.store.delete(key);
+    this.notify(key, undefined);
+    return existed;
+  };
+
+  readonly clear = (_options?: { notifySubscribers?: boolean }): void => {
+    this.store.clear();
+    this.notify(undefined, undefined);
+  };
+
+  readonly subscribe = (subscriber: CacheSubscriber): (() => void) => {
+    this.subscribers.add(subscriber);
+    return () => {
+      this.subscribers.delete(subscriber);
+    };
+  };
+
+  get isEmpty(): boolean {
+    return this.store.size === 0;
+  }
+}
+
 /* ------------------------------------------------------------- form plumbing */
 
 type FormValues = Record<string, string>;
@@ -220,6 +279,56 @@ function ListItemDetail(props: { markdown?: string; isLoading?: boolean }) {
   );
 }
 
+/**
+ * `List.Dropdown`, Raycast's search-bar accessory. Rendered as a real `<select>`
+ * so a test can change it the way a user would, rather than reaching into the
+ * command's state. Like Raycast, it selects its first item by default, so a
+ * dropdown with no items yields an empty value rather than a phantom one.
+ */
+function ListDropdown(props: {
+  tooltip?: string;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  children?: ReactNode;
+}) {
+  const items: { value: string; title: string }[] = [];
+  const collectItems = (nodes: ReactNode) => {
+    Children.forEach(nodes, (child) => {
+      if (!isValidElement(child)) return;
+      if (child.type === ListDropdownItem) {
+        items.push(child.props as { value: string; title: string });
+      } else if (child.type === ListDropdownSection) {
+        collectItems((child.props as { children?: ReactNode }).children);
+      }
+    });
+  };
+  collectItems(props.children);
+
+  return (
+    <select
+      data-testid="dropdown"
+      data-tooltip={props.tooltip}
+      value={props.value ?? props.defaultValue ?? items[0]?.value ?? ""}
+      onChange={(e) => props.onChange?.(e.target.value)}
+    >
+      {items.map((item) => (
+        <option key={item.value} value={item.value}>
+          {item.title}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function ListDropdownItem(props: { value: string; title: string }) {
+  return <option value={props.value}>{props.title}</option>;
+}
+
+function ListDropdownSection(props: { title?: string; children?: ReactNode }) {
+  return <optgroup label={props.title}>{props.children}</optgroup>;
+}
+
 function ListSection(props: { title?: string; children?: ReactNode }) {
   return (
     <div data-testid="list-section" data-title={props.title}>
@@ -238,6 +347,7 @@ export function List(props: {
   throttle?: boolean;
   filtering?: boolean | { keepSectionOrder: boolean };
   actions?: ReactNode;
+  searchBarAccessory?: ReactNode;
 }) {
   const items: ReactNode[] = [];
   const emptyViews: ReactNode[] = [];
@@ -284,6 +394,7 @@ export function List(props: {
         props.filtering === undefined ? props.onSearchTextChange === undefined : Boolean(props.filtering),
       )}
     >
+      {props.searchBarAccessory}
       <input
         data-testid="search-bar"
         placeholder={props.searchBarPlaceholder}
@@ -299,6 +410,9 @@ export function List(props: {
 }
 
 ListItem.Detail = ListItemDetail;
+ListDropdown.Item = ListDropdownItem;
+ListDropdown.Section = ListDropdownSection;
+List.Dropdown = ListDropdown;
 List.Item = ListItem;
 List.EmptyView = ListEmptyView;
 List.Section = ListSection;

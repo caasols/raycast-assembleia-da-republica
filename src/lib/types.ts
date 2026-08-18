@@ -100,3 +100,67 @@ export interface Iniciativa {
   linkTexto: string | null;
   updatedAt: string;
 }
+
+/** `/meta` — the values every filter dropdown is built from. */
+export interface Meta {
+  legislaturas: string[];
+  /**
+   * Party siglas, **prefixed** with the five institutional authors `Governo`,
+   * `PAR`, `Madeira`, `Açores`, `Mesa`. Those five are accepted by
+   * `/iniciativas?grupo=` and `/votacoes?grupo=` but **rejected** by
+   * `/deputados?grupo=`, so a single shared dropdown across all three would
+   * produce 400s. Filter per endpoint — see `parliamentaryGroups`.
+   */
+  grupos: string[];
+  tipos: { tipo: string; tipoDesc: string }[];
+  estados: string[];
+}
+
+export interface Peticao {
+  id: number;
+  legislaturaId: string;
+  numero: string | null;
+  assunto: string | null;
+  autor: string | null;
+  dataEntrada: string | null;
+  assinaturas: number | null;
+  assinaturasInicial: number | null;
+  situacao: string | null;
+  urlTexto: string | null;
+  dataDebate: string | null;
+  updatedAt: string;
+}
+
+export interface Deputado {
+  id: number;
+  nomeParlamentar: string;
+  nomeCompleto: string;
+  grupoParlamentar: string | null;
+  circuloEleitoral: string | null;
+  legislaturaId: string;
+  situacao: string | null;
+  updatedAt: string;
+}
+
+export interface Carreira {
+  id: number;
+  nomeParlamentar: string;
+  /** Distinct legislatures served; `Suplente` mandates are excluded. */
+  totalLegs: number;
+  firstLegStart: string | null;
+  lastLegStart: string | null;
+  lastParty: string | null;
+  legIds: string[];
+}
+
+export interface Carreiras {
+  data: Carreira[];
+  /** Aggregates over **all** deputies, not just the returned page. */
+  stats: { totalDeputies: number; singleTerm: number; avgLegs: number } | null;
+}
+
+export interface Comissao {
+  id: number;
+  sigla: string | null;
+  nome: string | null;
+}

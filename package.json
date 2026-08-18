@@ -73,6 +73,107 @@
         "parlamento",
         "assembleia"
       ]
+    },
+    {
+      "name": "browse-party-votes",
+      "title": "Browse Party Votes",
+      "subtitle": "Assembleia da República",
+      "description": "See how a party voted — in favour, against or abstaining",
+      "mode": "view",
+      "keywords": [
+        "party votes",
+        "party",
+        "voted",
+        "how did",
+        "partido",
+        "votos",
+        "votações",
+        "votacoes",
+        "a favor",
+        "contra",
+        "abstenção",
+        "abstencao",
+        "bancada",
+        "grupo parlamentar"
+      ]
+    },
+    {
+      "name": "search-petitions",
+      "title": "Search Petitions",
+      "subtitle": "Assembleia da República",
+      "description": "Search petitions to parliament by subject, with signature counts",
+      "mode": "view",
+      "keywords": [
+        "petitions",
+        "petition",
+        "signatures",
+        "petições",
+        "peticoes",
+        "petição",
+        "peticao",
+        "assinaturas",
+        "abaixo-assinado",
+        "cidadãos",
+        "cidadaos"
+      ]
+    },
+    {
+      "name": "browse-deputies",
+      "title": "Browse Deputies",
+      "subtitle": "Assembleia da República",
+      "description": "Browse the 230 sitting members of parliament, by name or party",
+      "mode": "view",
+      "keywords": [
+        "deputies",
+        "deputy",
+        "members",
+        "mp",
+        "parliament",
+        "deputados",
+        "deputado",
+        "deputada",
+        "parlamentares",
+        "bancada",
+        "círculo",
+        "circulo",
+        "eleitoral"
+      ]
+    },
+    {
+      "name": "browse-committees",
+      "title": "Browse Committees",
+      "subtitle": "Assembleia da República",
+      "description": "Browse parliamentary committees and their acronyms",
+      "mode": "view",
+      "keywords": [
+        "committees",
+        "committee",
+        "comissões",
+        "comissoes",
+        "comissão",
+        "comissao",
+        "parlamentar",
+        "parlamentares"
+      ]
+    },
+    {
+      "name": "longest-serving-deputies",
+      "title": "Browse Longest-Serving Deputies",
+      "subtitle": "Assembleia da República",
+      "description": "Rank deputies by how many legislatures they have served",
+      "mode": "view",
+      "keywords": [
+        "longest serving",
+        "veterans",
+        "careers",
+        "ranking",
+        "carreiras",
+        "carreira",
+        "legislaturas",
+        "mandatos",
+        "veteranos",
+        "mais antigos"
+      ]
     }
   ],
   "tools": [],
