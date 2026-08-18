@@ -1,20 +1,126 @@
-import { List } from "@raycast/api";
+import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
+import { usePromise } from "@raycast/utils";
+import { listVotacoes } from "./lib/openar-client";
+import { errorMessage, OpenArError } from "./lib/errors";
+import { displayDate, todayInLisbon } from "./lib/dates";
+import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
+import type { VotacaoListItem } from "./lib/types";
+
+/** The API caps `limit` at 200; a single sitting day never approaches that. */
+const MAX_VOTES_PER_DAY = 200;
 
 /**
- * Today's plenary votes.
+ * Colour the outcome rather than only naming it, so a day's results are
+ * scannable. `Prejudicado` — the vote fell because something else made it moot
+ * — is neither a pass nor a defeat, so it gets neither green nor red.
+ */
+function resultIcon(vote: VotacaoListItem) {
+  if (vote.resultado === "Aprovado") {
+    return { source: Icon.CheckCircle, tintColor: Color.Green };
+  }
+  if (vote.resultado === "Rejeitado") {
+    return { source: Icon.XMarkCircle, tintColor: Color.Red };
+  }
+  return { source: Icon.MinusCircle, tintColor: Color.SecondaryText };
+}
+
+/**
+ * Why the list is empty, told apart properly.
  *
- * Scaffold only — P0 exists to make the extension load, build and test; the
- * real fetch lands in P3 against `GET /votacoes` (see OPENAR-API.md §8), which
- * returns each vote already carrying its initiative's title, so the list needs
- * a single request rather than a fan-out.
+ * An error and a quiet day both produce no rows, and saying "no votes today"
+ * when the request actually failed would be a lie the user cannot see through.
+ * A rate limit is separated again because it is the one case where waiting
+ * genuinely fixes it, and the API tells us how long to wait.
+ */
+function EmptyState({ error, date }: { error: unknown; date: string }) {
+  if (error instanceof OpenArError && error.isRateLimited) {
+    const wait = error.retryAfterSeconds;
+    return (
+      <List.EmptyView
+        icon={{ source: Icon.Clock, tintColor: Color.Orange }}
+        title="Too many requests"
+        description={
+          wait === undefined
+            ? "openAR is rate limiting this connection. Try again shortly."
+            : `openAR is rate limiting this connection. Try again in ${wait} seconds.`
+        }
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <List.EmptyView
+        icon={{ source: Icon.Warning, tintColor: Color.Red }}
+        title="Could not load today's votes"
+        description={errorMessage(error)}
+      />
+    );
+  }
+
+  return (
+    <List.EmptyView
+      icon={Icon.Calendar}
+      title="No votes today"
+      // Parliament does not sit every day, so an empty day is the normal case
+      // rather than a failure — the copy says which one this is.
+      description={`Parliament recorded no plenary votes on ${displayDate(date)}.`}
+    />
+  );
+}
+
+/**
+ * Today's plenary votes in the Assembleia da República.
  *
- * `mode` is `view` (context.md O2): a `no-view` command can only raise a HUD or
- * toast, which cannot show a list of votes.
+ * One request: `/votacoes` returns each vote already carrying its initiative's
+ * title and number, so the list needs no per-vote follow-up.
+ *
+ * Committee votes are out of scope here by construction — `/votacoes` is
+ * documented as "votações em plenário", and committee votes live inside an
+ * initiative's `comissoesFases` instead.
  */
 export default function Command() {
+  const today = todayInLisbon();
+
+  const { isLoading, data, error } = usePromise(
+    async (date: string) => {
+      const page = await listVotacoes({
+        dataInicio: date,
+        dataFim: date,
+        limit: MAX_VOTES_PER_DAY,
+      });
+      return page.data;
+    },
+    [today],
+  );
+
+  const votes = data ?? [];
+
   return (
-    <List>
-      <List.EmptyView title="No votes yet" description="Fetching today's votes is not implemented yet." />
+    <List isLoading={isLoading} isShowingDetail={votes.length > 0} searchBarPlaceholder="Filter today's votes">
+      {votes.length === 0 && <EmptyState error={error} date={today} />}
+      {votes.map((vote) => (
+        // Vote ids are unique per initiative rather than globally, so the key
+        // is the pair — two initiatives can each carry a vote called "1".
+        <List.Item
+          key={`${vote.iniciativaId}:${vote.id}`}
+          icon={resultIcon(vote)}
+          title={vote.iniciativaTitulo}
+          subtitle={initiativeReference(vote)}
+          keywords={[vote.iniciativaNumero, vote.resultado, ...vote.aFavor, ...vote.contra]}
+          accessories={[{ text: resultLabel(vote) }]}
+          detail={<List.Item.Detail markdown={voteDetailMarkdown(vote)} />}
+          actions={
+            <ActionPanel>
+              <Action.CopyToClipboard
+                title="Copy Vote Summary"
+                content={`${vote.iniciativaTitulo} — ${resultLabel(vote)}. ${voteSummary(vote)}`}
+              />
+              <Action.CopyToClipboard title="Copy Initiative Title" content={vote.iniciativaTitulo} />
+            </ActionPanel>
+          }
+        />
+      ))}
     </List>
   );
 }

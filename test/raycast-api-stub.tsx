@@ -124,7 +124,19 @@ function useFormContext() {
 // assert on them without caring whether the value is a raw emoji or one of
 // the `Icon.X` proxy strings.
 function iconAttr(icon: unknown): string | undefined {
-  return icon === undefined || icon === null ? undefined : String(icon);
+  if (icon === undefined || icon === null) return undefined;
+  // Raycast accepts a bare Icon as well as the `{ source, tintColor }` form,
+  // and the tinted form is how a list conveys status. Stringifying it whole
+  // yields "[object Object]", which no test can meaningfully assert on, so the
+  // two fields are joined instead.
+  if (typeof icon === "object") {
+    const { source, tintColor } = icon as { source?: unknown; tintColor?: unknown };
+    return [source, tintColor]
+      .filter((part) => part !== undefined && part !== null)
+      .map(String)
+      .join(" ");
+  }
+  return String(icon);
 }
 
 type SimpleShortcut = { modifiers?: string[]; key?: string };
@@ -153,6 +165,7 @@ function ListItem(props: {
   title?: string;
   subtitle?: string;
   actions?: ReactNode;
+  detail?: ReactNode;
   accessories?: { text?: string; date?: Date; tag?: unknown; icon?: unknown }[];
   icon?: unknown;
   section?: string;
@@ -170,6 +183,7 @@ function ListItem(props: {
       data-accessories={props.accessories?.map((a) => a.text ?? (a.date ? a.date.toISOString() : "")).join(" ")}
     >
       {props.actions}
+      {props.detail}
     </div>
   );
 }
@@ -187,6 +201,18 @@ function ListEmptyView(props: { title?: string; description?: string; actions?: 
   );
 }
 
+/**
+ * `List.Item.Detail`. Raycast renders the detail pane only for the selected
+ * item; the stub renders it inline for whichever items declare one, so a test
+ * can assert the markdown a row would show without driving selection, which
+ * jsdom cannot reproduce.
+ */
+function ListItemDetail(props: { markdown?: string; isLoading?: boolean }) {
+  return (
+    <div data-testid="item-detail" data-markdown={props.markdown} data-loading={String(Boolean(props.isLoading))} />
+  );
+}
+
 function ListSection(props: { title?: string; children?: ReactNode }) {
   return (
     <div data-testid="list-section" data-title={props.title}>
@@ -198,6 +224,7 @@ function ListSection(props: { title?: string; children?: ReactNode }) {
 export function List(props: {
   children?: ReactNode;
   isLoading?: boolean;
+  isShowingDetail?: boolean;
   navigationTitle?: string;
   searchBarPlaceholder?: string;
   onSearchTextChange?: (text: string) => void;
@@ -231,6 +258,7 @@ export function List(props: {
     <div
       data-testid="list"
       data-loading={String(Boolean(props.isLoading))}
+      data-showing-detail={String(Boolean(props.isShowingDetail))}
       data-navigation-title={props.navigationTitle}
       // The stub does no actual filtering (native Raycast filtering is not
       // something jsdom can reproduce), so this pins the prop a command passes
@@ -263,6 +291,7 @@ export function List(props: {
   );
 }
 
+ListItem.Detail = ListItemDetail;
 List.Item = ListItem;
 List.EmptyView = ListEmptyView;
 List.Section = ListSection;

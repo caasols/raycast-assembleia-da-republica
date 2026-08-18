@@ -4,8 +4,8 @@ The forward plan. Project state, decisions and audit findings live in
 **`context.md`**; the working rules live in **`CLAUDE.md`**. Read both before
 starting a phase.
 
-- **Status:** P0 and P2 complete — client built and covered, no UI wired to it yet
-- **Ready now:** P3 (first command, end to end)
+- **Status:** P0, P1, P2, P3 complete — one command working end to end against a stubbed API
+- **Ready now:** P4 (second command) or P5 (publishing prep)
 - **Blocked:** nothing on the critical path — P1 is complete
 - **API contract:** `docs/openar-openapi.json` + `OPENAR-API.md` (complete)
 - **Last updated:** 2026-08-18
@@ -66,10 +66,19 @@ past P1 should start until the API is actually understood.
 
 **Verified:** all gates green; 100/100/100/100 across `openar-client.ts`, `query.ts`, `errors.ts`. Two implementation bugs were caught by the tests — see `context.md`. **Not** smoke-tested against the live API (P2.4).
 
-### P3 — First command, end to end
-Implement `what-was-the-vote-today` (or whichever P1.4 says is highest-value)
-with its full test suite, real empty and error states, and the Portuguese
-date/name formatting the data needs. **One command only.**
+### P3 — First command, end to end ✅ *complete (2026-08-18)*
+`Browse Today's Votes` renders `/votacoes` for the current Lisbon date in a
+single request, with the party breakdown in the detail pane, result-tinted
+icons, and three distinct empty states (quiet day / failure / rate limited).
+
+- `src/lib/dates.ts` — Lisbon-anchored "today" and display formatting (D39)
+- `src/lib/votes.ts` — reference, summary, result label, detail markdown (D40)
+- `src/what-was-the-vote-today.tsx` — the view, keyed by `(iniciativaId, id)`
+- `test/raycast-api-stub.tsx` — gained `List.Item.Detail` and icon-object
+  serialisation (D42)
+
+**Verified:** 99 tests, 100/100/100/100, all gates green. **Still never run
+against the live API** — P2.4 remains outstanding.
 
 ### P4 — Second command onwards
 Repeat P3 per command, extracting shared UI into `src/components/` only on the
