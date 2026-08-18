@@ -4,37 +4,39 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          # @raycast/api declares engines node >=22.22.2 and local development
+          # runs on 24, so anything older validates a configuration Raycast does
+          # not support and that nobody develops on. Matches raycast-publico.
+          node-version: 24
           cache: npm
 
       - run: npm ci
 
+      # `ray lint` also validates the manifest and icons, which ESLint and
+      # Prettier cannot see. It reaches raycast.com to check the author, which
+      # works in Actions but not inside the restricted dev containers — so it
+      # belongs here rather than in a local pre-commit step.
+      - run: npm run lint
+
       # Both tsconfigs: the extension without the DOM lib, the tests with it.
-      - name: Typecheck
-        run: npm run typecheck
+      - run: npm run typecheck
 
       # The ratchet. Thresholds are pinned at 100% in vitest.config.ts, so new
       # uncovered code fails here rather than quietly lowering the bar.
-      - name: Test with coverage
-        run: npm run test:coverage
-
-      # Scoped to src/ to match what `ray lint` itself checks. `ray lint` is not
-      # used here because it also validates the author against raycast.com,
-      # which makes CI depend on that service being reachable.
-      - name: ESLint and Prettier
-        run: npx eslint src && npx prettier --check .
+      - run: npm run test:coverage
 
       # Kept last and deliberately not trusted on its own: `ray build` once
       # compiled a 0-byte command file and reported success (context.md §4).
       # The tests above are what actually prove the commands work.
-      - name: Build
-        run: npm run build
+      - run: npm run build

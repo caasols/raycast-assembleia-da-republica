@@ -40,11 +40,11 @@ past P1 should start until the API is actually understood.
 
 ### P0 — Foundations ✅ *complete (2026-08-18)*
 
-- **P0.1** ✅ O2 → `view`, O3 → Store, O5 → Windows + macOS (D21–D23). O6 still open, and O9 was opened alongside it.
+- **P0.1** ✅ O2 → `view`, O3 → Store, O5 → Windows + macOS, O6 → English copy with Portuguese keywords (D21–D23, D28). Only O9 (extension title) remains.
 - **P0.2** ✅ Slug fixed to `assembleia-da-republica` (D24), command Title-Cased, real description and subtitle, `mode: view`.
 - **P0.3** ✅ Harness ported verbatim. `tsconfig.json` also gained buzz's test `exclude` and explicit `types` — without them `tsc --noEmit` checks the tests without the DOM lib and the jest-dom matchers fail.
 - **P0.4** ✅ Committed.
-- **P0.5** ✅ `.github/workflows/ci.yml` — typecheck, coverage (100% ratchet), eslint + prettier, build (D26).
+- **P0.5** ✅ `.github/workflows/ci.yml` — `ray lint`, typecheck, coverage (100% ratchet), build, on Node 24 (D29, D31).
 - **P0.6** ✅ Python/graphify/framework entries pruned; LICENSE holder is now `Carlos Sol`.
 
 **Verified:** `typecheck`, `test:coverage` (100/100/100/100), `build`, `eslint src` and `prettier --check` all pass locally. `scripts/smoke.ts` is written but **cannot run here** — api.openar.pt is egress-blocked.

@@ -76,7 +76,17 @@ Two reference repos, and they are **not** the same thing — don't confuse them:
 | [`caasols/raycast-buzz`](https://github.com/caasols/raycast-buzz) | The **Raycast extension** | Structure, conventions, test strategy. This is the template. |
 | [`block/buzz`](https://github.com/block/buzz) | The **Buzz product itself** — Rust workspace (~20 crates: relay, core, db, auth, search, media, agent) plus desktop/mobile/web. No Raycast code anywhere. | Contributor-guide and testing-doc conventions only. |
 
-When in doubt about layout, look at `caasols/raycast-buzz` first and match it.
+A third repo, [`caasols/raycast-publico`](https://github.com/caasols/raycast-publico),
+is the author's other **published** Raycast extension and sets the house style
+for anything store-facing: English command titles in `Browse X` form, the brand
+name as `subtitle`, and Portuguese `keywords` (accented *and* unaccented) so
+search works in either language. It also shows the CI shape and README format
+that got through store review.
+
+When in doubt about **layout and tests**, match `raycast-buzz`; when in doubt
+about **manifest, copy or store presentation**, match `raycast-publico`. Where
+they disagree — buzz colocates tests, publico uses `src/__tests__/` — buzz wins
+(`context.md` D32).
 
 ### Directory layout (mirrors raycast-buzz)
 

@@ -6,8 +6,8 @@
   "icon": "extension-icon.png",
   "author": "caasols",
   "platforms": [
-    "Windows",
-    "macOS"
+    "macOS",
+    "Windows"
   ],
   "categories": [
     "Data"
@@ -16,10 +16,32 @@
   "commands": [
     {
       "name": "what-was-the-vote-today",
-      "title": "What Was the Vote Today",
+      "title": "Browse Today's Votes",
       "subtitle": "Assembleia da República",
-      "description": "See how parliament voted today — the result of each vote and how every party voted",
-      "mode": "view"
+      "description": "Browse today's plenary votes — the result of each one and how every party voted",
+      "mode": "view",
+      "keywords": [
+        "votes",
+        "voting",
+        "vote",
+        "today",
+        "parliament",
+        "plenary",
+        "votações",
+        "votacoes",
+        "votação",
+        "votacao",
+        "voto",
+        "votos",
+        "hoje",
+        "plenário",
+        "plenario",
+        "parlamento",
+        "assembleia",
+        "ar",
+        "deputados",
+        "iniciativas"
+      ]
     }
   ],
   "tools": [],
