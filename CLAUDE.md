@@ -1,8 +1,16 @@
 # CLAUDE.md — working agreement
 
 Operating rules for any Claude session in this repo. Read this first, every
-session. Project state, decisions and roadmap live in **`PLAN.md`** — this file
-is *how we work*, `PLAN.md` is *what we're doing*.
+session. Three tracked documents, three jobs — keep them in their lanes:
+
+| File | Holds |
+|---|---|
+| **`CLAUDE.md`** (this file) | *How we work* — standing rules, conventions, test mechanics |
+| **`context.md`** | *What we know* — project context, decision log, open questions, blockers, audit findings |
+| **`PLAN.md`** | *What we do next* — candidate commands, phased roadmap |
+
+The repo is **private**, so internal working notes belong here rather than in a
+side channel. Keep credentials out regardless.
 
 ---
 
@@ -14,7 +22,7 @@ ones, unless the user explicitly waives them for a given piece of work.
 ### R1 — Plan and brainstorm before building
 No implementation before a written plan. Every non-trivial task starts with a
 brainstorm of the possible approaches, not the first one that comes to mind.
-Write the plan down in `PLAN.md` (or in the reply, for small work) before
+Write it down — roadmap items in `PLAN.md`, decisions in `context.md` — before
 touching code.
 
 ### R2 — Break work down as far as it will go
@@ -40,7 +48,7 @@ Do not skip to build because the task looks obvious.
 Tests are part of the work, not a follow-up. Every new module ships with its
 colocated test file in the same change. Coverage thresholds are enforced in CI
 and in `vitest.config.ts` — a change that drops coverage fails, it does not get
-waved through. See §3 for the mechanics.
+waved through. See §3 below for the mechanics.
 
 ### R6 — Report honestly
 If something is blocked, unverified, or was skipped, say so plainly and say
@@ -50,7 +58,7 @@ why. Never present an unverified assumption as a finding.
 borrowed from `block/buzz`'s own agent guide, and the exact lesson this repo
 already taught: `ray build` compiled a 0-byte command file and reported
 success. Scale validation to the change's risk, and exercise the real workflow
-for user-visible behaviour when practical. See `PLAN.md` §4.
+for user-visible behaviour when practical. See `context.md` §4.
 
 ---
 
@@ -147,10 +155,10 @@ component tests without letting the extension itself see browser globals.
 - **`ray build` succeeding proves almost nothing.** It compiled a 0-byte
   command file and reported success. A `no-view` command with no default export
   builds clean and fails at invocation. Trust tests, not the build.
-- **This file and `context.md` are now tracked** (`PLAN.md` D14). `docs/` and
+- **All three docs are tracked** (`context.md` D14/D15). `docs/` and
   `PROJECT_BRIEF.md` remain ignored. Keep secrets out of all four regardless.
 - **Network egress is restricted in remote dev containers.** `openar.pt`,
   `api.openar.pt` and `parlamento.pt` are currently blocked by the egress
-  proxy. Do not try to route around it — report it. See `PLAN.md` §3.
+  proxy. Do not try to route around it — report it. See `context.md` §3.
 - **The `name` field in `package.json` is permanent after publishing** — it
   becomes the store URL. It is currently misspelled. Fix before first publish.
