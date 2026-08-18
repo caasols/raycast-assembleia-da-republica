@@ -22,8 +22,9 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       include: ["src/**"],
-      // No types-only module exists yet; add it here (with a note) when one does.
-      exclude: ["src/**/*.test.{ts,tsx}"],
+      // types.ts is type declarations only and emits no runtime code, so v8 sees
+      // a file with zero coverable lines rather than an untested one.
+      exclude: ["src/**/*.test.{ts,tsx}", "src/lib/types.ts"],
       // src/ is fully covered today; the thresholds hold that line, so new
       // uncovered code fails `npm run test:coverage` rather than drifting.
       thresholds: {

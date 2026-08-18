@@ -4,8 +4,8 @@ The forward plan. Project state, decisions and audit findings live in
 **`context.md`**; the working rules live in **`CLAUDE.md`**. Read both before
 starting a phase.
 
-- **Status:** P0 complete — foundations in place, no data fetching yet
-- **Ready now:** P2 (client design)
+- **Status:** P0 and P2 complete — client built and covered, no UI wired to it yet
+- **Ready now:** P3 (first command, end to end)
 - **Blocked:** nothing on the critical path — P1 is complete
 - **API contract:** `docs/openar-openapi.json` + `OPENAR-API.md` (complete)
 - **Last updated:** 2026-08-18
@@ -58,16 +58,13 @@ past P1 should start until the API is actually understood.
 
 **Done when:** every §1 command is backed by a named endpoint, or dropped.
 
-### P2 — Design the client
-- **P2.1** Brainstorm + pros/cons: hand-written client vs generated from
-  OpenAPI; `@raycast/utils` `useFetch` vs a bare typed wrapper.
-- **P2.2** Design the types, error model and caching strategy. Self-audit and
-  recommend before writing it (R4).
-- **P2.3** Build `src/lib/openar-client.ts` + `src/lib/errors.ts`, fully unit
-  tested against fixtures.
-- **P2.4** `scripts/smoke.ts` against the live API.
+### P2 — Design the client ✅ *complete (2026-08-18)*
+- **P2.1** ✅ Hand-written over generated (D33); module functions over a class (D34); `usePromise` over `useFetch` (D35).
+- **P2.2** ✅ `src/lib/types.ts` models only what is consumed, including the compound `VotacaoKey`. `OpenArError` carries status and `Retry-After` (D36, D37).
+- **P2.3** ✅ `openar-client.ts`, `query.ts`, `errors.ts`, `types.ts` — 100% covered, 56 tests.
+- **P2.4** ⚠️ Written and driving the real client, but **cannot run here** — api.openar.pt is egress-blocked. Must be run locally before P3 is trusted.
 
-**Done when:** the client is 100%-covered and smoke-tested, with zero UI written.
+**Verified:** all gates green; 100/100/100/100 across `openar-client.ts`, `query.ts`, `errors.ts`. Two implementation bugs were caught by the tests — see `context.md`. **Not** smoke-tested against the live API (P2.4).
 
 ### P3 — First command, end to end
 Implement `what-was-the-vote-today` (or whichever P1.4 says is highest-value)
