@@ -67,6 +67,13 @@ stated explicitly — correct these rather than inherit them as fact.
 | D18 | 2026-08-18 | **Vendor the full OpenAPI spec** as `docs/openar-openapi.json`; `OPENAR-API.md` rewritten from it | The complete 3.1 spec was supplied directly. 16 endpoints, all schemas. `.gitignore` narrowed from `docs/` to `docs/*` + a negation so the spec tracks while scratch docs stay ignored. Closes O8. | Settled |
 | D19 | 2026-08-18 | **Base URL is `https://api.openar.pt/v1`** | `servers[0].url` in the spec. The reference page lists paths without the prefix, which is misleading — the earlier vendored doc had it wrong. Every call against the bare host would 404. | Settled |
 | D20 | 2026-08-18 | openAR is **MIT licensed**; attribute it in README and store listing | `info.license` in the spec. Resolves the licensing question that blocked P5. Redistribution is permitted with attribution. | Settled |
+| D21 | 2026-08-18 | Command mode is **`view`** (closes O2) | A `no-view` command can only raise a HUD or toast, which cannot render a list of votes. File is now `.tsx`. | Settled |
+| D22 | 2026-08-18 | Target the **Raycast Store** (closes O3) | Keeps P5 in the roadmap and makes the manifest/README/screenshot rules binding. | Settled |
+| D23 | 2026-08-18 | Ship on **Windows and macOS** (closes O5) | Confirms D2. Consequence: no macOS-only APIs, and manual test surface doubles. raycast-buzz is macOS-only, so it is not a guide here. | Settled |
+| D24 | 2026-08-18 | Extension slug is **`assembleia-da-republica`** | Was `assembleia-da-rep-blica` — the `ú` was dropped, not transliterated. Permanent once published, so fixed before any publish. | Settled |
+| D25 | 2026-08-18 | Extension title stays **`Assembleia da República`**, accepting a `ray lint` Title-Case warning | It is the institution's proper name; `Assembleia Da República` is wrong Portuguese. A warning, not an error. Revisit if store review objects — see O9. | Settled |
+| D26 | 2026-08-18 | CI runs `eslint src` + `prettier --check`, **not** `ray lint` | `ray lint` validates the author against raycast.com, which would make CI depend on that service. The other `ray lint` checks (ESLint, Prettier, icons) are covered directly. | Settled |
+| D27 | 2026-08-18 | `.prettierignore` covers `docs/` and `*.md` | The vendored spec must not be reformatted or diffs against a refreshed spec become unreadable; prose docs are hand-formatted and Prettier's reflow fights the tables. | Settled |
 
 ### Open questions
 
@@ -76,7 +83,8 @@ stated explicitly — correct these rather than inherit them as fact.
 | O3 | Raycast Store, or private use? | Store review enforces naming, description, README and screenshot rules. If private, most manifest findings drop to cosmetic and P5 disappears. | P5 |
 | O4 | Scope of "today" — plenary only, or committees too? Behaviour on a non-sitting day? | Shapes queries and the empty state | P1, P3 |
 | O5 | Windows **and** macOS, or macOS only? | D2 claims both; raycast-buzz ships macOS-only. Cross-platform means no macOS-only APIs and doubles manual test surface. | P2, P5 |
-| O6 | Portuguese or English UI copy? Both? | Data arrives in Portuguese. Mixed-language UI reads badly; an English UI over Portuguese content is a real trade-off. Store listings skew English. | P3 |
+| O9 | Does Raycast store review accept a non-English extension title? | `ray lint` warns that `Assembleia da República` is not Title Case and wants `Assembleia Da República`, which is wrong Portuguese. Both `developers.raycast.com` and `manual.raycast.com` are blocked by the egress proxy, so the guideline could not be verified. Alternative is an English title such as `Portuguese Parliament`. | P5 |
+| O6 | Portuguese or English UI copy? Both? | Data arrives in Portuguese. Mixed-language UI reads badly. **Unverified** — Raycast's guidelines are behind the egress block (O9). P0 used English chrome (`What Was the Vote Today`), which is reversible. | P3 |
 | ~~O8~~ | ~~`/votacoes`, `/peticoes`, `/comissoes` contracts~~ | **Closed 2026-08-18 (D18).** The full OpenAPI spec was supplied and vendored; all 16 endpoints are documented. | — |
 | O7 | What do the pre-existing iCloud `CLAUDE.md` / `context.md` contain? | They may hold decisions from local sessions that this log has never seen. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not file contents — see §3.1. Until recovered, this log may be missing history. | — |
 

@@ -4,8 +4,8 @@ The forward plan. Project state, decisions and audit findings live in
 **`context.md`**; the working rules live in **`CLAUDE.md`**. Read both before
 starting a phase.
 
-- **Status:** scaffold only — no implementation yet
-- **Ready now:** P0 (no API access required)
+- **Status:** P0 complete — foundations in place, no data fetching yet
+- **Ready now:** P2 (client design)
 - **Blocked:** nothing on the critical path — P1 is complete
 - **API contract:** `docs/openar-openapi.json` + `OPENAR-API.md` (complete)
 - **Last updated:** 2026-08-18
@@ -38,22 +38,16 @@ designed.
 Ordered by dependency. Phases are deliberately small per `CLAUDE.md` R2. Nothing
 past P1 should start until the API is actually understood.
 
-### P0 — Foundations *(ready now, unblocked)*
-Independent of the API, so it can proceed while `context.md` §3 is resolved.
+### P0 — Foundations ✅ *complete (2026-08-18)*
 
-- **P0.1** Resolve O2, O3, O5, O6 (see recommendations above).
-- **P0.2** Fix `package.json`: the `name` slug **first** (it's permanent), then
-  Title Case, real `description`, real `subtitle`, `mode` per O2.
-- **P0.3** Port the test harness from raycast-buzz: `vitest`,
-  `@vitest/coverage-v8`, `test/raycast-api-stub.tsx`, `test/setup.ts`,
-  `vitest.config.ts`, `tsconfig.test.json`, and the `test`/`typecheck` scripts.
-- **P0.4** Commit `package-lock.json`.
-- **P0.5** CI: GitHub Actions running `lint` + `typecheck` + `test:coverage` +
-  `build` on PRs. Do this *before* real code, so the ratchet exists from commit one.
-- **P0.6** Prune the dead `.gitignore` entries; fix the `LICENSE` holder name.
+- **P0.1** ✅ O2 → `view`, O3 → Store, O5 → Windows + macOS (D21–D23). O6 still open, and O9 was opened alongside it.
+- **P0.2** ✅ Slug fixed to `assembleia-da-republica` (D24), command Title-Cased, real description and subtitle, `mode: view`.
+- **P0.3** ✅ Harness ported verbatim. `tsconfig.json` also gained buzz's test `exclude` and explicit `types` — without them `tsc --noEmit` checks the tests without the DOM lib and the jest-dom matchers fail.
+- **P0.4** ✅ Committed.
+- **P0.5** ✅ `.github/workflows/ci.yml` — typecheck, coverage (100% ratchet), eslint + prettier, build (D26).
+- **P0.6** ✅ Python/graphify/framework entries pruned; LICENSE holder is now `Carlos Sol`.
 
-**Done when:** an empty-but-real extension builds, lints, typechecks, and passes
-a green test suite in CI.
+**Verified:** `typecheck`, `test:coverage` (100/100/100/100), `build`, `eslint src` and `prettier --check` all pass locally. `scripts/smoke.ts` is written but **cannot run here** — api.openar.pt is egress-blocked.
 
 ### P1 — Understand the API ✅ *complete*
 - **P1.1** ✅ Full OpenAPI 3.1 spec vendored at `docs/openar-openapi.json` (D18).

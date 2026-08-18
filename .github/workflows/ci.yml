@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Both tsconfigs: the extension without the DOM lib, the tests with it.
+      - name: Typecheck
+        run: npm run typecheck
+
+      # The ratchet. Thresholds are pinned at 100% in vitest.config.ts, so new
+      # uncovered code fails here rather than quietly lowering the bar.
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      # Scoped to src/ to match what `ray lint` itself checks. `ray lint` is not
+      # used here because it also validates the author against raycast.com,
+      # which makes CI depend on that service being reachable.
+      - name: ESLint and Prettier
+        run: npx eslint src && npx prettier --check .
+
+      # Kept last and deliberately not trusted on its own: `ray build` once
+      # compiled a 0-byte command file and reported success (context.md §4).
+      # The tests above are what actually prove the commands work.
+      - name: Build
+        run: npm run build

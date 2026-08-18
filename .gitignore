@@ -23,7 +23,7 @@ docs/*
 !docs/openar-openapi.json
 PROJECT_BRIEF.md
 
-# CLAUDE.md and context.md are deliberately TRACKED (see PLAN.md D14): they are
+# CLAUDE.md and context.md are deliberately TRACKED (see context.md D14): they are
 # the agent working agreement and the decision log, and both are worthless if
 # they die with an ephemeral dev container. They contain no secrets.
 
@@ -43,17 +43,3 @@ yarn-error.log*
 
 # misc
 .DS_Store
-
-# tooling / generated (graphify code-graph, python-based helpers)
-node_modules
-graphify-out/
-.superpowers/
-__pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-*.egg-info/
-.next
-.nuxt
-.svelte-kit
-.turbo

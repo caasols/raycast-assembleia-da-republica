@@ -1,8 +1,8 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "assembleia-da-rep-blica",
+  "name": "assembleia-da-republica",
   "title": "Assembleia da República",
-  "description": "Assembleia da República",
+  "description": "Search votes, legislative initiatives, deputies and petitions from the Portuguese parliament, powered by openAR open data",
   "icon": "extension-icon.png",
   "author": "caasols",
   "platforms": [
@@ -16,10 +16,10 @@
   "commands": [
     {
       "name": "what-was-the-vote-today",
-      "title": "what was the vote today",
-      "subtitle": "what was bvoted today you know d",
-      "description": "what was voted today?",
-      "mode": "no-view"
+      "title": "What Was the Vote Today",
+      "subtitle": "Assembleia da República",
+      "description": "See how parliament voted today — the result of each vote and how every party voted",
+      "mode": "view"
     }
   ],
   "tools": [],
@@ -29,11 +29,20 @@
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.2.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "22.19.17",
     "@types/react": "19.0.10",
+    "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^10.5.0",
+    "jsdom": "^25.0.1",
     "prettier": "^3.8.5",
-    "typescript": "^6.0.3"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsx": "^4.23.1",
+    "typescript": "^6.0.3",
+    "vitest": "^2.1.9"
   },
   "scripts": {
     "build": "ray build",
@@ -41,6 +50,11 @@
     "fix-lint": "ray lint --fix",
     "lint": "ray lint",
     "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1",
-    "publish": "npx @raycast/api@latest publish"
+    "publish": "npx @raycast/api@latest publish",
+    "smoke": "tsx scripts/smoke.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   }
 }
