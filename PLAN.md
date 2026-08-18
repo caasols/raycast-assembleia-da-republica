@@ -6,7 +6,8 @@ starting a phase.
 
 - **Status:** scaffold only — no implementation yet
 - **Ready now:** P0 (no API access required)
-- **Blocked:** P1 onward — see `context.md` §3
+- **Blocked:** P3 onward — `/votacoes` is not yet documented (O8)
+- **API contract:** `OPENAR-API.md` (partial capture)
 - **Last updated:** 2026-08-18
 
 ---
@@ -55,9 +56,11 @@ Independent of the API, so it can proceed while `context.md` §3 is resolved.
 a green test suite in CI.
 
 ### P1 — Understand the API *(blocked — see `context.md` §3)*
-- **P1.1** Obtain `openapi.json`; vendor it into the repo.
-- **P1.2** Document real endpoints, response shapes, pagination, update cadence,
-  rate limits and licensing/attribution in a new `## 8. API notes` section here.
+- **P1.1** ✅ *Done* — API reference vendored as `OPENAR-API.md` (D17).
+- **P1.2** ⚠️ *Partial* — base URL, auth, rate limits, caching, pagination and 9
+  endpoints documented. **Still missing `/votacoes`, `/peticoes`, `/comissoes`
+  (O8)** and every response body beyond the envelope. Licensing/attribution
+  terms are still undocumented and still need checking before publish.
 - **P1.3** Settle O4 against what the data actually supports.
 - **P1.4** Re-derive §1 from the real spec; kill the speculative entries.
 

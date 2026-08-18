@@ -8,6 +8,7 @@ session. Three tracked documents, three jobs — keep them in their lanes:
 | **`CLAUDE.md`** (this file) | *How we work* — standing rules, conventions, test mechanics |
 | **`context.md`** | *What we know* — project context, decision log, open questions, blockers, audit findings |
 | **`PLAN.md`** | *What we do next* — candidate commands, phased roadmap |
+| **`OPENAR-API.md`** | *What the API does* — vendored openAR contract, its traps and limits |
 
 The repo is **private**, so internal working notes belong here rather than in a
 side channel. Keep credentials out regardless.
@@ -160,5 +161,9 @@ component tests without letting the extension itself see browser globals.
 - **Network egress is restricted in remote dev containers.** `openar.pt`,
   `api.openar.pt` and `parlamento.pt` are currently blocked by the egress
   proxy. Do not try to route around it — report it. See `context.md` §3.
+  Work from the vendored **`OPENAR-API.md`** instead — but note it is a partial
+  capture: `/votacoes`, `/peticoes` and `/comissoes` are missing (O8).
+- **`estado` is not a verdict.** `Aprovado` is not a valid `/iniciativas?estado=`
+  value — use `resultado=aprovado`. See `OPENAR-API.md` §14.
 - **The `name` field in `package.json` is permanent after publishing** — it
   becomes the store URL. It is currently misspelled. Fix before first publish.

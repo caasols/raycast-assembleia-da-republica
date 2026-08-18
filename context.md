@@ -59,6 +59,7 @@ stated explicitly — correct these rather than inherit them as fact.
 | D12 | 2026-08-18 | Working rules captured in `CLAUDE.md` | Per user request; see `CLAUDE.md` R1–R6 | Settled |
 | D13 | 2026-08-18 | `caasols/raycast-buzz` — **not** `block/buzz` — is the Raycast reference | `block/buzz` is the Buzz *product*: a Rust workspace (~20 crates) plus desktop/mobile/web, with zero `@raycast/api` anywhere. It is the backend the extension talks to. Useful only for contributor-guide/testing conventions. | Settled |
 | D15 | 2026-08-18 | **Three tracked docs with separate jobs:** `CLAUDE.md` (how we work) / `context.md` (what we know) / `PLAN.md` (what we do next). Partially reverses D9 — `context.md` is restored rather than retired. | The user works from a `CLAUDE.md` + `context.md` pair and needs both present to build on as we go. Splitting state from forward-plan keeps one source of truth per question instead of duplicating decisions across two files. | Settled |
+| D17 | 2026-08-18 | **Vendor the openAR API reference into the repo** as `OPENAR-API.md` | The live spec is unreachable from dev containers, so the contract is transcribed from the official reference PDF and committed. Makes the API contract reviewable in diffs and unblocks every future session. Capture is **partial** — see O8. | Settled |
 | D16 | 2026-08-18 | Internal working docs live in the repo | **The repo is private** — checked, not assumed. D6's premise ("never published to the public repo") was simply wrong: there is no public repo. Nothing here is secret-bearing anyway. | Settled |
 | D14 | 2026-08-18 | **`CLAUDE.md` and `context.md` are now tracked in git** | Supersedes D6/D8 for these two files. User asked for them in the GitHub repo. Removed from `.gitignore`; `docs/` and `PROJECT_BRIEF.md` stay ignored. Neither contains secrets. | Settled |
 
@@ -71,6 +72,7 @@ stated explicitly — correct these rather than inherit them as fact.
 | O4 | Scope of "today" — plenary only, or committees too? Behaviour on a non-sitting day? | Shapes queries and the empty state | P1, P3 |
 | O5 | Windows **and** macOS, or macOS only? | D2 claims both; raycast-buzz ships macOS-only. Cross-platform means no macOS-only APIs and doubles manual test surface. | P2, P5 |
 | O6 | Portuguese or English UI copy? Both? | Data arrives in Portuguese. Mixed-language UI reads badly; an English UI over Portuguese content is a real trade-off. Store listings skew English. | P3 |
+| O8 | What are the `/votacoes`, `/peticoes` and `/comissoes` contracts? | The supplied PDF truncated mid-`/iniciativas`; these three endpoints are confirmed to exist but were not captured. **`/votacoes` backs the extension's first planned command**, so this blocks P3. Fix: re-export the full reference page, or commit `openapi.json` from an unblocked machine. | P3 |
 | O7 | What do the pre-existing iCloud `CLAUDE.md` / `context.md` contain? | They may hold decisions from local sessions that this log has never seen. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not file contents — see §3.1. Until recovered, this log may be missing history. | — |
 
 ---
@@ -94,7 +96,12 @@ reported rather than worked around. **Re-tested 2026-08-18 after being given
 the `https://api.openar.pt/` URL directly — still blocked.** Supplying the URL
 does not help; the block is on the host, not on knowing the address.
 
-**To unblock, do one of:**
+**Partially mitigated 2026-08-18:** the official API reference was supplied as a
+PDF and transcribed into **`OPENAR-API.md`** (D17). Base URL, auth, rate limits,
+caching, pagination and 9 endpoints are now documented offline. **The capture is
+incomplete** — see O8.
+
+**To unblock fully, do one of:**
 1. Add `openar.pt` and `api.openar.pt` to the environment's network allowlist —
    see the [environment docs](https://code.claude.com/docs/en/claude-code-on-the-web).
 2. Run the openAR exploration locally instead, and paste `openapi.json` into the
@@ -120,10 +127,13 @@ downloaded locally — sharing hands over a reference instead of the content.
 (the cloud-with-arrow icon disappears), *then* share it — or simply paste the
 contents into chat, or upload from a Mac with iCloud Drive synced. Tracked as O7.
 
-### What we know about openAR so far
+### What we know about openAR
 
-From web search only — **none of this is verified against the live API**, and
-nothing below should be treated as fact until it is:
+**Superseded by `OPENAR-API.md`**, which is transcribed from the official
+reference rather than inferred. The summary below is retained only as the
+pre-D17 record of what was assumed before the real contract arrived — several
+guesses in it turned out wrong (rate limits and licensing were listed as
+"unknown"; they are documented). Read `OPENAR-API.md` instead.
 
 - Base URL `https://api.openar.pt`; OpenAPI spec at `/openapi.json`.
 - **No authentication.**
