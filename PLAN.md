@@ -6,8 +6,8 @@ starting a phase.
 
 - **Status:** scaffold only — no implementation yet
 - **Ready now:** P0 (no API access required)
-- **Blocked:** P3 onward — `/votacoes` is not yet documented (O8)
-- **API contract:** `OPENAR-API.md` (partial capture)
+- **Blocked:** nothing on the critical path — P1 is complete
+- **API contract:** `docs/openar-openapi.json` + `OPENAR-API.md` (complete)
 - **Last updated:** 2026-08-18
 
 ---
@@ -15,7 +15,7 @@ starting a phase.
 ## 1. Candidate commands
 
 Derived from openAR's dataset list. **Speculative** — must be re-derived from
-the real spec once `context.md` §3 is unblocked. Listed to shape the roadmap, not committed.
+the real spec (P1.4). Listed to shape the roadmap, not committed.
 
 | Command | Shape | Notes |
 |---|---|---|
@@ -55,12 +55,10 @@ Independent of the API, so it can proceed while `context.md` §3 is resolved.
 **Done when:** an empty-but-real extension builds, lints, typechecks, and passes
 a green test suite in CI.
 
-### P1 — Understand the API *(blocked — see `context.md` §3)*
-- **P1.1** ✅ *Done* — API reference vendored as `OPENAR-API.md` (D17).
-- **P1.2** ⚠️ *Partial* — base URL, auth, rate limits, caching, pagination and 9
-  endpoints documented. **Still missing `/votacoes`, `/peticoes`, `/comissoes`
-  (O8)** and every response body beyond the envelope. Licensing/attribution
-  terms are still undocumented and still need checking before publish.
+### P1 — Understand the API ✅ *complete*
+- **P1.1** ✅ Full OpenAPI 3.1 spec vendored at `docs/openar-openapi.json` (D18).
+- **P1.2** ✅ All 16 endpoints, schemas, limits, caching and licensing documented
+  in `OPENAR-API.md`. Licence is **MIT** (D20) — P5's licensing blocker is gone.
 - **P1.3** Settle O4 against what the data actually supports.
 - **P1.4** Re-derive §1 from the real spec; kill the speculative entries.
 

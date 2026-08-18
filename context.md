@@ -10,9 +10,11 @@ Companion documents:
 | **`CLAUDE.md`** | *How we work* — the standing rules (R1–R6), architecture conventions, test mechanics | Start of every session |
 | **`context.md`** (this file) | *What we know* — project context, decision log, open questions, blockers, audit findings | Before proposing anything |
 | **`PLAN.md`** | *What we do next* — candidate commands and the phased roadmap | When picking up work |
+| **`OPENAR-API.md`** | *What the API does* — the openAR contract and its traps | Before writing any client code |
+| **`docs/openar-openapi.json`** | The full OpenAPI 3.1 spec — source of truth | When the prose is ambiguous |
 
-Decisions are append-only: add, don't rewrite. All three files are tracked in
-git (D14) — the repo is **private**, so internal working notes are fine here.
+Decisions are append-only: add, don't rewrite. All of these are tracked in
+git (D14/D18) — the repo is **private**, so internal working notes are fine here.
 Keep credentials out regardless.
 
 - **Repo:** `caasols/raycast-assembleia-da-republica` (private)
@@ -58,10 +60,13 @@ stated explicitly — correct these rather than inherit them as fact.
 | D11 | 2026-08-18 | **Mirror raycast-buzz's structure and test strategy wholesale** | It already solves the hard parts: stubbing `@raycast/api` under vitest, split tsconfigs, 100% coverage thresholds, `lib`/`components`/command split. Divergence costs more than it buys. | Settled |
 | D12 | 2026-08-18 | Working rules captured in `CLAUDE.md` | Per user request; see `CLAUDE.md` R1–R6 | Settled |
 | D13 | 2026-08-18 | `caasols/raycast-buzz` — **not** `block/buzz` — is the Raycast reference | `block/buzz` is the Buzz *product*: a Rust workspace (~20 crates) plus desktop/mobile/web, with zero `@raycast/api` anywhere. It is the backend the extension talks to. Useful only for contributor-guide/testing conventions. | Settled |
-| D15 | 2026-08-18 | **Three tracked docs with separate jobs:** `CLAUDE.md` (how we work) / `context.md` (what we know) / `PLAN.md` (what we do next). Partially reverses D9 — `context.md` is restored rather than retired. | The user works from a `CLAUDE.md` + `context.md` pair and needs both present to build on as we go. Splitting state from forward-plan keeps one source of truth per question instead of duplicating decisions across two files. | Settled |
-| D17 | 2026-08-18 | **Vendor the openAR API reference into the repo** as `OPENAR-API.md` | The live spec is unreachable from dev containers, so the contract is transcribed from the official reference PDF and committed. Makes the API contract reviewable in diffs and unblocks every future session. Capture is **partial** — see O8. | Settled |
-| D16 | 2026-08-18 | Internal working docs live in the repo | **The repo is private** — checked, not assumed. D6's premise ("never published to the public repo") was simply wrong: there is no public repo. Nothing here is secret-bearing anyway. | Settled |
 | D14 | 2026-08-18 | **`CLAUDE.md` and `context.md` are now tracked in git** | Supersedes D6/D8 for these two files. User asked for them in the GitHub repo. Removed from `.gitignore`; `docs/` and `PROJECT_BRIEF.md` stay ignored. Neither contains secrets. | Settled |
+| D15 | 2026-08-18 | **Three tracked docs with separate jobs:** `CLAUDE.md` (how we work) / `context.md` (what we know) / `PLAN.md` (what we do next). Partially reverses D9 — `context.md` is restored rather than retired. | The user works from a `CLAUDE.md` + `context.md` pair and needs both present to build on as we go. Splitting state from forward-plan keeps one source of truth per question instead of duplicating decisions across two files. | Settled |
+| D16 | 2026-08-18 | Internal working docs live in the repo | **The repo is private** — checked, not assumed. D6's premise ("never published to the public repo") was simply wrong: there is no public repo. Nothing here is secret-bearing anyway. | Settled |
+| D17 | 2026-08-18 | **Vendor the openAR API reference into the repo** as `OPENAR-API.md` | The live spec is unreachable from dev containers, so the contract is transcribed from the official reference PDF and committed. Makes the API contract reviewable in diffs and unblocks every future session. Capture is **partial** — see O8. | Settled |
+| D18 | 2026-08-18 | **Vendor the full OpenAPI spec** as `docs/openar-openapi.json`; `OPENAR-API.md` rewritten from it | The complete 3.1 spec was supplied directly. 16 endpoints, all schemas. `.gitignore` narrowed from `docs/` to `docs/*` + a negation so the spec tracks while scratch docs stay ignored. Closes O8. | Settled |
+| D19 | 2026-08-18 | **Base URL is `https://api.openar.pt/v1`** | `servers[0].url` in the spec. The reference page lists paths without the prefix, which is misleading — the earlier vendored doc had it wrong. Every call against the bare host would 404. | Settled |
+| D20 | 2026-08-18 | openAR is **MIT licensed**; attribute it in README and store listing | `info.license` in the spec. Resolves the licensing question that blocked P5. Redistribution is permitted with attribution. | Settled |
 
 ### Open questions
 
@@ -72,7 +77,7 @@ stated explicitly — correct these rather than inherit them as fact.
 | O4 | Scope of "today" — plenary only, or committees too? Behaviour on a non-sitting day? | Shapes queries and the empty state | P1, P3 |
 | O5 | Windows **and** macOS, or macOS only? | D2 claims both; raycast-buzz ships macOS-only. Cross-platform means no macOS-only APIs and doubles manual test surface. | P2, P5 |
 | O6 | Portuguese or English UI copy? Both? | Data arrives in Portuguese. Mixed-language UI reads badly; an English UI over Portuguese content is a real trade-off. Store listings skew English. | P3 |
-| O8 | What are the `/votacoes`, `/peticoes` and `/comissoes` contracts? | The supplied PDF truncated mid-`/iniciativas`; these three endpoints are confirmed to exist but were not captured. **`/votacoes` backs the extension's first planned command**, so this blocks P3. Fix: re-export the full reference page, or commit `openapi.json` from an unblocked machine. | P3 |
+| ~~O8~~ | ~~`/votacoes`, `/peticoes`, `/comissoes` contracts~~ | **Closed 2026-08-18 (D18).** The full OpenAPI spec was supplied and vendored; all 16 endpoints are documented. | — |
 | O7 | What do the pre-existing iCloud `CLAUDE.md` / `context.md` contain? | They may hold decisions from local sessions that this log has never seen. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not file contents — see §3.1. Until recovered, this log may be missing history. | — |
 
 ---
@@ -96,12 +101,14 @@ reported rather than worked around. **Re-tested 2026-08-18 after being given
 the `https://api.openar.pt/` URL directly — still blocked.** Supplying the URL
 does not help; the block is on the host, not on knowing the address.
 
-**Partially mitigated 2026-08-18:** the official API reference was supplied as a
-PDF and transcribed into **`OPENAR-API.md`** (D17). Base URL, auth, rate limits,
-caching, pagination and 9 endpoints are now documented offline. **The capture is
-incomplete** — see O8.
+**Resolved for development purposes, 2026-08-18.** The complete OpenAPI 3.1
+spec was supplied directly and is vendored at **`docs/openar-openapi.json`**,
+with `OPENAR-API.md` rewritten from it (D18). All 16 endpoints, all schemas.
+Sessions no longer need network access to know the contract.
 
-**To unblock fully, do one of:**
+**Still blocked: anything that must touch the live API.** `scripts/smoke.ts`
+(P2.4) cannot run from a remote container, and neither can any manual
+verification of real responses. To fix that, do one of:
 1. Add `openar.pt` and `api.openar.pt` to the environment's network allowlist —
    see the [environment docs](https://code.claude.com/docs/en/claude-code-on-the-web).
 2. Run the openAR exploration locally instead, and paste `openapi.json` into the
@@ -129,24 +136,10 @@ contents into chat, or upload from a Mac with iCloud Drive synced. Tracked as O7
 
 ### What we know about openAR
 
-**Superseded by `OPENAR-API.md`**, which is transcribed from the official
-reference rather than inferred. The summary below is retained only as the
-pre-D17 record of what was assumed before the real contract arrived — several
-guesses in it turned out wrong (rate limits and licensing were listed as
-"unknown"; they are documented). Read `OPENAR-API.md` instead.
-
-- Base URL `https://api.openar.pt`; OpenAPI spec at `/openapi.json`.
-- **No authentication.**
-- Coverage from the Constituent Assembly (1975) / 1st Legislature (1976)
-  through the 17th (current).
-- Roughly five datasets: **legislative initiatives, deputies, plenary votes,
-  petitions, parliamentary committees**.
-- An official MCP server (`@openar/mcp`) exists, which implies a stable
-  documented surface.
-- Rate limits, licensing/attribution terms and update cadence: **unknown**.
-  All three matter before shipping.
-
----
+See **`OPENAR-API.md`** and `docs/openar-openapi.json`. The pre-D18 summary that
+sat here — assembled from web search and a truncated PDF — has been removed
+rather than left to mislead: it had the base URL wrong and listed licensing and
+rate limits as unknown.
 
 ## 4. Findings — repo audit, 2026-08-18
 

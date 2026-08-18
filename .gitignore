@@ -19,7 +19,8 @@ compiled_raycast_rust
 coverage/
 
 # internal working docs: kept on disk, never published to the public repo
-docs/
+docs/*
+!docs/openar-openapi.json
 PROJECT_BRIEF.md
 
 # CLAUDE.md and context.md are deliberately TRACKED (see PLAN.md D14): they are

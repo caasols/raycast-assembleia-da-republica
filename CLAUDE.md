@@ -8,7 +8,8 @@ session. Three tracked documents, three jobs — keep them in their lanes:
 | **`CLAUDE.md`** (this file) | *How we work* — standing rules, conventions, test mechanics |
 | **`context.md`** | *What we know* — project context, decision log, open questions, blockers, audit findings |
 | **`PLAN.md`** | *What we do next* — candidate commands, phased roadmap |
-| **`OPENAR-API.md`** | *What the API does* — vendored openAR contract, its traps and limits |
+| **`OPENAR-API.md`** | *What the API does* — the openAR contract and its traps |
+| **`docs/openar-openapi.json`** | Full OpenAPI 3.1 spec — source of truth when the prose is ambiguous |
 
 The repo is **private**, so internal working notes belong here rather than in a
 side channel. Keep credentials out regardless.
@@ -161,9 +162,13 @@ component tests without letting the extension itself see browser globals.
 - **Network egress is restricted in remote dev containers.** `openar.pt`,
   `api.openar.pt` and `parlamento.pt` are currently blocked by the egress
   proxy. Do not try to route around it — report it. See `context.md` §3.
-  Work from the vendored **`OPENAR-API.md`** instead — but note it is a partial
-  capture: `/votacoes`, `/peticoes` and `/comissoes` are missing (O8).
+  Work from `OPENAR-API.md` and `docs/openar-openapi.json` instead — the
+  contract is fully vendored, so no session needs network access to know it.
 - **`estado` is not a verdict.** `Aprovado` is not a valid `/iniciativas?estado=`
   value — use `resultado=aprovado`. See `OPENAR-API.md` §14.
+- **The API base URL is `https://api.openar.pt/v1`** — the `/v1` is in
+  `servers[0].url`, not in the documented paths. Omitting it 404s everything.
+- **Vote ids are unique per initiative, not globally.** `/votacoes/{id}` requires
+  an `iniciativa_id`; the real key is the pair. See `OPENAR-API.md` §8.
 - **The `name` field in `package.json` is permanent after publishing** — it
   becomes the store URL. It is currently misspelled. Fix before first publish.

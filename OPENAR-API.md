@@ -1,29 +1,16 @@
 # openAR API — vendored reference
 
-Transcribed from the official API reference at `openar.pt`, captured
-2026-08-18 07:49 (`REFERÊNCIA DA API · REST · OPENAPI 3.1`).
+Human-readable companion to **`docs/openar-openapi.json`**, the complete
+OpenAPI 3.1 spec (`info.version` 0.1.0), vendored 2026-08-18 because
+`api.openar.pt` is blocked by the dev environment's egress proxy
+(`context.md` §3).
 
-Vendored because `api.openar.pt` is blocked by the dev environment's egress
-proxy (`context.md` §3), so sessions cannot read the live spec.
+**The JSON is the source of truth.** This file exists to surface the traps that
+a schema alone doesn't make obvious. Where they disagree, the JSON wins.
 
-**Verification status.** §1–§9 (basics, rate limits, input limits, caching,
-incremental sync, `/meta`, `/legislaturas`) were independently confirmed against
-screenshots of the live page on 2026-08-18. Every field name, limit and header
-matched — **except the `/legislaturas` error codes, which this file had wrong**
-(it claimed `400/404/429` on the detail endpoint; the reference lists `429` for
-the list and `404` for the detail). Corrected. §10–§14 rest on the PDF alone and
-are unverified.
-
-> ### ⚠️ This capture is INCOMPLETE
-> The source PDF was truncated mid-`/iniciativas`, at its `RESPOSTA 200`
-> heading. **`/votacoes`, `/peticoes` and `/comissoes` are entirely missing** —
-> their existence is confirmed by cross-references elsewhere in the document
-> (see §7), but their paths, parameters and response shapes were not captured.
->
-> `/votacoes` is the endpoint behind the extension's first planned command, so
-> **this must be completed before P3 can start.** Re-export the full page, or
-> fetch `https://api.openar.pt/openapi.json` from an unblocked machine and
-> commit it alongside this file.
+> **Status: complete.** All 16 endpoints are documented. This supersedes the
+> earlier partial capture transcribed from a truncated PDF — which, among other
+> things, had the base URL wrong (§1).
 
 ---
 
@@ -31,216 +18,312 @@ are unverified.
 
 | | |
 |---|---|
-| **Base URL** | `https://api.openar.pt` |
-| **Spec** | OpenAPI 3.1, at `/openapi.json` |
-| **Auth** | **None.** All endpoints public. |
-| **Methods** | `GET`, `HEAD`, `OPTIONS` only |
-| **Source** | AR *dados abertos* programme, **updated daily** |
-| **CDN** | `cdn.openar.pt` (deputy photos) |
+| **Base URL** | **`https://api.openar.pt/v1`** |
+| Local dev server | `http://localhost:3000/v1` |
+| Spec | `docs/openar-openapi.json` · live at `api.openar.pt/openapi.json` |
+| **Licence** | **MIT** (`https://opensource.org/licenses/MIT`) |
+| Contact | `https://openar.pt` |
+| Auth | **None.** All endpoints public. |
+| Methods | `GET`, `HEAD`, `OPTIONS` only |
+| Source | AR *dados abertos* programme, **updated daily** |
+| CDN | `cdn.openar.pt` (deputy photos) |
+
+> ### ⚠️ The base URL carries a `/v1` prefix
+> Every path below is relative to **`https://api.openar.pt/v1`**, not
+> `https://api.openar.pt`. The reference *page* lists paths as `/meta`,
+> `/votacoes` and so on with no prefix, which is misleading — the prefix lives
+> in `servers[0].url`. Building the client against the bare host would 404 on
+> every single call.
+
+> **Licensing is resolved: MIT.** This was an open question blocking publish
+> (P5). MIT permits redistribution with attribution, so surfacing this data in
+> a Raycast extension is fine. Credit openAR in the README and the store listing.
 
 ## 2. Rate limits
 
 **100 requests per minute per IP**, sliding window. Every response carries
-`X-RateLimit-Limit` and `X-RateLimit-Remaining`. On exceeding the limit the API
-returns **429** with `Retry-After: 60`.
+`X-RateLimit-Limit` and `X-RateLimit-Remaining`. Exceeding it returns **429**
+with `Retry-After: <seconds>`.
 
-> **Design consequence:** 100/min is generous for a launcher but trivially
-> exceeded by an unthrottled type-ahead search. Any search command must debounce
-> and must handle 429 by honouring `Retry-After` — not by retrying blindly.
-> `429` is listed as a possible error on *every* endpoint.
+> **The spec's per-endpoint error lists are incomplete.** `/meta` documents no
+> errors at all and `/legislaturas/{id}` omits `429`, but the rate limit is
+> global — described in `info.description`, not per-path. Treat **429 as
+> possible on every call** regardless of what a path's `responses` object lists.
 
 ## 3. Input limits
 
 - Query string: **max 500 characters**
-- `q` parameter: **max 100 characters**
+- `q`: **max 100 characters** (`maxLength` in the schema)
 
-Both return **400** when exceeded. Validate client-side before sending.
+Both return **400**. Validate client-side.
 
 ## 4. Caching
 
-- All responses carry `Cache-Control`: `max-age=300` (5 min), or **3600**
-  (1 hour) on `/meta` and `/legislaturas`.
-- Detail endpoints of `/iniciativas` and `/peticoes` also return a **weak
-  ETag** — send it back as `If-None-Match` to get **304 Not Modified**.
+- `Cache-Control` on everything: `max-age=300`, or **3600** on `/meta` and
+  `/legislaturas`.
+- `/iniciativas/{id}` and `/peticoes/{id}` return a **weak `ETag`** derived from
+  `updatedAt`. Send it as `If-None-Match` → **304**, no body.
 
 ## 5. Incremental sync
 
-`/deputados`, `/iniciativas` and `/peticoes` accept **`updated_since`**,
-returning only records whose `updatedAt` is at or after that instant.
-Accepts `AAAA-MM-DD` or `AAAA-MM-DDTHH:MM:SSZ`.
+`/deputados`, `/iniciativas` and `/peticoes` accept **`updated_since`**
+(`AAAA-MM-DD` or `AAAA-MM-DDTHH:MM:SSZ`), returning only records whose
+`updatedAt` is at or after that instant.
 
-## 6. Conventions
+## 6. Shared conventions
 
-**Envelope.** Listing endpoints return `{ data, total, page, limit }`.
-**`/legislaturas` is the documented exception** — a bare array, no envelope, no
+**Envelope.** Listings return `{ data, total, page, limit }`.
+**`/legislaturas` is the sole exception** — a bare array, no envelope, no
 pagination.
 
-**Pagination.** `page` (default 1) and `limit` (default 50). Out-of-range values
-are *clamped to the nearest bound*, not rejected — so a bad `page` silently
-returns edge data rather than erroring. Don't rely on an error to catch it.
+**Pagination.** `page` (default 1, min 1) · `limit` (default 50, min 1,
+**max 200**). Out-of-range values are **clamped, not rejected** — a bad `page`
+silently returns edge data rather than erroring.
+
+**Sort defaults differ.** `sortNome` (`/deputados`, `/comissoes`) defaults to
+**`asc`** (alphabetical); everything else defaults to **`desc`** (newest first).
+
+**Dates.** `data_inicio` / `data_fim`, inclusive, `AAAA-MM-DD`.
 
 ---
 
 ## 7. Endpoints
 
-### Captured
-
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/meta` | Filter values: legislaturas, grupos, tipos, estados |
+| `GET` | `/meta` | Filter values — legislaturas, grupos, tipos, estados |
 | `GET` | `/legislaturas` | All legislatures (bare array) |
-| `GET` | `/legislaturas/{id}` | One legislature, with totals |
+| `GET` | `/legislaturas/{id}` | One legislature + totals |
 | `GET` | `/deputados` | List deputies |
-| `GET` | `/deputados/carreiras` | Ranking by number of legislatures served |
-| `GET` | `/deputados/{id}` | Deputy detail: mandates, bio, stats, 20 latest initiatives |
-| `GET` | `/deputados/{id}/foto` | **302 redirect** to `cdn.openar.pt/fotos/{id}` |
+| `GET` | `/deputados/carreiras` | Ranking by legislatures served |
+| `GET` | `/deputados/{id}` | Deputy detail |
+| `GET` | `/deputados/{id}/foto` | 302 → CDN photo |
 | `GET` | `/deputados/{id}/atividade` | Full parliamentary activity |
-| `GET` | `/iniciativas` | List legislative initiatives *(params captured; response truncated)* |
-
-### Known to exist, NOT captured
-
-| Path | Evidence |
-|---|---|
-| `/votacoes` | Referenced as `/votacoes?grupo=` in the `/meta` notes |
-| `/peticoes` | Referenced in the caching and `updated_since` sections |
-| `/comissoes` | Named in openAR's own dataset summary |
+| `GET` | `/iniciativas` | List initiatives |
+| `GET` | `/iniciativas/{id}` | Initiative detail (supports `include`) |
+| `GET` | `/votacoes` | **List plenary votes** |
+| `GET` | `/votacoes/{id}` | One vote (**requires `iniciativa_id`**) |
+| `GET` | `/peticoes` | List petitions |
+| `GET` | `/peticoes/{id}` | Petition detail (supports `include`) |
+| `GET` | `/comissoes` | List committees |
+| `GET` | `/comissoes/{id}` | Committee + its initiatives |
 
 ---
 
-## 8. `GET /meta`
+## 8. `/votacoes` — the one that matters
 
-Returns legislaturas, parliamentary groups, initiative types and states present
-in the database, ordered. **Use it to populate dropdowns instead of hardcoding.**
+Backs `what-was-the-vote-today`.
 
-**Param:** `legislatura` (string) — filters `grupos` and `tipos` to that
-legislature. `legislaturas` is always returned in full.
+**Params:** `legislatura`, `resultado`, `unanime`, `iniciativa` (IniId), `tipo`,
+`grupo`, `a_favor`, `contra`, `abstencao`, `data_inicio`, `data_fim`, `sort`
+(default `desc`), `page`, `limit`.
 
-**Returns:** `legislaturas: string[]`, `grupos: string[]`, `tipos: object[]`,
-`estados: string[]`.
+`a_favor` / `contra` / `abstencao` each take a party sigla and filter to votes
+where that party voted that way — so "how did IL vote on things it abstained
+on" is one request, no client-side filtering.
 
-> **Trap.** `grupos` is prefixed with five *institutional authors* —
-> `Governo`, `PAR`, `Madeira`, `Açores`, `Mesa` — which are accepted **only** by
-> `/iniciativas?grupo=` and `/votacoes?grupo=`, and are **rejected by
-> `/deputados?grupo=`**. A single shared "group" dropdown wired to all three
-> endpoints will produce 400s. Filter the list per endpoint.
+**Response** is `PaginatedVotacoes`; each item is a `Votacao` **plus** initiative
+metadata (`iniciativaId`, `iniciativaTitulo`, `iniciativaNumero`,
+`iniciativaTipo`, `legislaturaId`) — so a vote list renders titles without a
+second call. That is what makes the day's-votes command a single request.
 
-## 9. `GET /legislaturas`
-
-Bare array, ordered by start date ascending. No pagination, no envelope.
+### `Votacao`
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | string | `Constituinte`, or Roman numerals `I`–`XVII` |
-| `nome` | string | |
-| `dataInicio` | string \| null | |
-| `dataFim` | string \| null | **null for the legislature in progress** |
-| `arId` | string \| null | AR's internal numeric id (`DetalheLegislatura.id`) |
-| `siglaAntiga` | string \| null | Sigla used in the source data |
+| `id` | string | **Not globally unique** — see below |
+| `data` | date \| null | |
+| `resultado` | enum | `Aprovado` · `Rejeitado` · `Prejudicado` |
+| `unanime` | boolean | |
+| `reuniao` | string \| null | |
+| `tipoReuniao` | string \| null | e.g. `RP` |
+| `descricao` | string \| null | |
+| `aFavor` | string[] | Party siglas voting in favour |
+| `contra` | string[] | |
+| `abstencao` | string[] | |
+| `ausencias` | string[] | |
+| `detalhe` | string \| null | **Raw AR HTML** the three arrays are parsed from. For roll-call votes it names individual deputies. |
 
-**Errors:** `429` only.
+> ### ⚠️ Vote ids are unique per initiative, not globally
+> `/votacoes/{id}` **requires** an `iniciativa_id` query parameter — the spec
+> says so outright. Missing or non-numeric returns 400. So a vote's identity is
+> the **pair** `(id, iniciativaId)`. Model it as a compound key; a bare `id`
+> passed between views will not resolve.
 
-### `GET /legislaturas/{id}`
+> ### ⚠️ `resultado` casing is inconsistent between endpoints
+> `/votacoes?resultado=` takes **`Aprovado`** — capitalised, and the spec says
+> *"correspondência exacta, sensível a maiúsculas"*.
+> `/iniciativas?resultado=` takes **`aprovado`** — lowercase.
+> Same concept, different casing, on sibling endpoints. Wrap both in typed
+> constants rather than passing raw strings.
 
-**Param:** `id*` (string) — e.g. `XVII`, `XIII`, `Constituinte`.
-
-Returns the six fields above **plus three totals**:
-
-| Field | Type |
-|---|---|
-| `iniciativasTotal` | integer |
-| `deputadosTotal` | integer |
-| `votacoesTotal` | integer |
-
-**Errors:** `404` only.
-
-> `votacoesTotal` is independent confirmation that vote data is exposed per
-> legislature, and gives a cheap way to show counts without paging `/votacoes`.
-
-## 10. `GET /deputados`
-
-**Params:** `legislatura`, `grupo` (sigla only — no institutional authors),
-`q` (parliamentary name), `situacao`, `updated_since`, `sort` (`asc`/`desc`,
-default `asc`), `page`, `limit`.
-
-> `situacao=ativo` is a shortcut for *Efetivo + Efetivo Temporário + Efetivo
-> Definitivo* — **the 230 sitting seats.** This is the filter for "current
-> deputies".
-
-**`data[]` fields:** `id`, `nomeParlamentar`, `nomeCompleto`,
-`grupoParlamentar`, `circuloEleitoral`, `legislaturaId`, `situacao`,
-`updatedAt`. Errors: 400, 429.
-
-## 11. `GET /deputados/{id}`
-
-`id` is **`DepCadId`**. Note the response also carries `depId` — *"identificador
-interno distinto do DepCadId"*. **Two different deputy identifiers exist; do not
-conflate them.**
-
-Returns `mandatos`, `cargos`, `situacoes`, `bio`, `stats`, and the 20 most
-recent authored `iniciativas`. `videos` is documented as *null in every record
-to date* — do not build UI on it. Errors: 400, 404, 429.
-
-## 12. `GET /deputados/{id}/foto`
-
-**302 redirect** to the CDN, not image bytes — follow `Location` (browsers and
-`<img>` do this automatically). **Existence is not checked:** an id with no
-photo yields a 404 *from the CDN*, not from this API. Needs a fallback image.
-
-## 13. `GET /deputados/{id}/atividade`
-
-Full activity for a deputy, optionally scoped by `legislatura` (omit for all
-history — potentially very large).
-
-Returns ~18 parallel arrays: `iniciativas`, `requerimentos`, `intervencoes`,
-`actp`, `comissoes`, `atividadesComissao`, `gpa`, `dlp`, `dle`, `relIni`,
-`relPet`, `relContas`, `relIniEur`, `relPareceres`, `parlJovens`, `dadosLegis`,
-`scgt`, plus `deputado`. Errors: 400, 404, 429.
-
-## 14. `GET /iniciativas`
-
-**Params:** `legislatura`, `tipo`, `estado` (repeatable), `grupo`, `resultado`,
-`data_inicio`, `data_fim`, `deputado`, `q`, `updated_since`, `sort` (default
-`desc`), `page`, `limit`.
-
-**`tipo` codes:** `R` Resolução · `P` Proposta de Lei · `J` Projeto de Lei ·
-`D` Decreto · `S` Outros · `A` Apreciação · `I` Iniciativa Europeia ·
-`C` Pergunta/Requerimento · `F` Outros. Use `/meta` for the types actually
-present.
-
-**`resultado`:** `aprovado` (≥1 *Aprovado* vote) · `rejeitado` (≥1 *Rejeitado*
-vote) · `pendente` (no votes recorded).
-
-**`deputado`** accepts a numeric id *or* a partial, case-insensitive
-parliamentary name.
-
-**Deprecated:** `dataEntradaDe` / `dataEntradaAte` — use `data_inicio` /
-`data_fim`. The old names are **silently ignored** when the new ones are
-present. Do not use them.
-
-> **The most important trap in this document.** `estado` is *"a fase actual do
-> processo, não um veredicto"* — the current procedural stage, not an outcome.
-> **`Aprovado` is not a valid `estado`.** To find approved initiatives use
-> `resultado=aprovado`. Exact values live in `/meta → estados`. Getting this
-> wrong yields a filter that silently returns nothing.
-
-**Response:** truncated in the capture — envelope shape only.
+> `unanime` accepts only `true`/`false`/`1`/`0` as strings. **Anything else is a
+> 400**, so don't forward a raw boolean-ish value.
 
 ---
 
-## 15. Implications for this extension
+## 9. `include=` on detail endpoints
 
-Recorded here so they survive into design (see `PLAN.md` P2):
+`/iniciativas/{id}` and `/peticoes/{id}` accept a comma-separated `include`.
 
-1. **`/meta` is a startup dependency.** It supplies every dropdown, and is
-   cacheable for an hour. Fetch once, cache, reuse.
-2. **Per-endpoint group lists** — the institutional-author split (§8) means
-   there is no single reusable "group" filter component.
-3. **Debounce all search.** 100 req/min dies fast under type-ahead.
-4. **Honour `Retry-After` on 429.** It's an error case on every endpoint.
-5. **ETags on detail views** give cheap 304s — worth wiring into the client
-   from the start rather than retrofitting.
-6. **Two deputy identifiers** (`DepCadId` vs `depId`) — model this explicitly in
-   types so they cannot be swapped by accident.
-7. **Photos need a fallback** — the CDN 404s for deputies without one.
-8. **`dataFim: null` marks the current legislature** — that's how to resolve
-   "now" without hardcoding `XVII`.
+**Omitting `include` returns everything.** The spec warns that for old,
+heavily-debated initiatives this reaches **hundreds of KB**. In a launcher
+extension that is a real latency cost — always pass `include` explicitly.
+
+**`/iniciativas/{id}` top-level relations:** `autores`, `eventos`,
+`relacionadas`, `anexos`, `conjuntas`, `peticoes`, `propostasAlteracao`.
+
+**`eventos` sub-relations:** `eventos.votacoes`, `eventos.publicacoes`,
+`eventos.comissoesFases`, `eventos.intervencoesdebates`,
+`eventos.iniciativasConjuntas`, `eventos.peticoesConjuntas`, `eventos.anexos`.
+
+Rules worth knowing:
+- Requesting `eventos` pulls **all** its sub-relations.
+- Requesting any sub-relation pulls `eventos` automatically.
+- Short forms work (`votacoes` ≡ `eventos.votacoes`) — **except `eventos.anexos`**,
+  because bare `anexos` always means the top-level relation.
+- `?include=` (empty) returns scalar fields only.
+- An unknown key returns **400 with the list of valid keys**.
+- `intervencoesdebates` is flagged as the heaviest relation — opt in deliberately.
+
+`/peticoes/{id}` works identically: top-level `comissoes`, `documentos`,
+`publicacoes`, `relacionadas`; `comissoes.*` sub-relations with the same
+short-form rule, `comissoes.documentos` being the exception.
+
+---
+
+## 10. `/meta`
+
+Populates every dropdown. Returns `legislaturas: string[]`, `grupos: string[]`,
+`tipos: {tipo, tipoDesc}[]`, `estados: string[]`. Optional `legislatura` filters
+`grupos` and `tipos`; `legislaturas` always comes back whole.
+
+> ### ⚠️ `grupos` mixes parties with institutional authors
+> The array is prefixed with `Governo`, `PAR`, `Madeira`, `Açores`, `Mesa`.
+> Those five are accepted by **`/iniciativas?grupo=` and `/votacoes?grupo=`**
+> but **rejected by `/deputados?grupo=`**. One shared group dropdown wired to
+> all three produces 400s. Filter per endpoint.
+
+Example values: `Governo`, `PAR`, `Madeira`, `Açores`, `Mesa`, `BE`, `CH`,
+`CDS-PP`, `IL`, `L`, `PAN`, `PCP`, `PS`, `PSD`.
+
+## 11. `/legislaturas`
+
+Bare array, oldest → newest. Fields: `id` (`Constituinte` or `I`–`XVII`),
+`nome`, `dataInicio`, `dataFim`, `arId`, `siglaAntiga`.
+
+**`dataFim: null` marks the legislature in progress** — that's how to resolve
+"current" without hardcoding `XVII`.
+
+`/legislaturas/{id}` adds `iniciativasTotal`, `deputadosTotal`, `votacoesTotal`.
+
+## 12. `/deputados`
+
+**Params:** `legislatura`, `grupo` (sigla only), `q`, `situacao`,
+`updated_since`, `sort` (default `asc`), `page`, `limit`.
+
+`situacao=ativo` is a shortcut for *Efetivo + Efetivo Temporário + Efetivo
+Definitivo* — **the 230 sitting seats**.
+
+**Deduplication:** *"Um deputado aparece uma só vez, com os dados do mandato
+mais recente que corresponde aos filtros."* One row per person, not per mandate.
+
+**`Deputado`:** `id`, `nomeParlamentar`, `nomeCompleto`, `grupoParlamentar`,
+`circuloEleitoral`, `legislaturaId`, `situacao`, `updatedAt`.
+
+### `/deputados/{id}`
+
+> **Two deputy identifiers.** The path `id` is `DepCadId`; the response also
+> carries `depId`, *"identificador interno distinto do DepCadId"*. Model them as
+> distinct types — they are not interchangeable.
+
+Returns `mandatos`, `cargos`, `situacoes`, `bio`, `stats`, and the 20 most
+recent authored `iniciativas`.
+
+`bio.legislaturas[].partidoSigla` is the **electoral party or coalition**
+(e.g. `PPD/PSD.CDS-PP`) and is **distinct from the parliamentary group** in
+`mandatos[].grupoParlamentar`. Don't treat them as the same field.
+
+`videos` is documented as *null in every record to date* — don't build on it.
+
+### `/deputados/{id}/foto`
+
+**302 → CDN**, not image bytes. Existence is **not** checked: an id with no
+photo 404s *at the CDN*. Needs a fallback image.
+
+### `/deputados/carreiras`
+
+Ranking by distinct legislatures served, `Suplente` mandates excluded. Returns
+`data[]` (`totalLegs`, `firstLegStart`, `lastLegStart`, `lastParty`, `legIds`)
+plus `stats` aggregated over **all** deputies, not just the returned page.
+
+## 13. `/iniciativas`
+
+**Params:** `legislatura`, `tipo`, `estado` (repeatable), `grupo`, `resultado`,
+`data_inicio`, `data_fim`, `deputado`, `q`, `updated_since`, `sort`, `page`,
+`limit`.
+
+**`tipo`:** `R` Resolução · `P` Proposta de Lei · `J` Projeto de Lei ·
+`D` Decreto · `S` Outros · `A` Apreciação · `I` Iniciativa Europeia ·
+`C` Pergunta/Requerimento · `F` Outros.
+
+**`resultado`:** `aprovado` (≥1 Aprovado vote) · `rejeitado` · `pendente` (no
+votes recorded).
+
+**`deputado`** takes a numeric id *or* a partial case-insensitive name.
+
+**Deprecated:** `dataEntradaDe` / `dataEntradaAte` — **silently ignored** when
+`data_inicio` / `data_fim` are present. Never use them.
+
+> ### ⚠️ `estado` is a stage, not a verdict
+> *"Fase actual do processo, não um veredicto."* **`Aprovado` is not a valid
+> `estado`.** For approval use `resultado=aprovado`. Exact values live in
+> `/meta → estados`. Getting this wrong yields a filter that silently matches
+> nothing. `Iniciativa.estado` carries the same caveat: *"Fase do último evento
+> registado — não é um veredicto de aprovação."*
+
+`estado` is `style: form, explode: true` — repeat the key for multiple values
+(`?estado=A&estado=B`), don't comma-join.
+
+## 14. `/comissoes`
+
+`/comissoes` returns the canonical committee table with a **stable numeric
+`id`** — resolve a name to an id here first. `/comissoes/{id}` then returns the
+committee plus a paginated list of initiatives that passed through it, each with
+its `comissoesFases` (relatores, votações, documentos, audições, remessas,
+publicações).
+
+> **Schema migration, dated.** `PeticaoComissao.comissaoId` is now an FK into
+> `/comissoes`; *before 2026-07* that field held the source code, which is now
+> `comissaoCodigo`. Any cached or third-party data older than that has the old
+> meaning.
+
+## 15. `/peticoes`
+
+**Params:** `legislatura`, `situacao` (e.g. `Admitida`, `Arquivada`), `q`,
+`data_inicio`, `data_fim`, `updated_since`, `sort`, `page`, `limit`.
+
+`Peticao` carries `assunto`, `autor`, `assinaturas` / `assinaturasInicial`,
+`dataDebate`, `urlTexto`. Detail adds `comissoes` (with `relatorioFinal`
+including its own vote breakdown), `documentos`, `publicacoes`, `relacionadas`.
+
+---
+
+## 16. Implications for the extension
+
+Feed these into P2 (client design):
+
+1. **`/v1` in the base URL.** Non-negotiable, and the single easiest thing to
+   get wrong.
+2. **`/meta` is a startup dependency** — every dropdown, cacheable an hour.
+3. **Per-endpoint group lists** (§10) — no single shared group filter.
+4. **Compound key for votes** — `(id, iniciativaId)`, always.
+5. **Typed constants for `resultado`** — the casing differs per endpoint (§8).
+6. **Always send `include`** on detail calls, or pay hundreds of KB (§9).
+7. **Debounce search; honour `Retry-After`.** 100/min dies under type-ahead.
+8. **Wire ETags early** on the two detail endpoints — cheap 304s.
+9. **Two deputy ids**, and party ≠ parliamentary group (§12).
+10. **Photo fallback** for deputies with no CDN image.
+11. **`dataFim: null`** resolves the current legislature.
+12. **`limit` caps at 200**, and out-of-range paging is clamped silently.
+13. **MIT licence** — attribute openAR in README and store listing.
