@@ -8,8 +8,11 @@ proxy (`context.md` §3), so sessions cannot read the live spec.
 
 **Verification status.** §1–§9 (basics, rate limits, input limits, caching,
 incremental sync, `/meta`, `/legislaturas`) were independently confirmed against
-screenshots of the live page on 2026-08-18 — every field name, limit and header
-matched the PDF transcription. §10–§14 rest on the PDF alone and are unverified.
+screenshots of the live page on 2026-08-18. Every field name, limit and header
+matched — **except the `/legislaturas` error codes, which this file had wrong**
+(it claimed `400/404/429` on the detail endpoint; the reference lists `429` for
+the list and `404` for the detail). Corrected. §10–§14 rest on the PDF alone and
+are unverified.
 
 > ### ⚠️ This capture is INCOMPLETE
 > The source PDF was truncated mid-`/iniciativas`, at its `RESPOSTA 200`
@@ -134,8 +137,24 @@ Bare array, ordered by start date ascending. No pagination, no envelope.
 | `arId` | string \| null | AR's internal numeric id (`DetalheLegislatura.id`) |
 | `siglaAntiga` | string \| null | Sigla used in the source data |
 
-`GET /legislaturas/{id}` returns the same fields plus totals (e.g.
-`iniciativasTotal`). Errors: 429 (list), 400/404/429 (detail).
+**Errors:** `429` only.
+
+### `GET /legislaturas/{id}`
+
+**Param:** `id*` (string) — e.g. `XVII`, `XIII`, `Constituinte`.
+
+Returns the six fields above **plus three totals**:
+
+| Field | Type |
+|---|---|
+| `iniciativasTotal` | integer |
+| `deputadosTotal` | integer |
+| `votacoesTotal` | integer |
+
+**Errors:** `404` only.
+
+> `votacoesTotal` is independent confirmation that vote data is exposed per
+> legislature, and gives a cheap way to show counts without paging `/votacoes`.
 
 ## 10. `GET /deputados`
 
