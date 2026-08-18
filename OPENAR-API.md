@@ -6,6 +6,11 @@ Transcribed from the official API reference at `openar.pt`, captured
 Vendored because `api.openar.pt` is blocked by the dev environment's egress
 proxy (`context.md` §3), so sessions cannot read the live spec.
 
+**Verification status.** §1–§9 (basics, rate limits, input limits, caching,
+incremental sync, `/meta`, `/legislaturas`) were independently confirmed against
+screenshots of the live page on 2026-08-18 — every field name, limit and header
+matched the PDF transcription. §10–§14 rest on the PDF alone and are unverified.
+
 > ### ⚠️ This capture is INCOMPLETE
 > The source PDF was truncated mid-`/iniciativas`, at its `RESPOSTA 200`
 > heading. **`/votacoes`, `/peticoes` and `/comissoes` are entirely missing** —
