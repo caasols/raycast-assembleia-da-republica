@@ -1,8 +1,8 @@
 import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { listVotacoes } from "./lib/openar-client";
-import { errorMessage, OpenArError } from "./lib/errors";
 import { displayDate, todayInLisbon } from "./lib/dates";
+import { RequestEmptyView } from "./components/request-empty-view";
 import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
 import type { VotacaoListItem } from "./lib/types";
 
@@ -22,51 +22,6 @@ function resultIcon(vote: VotacaoListItem) {
     return { source: Icon.XMarkCircle, tintColor: Color.Red };
   }
   return { source: Icon.MinusCircle, tintColor: Color.SecondaryText };
-}
-
-/**
- * Why the list is empty, told apart properly.
- *
- * An error and a quiet day both produce no rows, and saying "no votes today"
- * when the request actually failed would be a lie the user cannot see through.
- * A rate limit is separated again because it is the one case where waiting
- * genuinely fixes it, and the API tells us how long to wait.
- */
-function EmptyState({ error, date }: { error: unknown; date: string }) {
-  if (error instanceof OpenArError && error.isRateLimited) {
-    const wait = error.retryAfterSeconds;
-    return (
-      <List.EmptyView
-        icon={{ source: Icon.Clock, tintColor: Color.Orange }}
-        title="Too many requests"
-        description={
-          wait === undefined
-            ? "openAR is rate limiting this connection. Try again shortly."
-            : `openAR is rate limiting this connection. Try again in ${wait} seconds.`
-        }
-      />
-    );
-  }
-
-  if (error) {
-    return (
-      <List.EmptyView
-        icon={{ source: Icon.Warning, tintColor: Color.Red }}
-        title="Could not load today's votes"
-        description={errorMessage(error)}
-      />
-    );
-  }
-
-  return (
-    <List.EmptyView
-      icon={Icon.Calendar}
-      title="No votes today"
-      // Parliament does not sit every day, so an empty day is the normal case
-      // rather than a failure — the copy says which one this is.
-      description={`Parliament recorded no plenary votes on ${displayDate(date)}.`}
-    />
-  );
 }
 
 /**
@@ -98,7 +53,16 @@ export default function Command() {
 
   return (
     <List isLoading={isLoading} isShowingDetail={votes.length > 0} searchBarPlaceholder="Filter today's votes">
-      {votes.length === 0 && <EmptyState error={error} date={today} />}
+      {votes.length === 0 && (
+        <RequestEmptyView
+          error={error}
+          icon={Icon.Calendar}
+          title="No votes today"
+          // Parliament does not sit every day, so an empty day is the normal
+          // case rather than a failure — the copy says which one this is.
+          description={`Parliament recorded no plenary votes on ${displayDate(today)}.`}
+        />
+      )}
       {votes.map((vote) => (
         // Vote ids are unique per initiative rather than globally, so the key
         // is the pair — two initiatives can each carry a vote called "1".

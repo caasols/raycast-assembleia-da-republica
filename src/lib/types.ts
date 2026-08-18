@@ -70,3 +70,33 @@ export interface VotacaoKey {
   id: string;
   iniciativaId: number;
 }
+
+/**
+ * The nine single-letter initiative types, as `/iniciativas?tipo=` accepts
+ * them. `/meta` reports which are actually present in the data, which is a
+ * smaller set — this is the vocabulary, not the menu.
+ */
+export type IniciativaTipo = "R" | "P" | "J" | "D" | "S" | "A" | "I" | "C" | "F";
+
+export interface Iniciativa {
+  id: number;
+  legislaturaId: string;
+  numero: string;
+  tipo: IniciativaTipo;
+  /** Human-readable type, e.g. "Projeto de Lei". */
+  tipoDesc: string;
+  titulo: string;
+  epigrafe: string | null;
+  dataEntrada: string | null;
+  dataFim: string | null;
+  /**
+   * The stage of the last recorded event — **not** a verdict on approval. The
+   * spec is explicit: "Fase do último evento registado — não é um veredicto de
+   * aprovação". `Aprovado` is not one of its values; approval is a separate
+   * `resultado` filter.
+   */
+  estado: string | null;
+  /** URL of the full text, as a PDF. */
+  linkTexto: string | null;
+  updatedAt: string;
+}

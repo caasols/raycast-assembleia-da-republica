@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { BASE_URL, listVotacoes, request } from "./openar-client";
+import { BASE_URL, listIniciativas, listVotacoes, request } from "./openar-client";
 import { OpenArError } from "./errors";
 import type { VotacaoListItem } from "./types";
 
@@ -220,5 +220,77 @@ describe("listVotacoes", () => {
     fetchMock.mockResolvedValue(jsonResponse({ data: [VOTE] }));
     const result = await listVotacoes();
     expect(result).toMatchObject({ total: 1, page: 1, limit: 1 });
+  });
+});
+
+describe("listIniciativas", () => {
+  const INITIATIVE = { id: 1, titulo: "Altera o Código do Trabalho" };
+
+  it("returns the envelope's rows", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [INITIATIVE], total: 1, page: 1, limit: 50 }));
+    const result = await listIniciativas();
+    expect(result.data).toEqual([INITIATIVE]);
+  });
+
+  it("sends no parameters when given none", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listIniciativas();
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/iniciativas`);
+  });
+
+  it("truncates an over-long `q` rather than earning a 400", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listIniciativas({ q: "x".repeat(160) });
+    // A search box produces over-long input by ordinary typing; searching the
+    // first 100 characters beats an error the user cannot act on.
+    expect(requestedUrl().searchParams.get("q")).toHaveLength(100);
+  });
+
+  it("repeats `estado` per value, since the API explodes it rather than reading a CSV", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listIniciativas({ estado: ["Lei (Publicação DR)", "Iniciativa Caducada"] });
+    expect(requestedUrl().searchParams.getAll("estado")).toHaveLength(2);
+  });
+
+  it("maps camelCase dates onto the API's snake_case parameters", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listIniciativas({ dataInicio: "2026-01-01", dataFim: "2026-12-31" });
+    const params = requestedUrl().searchParams;
+    expect(params.get("data_inicio")).toBe("2026-01-01");
+    expect(params.get("data_fim")).toBe("2026-12-31");
+  });
+
+  it("passes the remaining filters through unchanged", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listIniciativas({
+      legislatura: "XVII",
+      tipo: "J",
+      grupo: "PS",
+      resultado: "aprovado",
+      deputado: "Pedro",
+      sort: "asc",
+    });
+    expect(Object.fromEntries(requestedUrl().searchParams)).toMatchObject({
+      legislatura: "XVII",
+      tipo: "J",
+      grupo: "PS",
+      // Lowercase here — /votacoes uses the capitalised vocabulary instead.
+      resultado: "aprovado",
+      deputado: "Pedro",
+      sort: "asc",
+    });
+  });
+
+  it("clamps page and limit to the documented range", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listIniciativas({ page: -2, limit: 900 });
+    const params = requestedUrl().searchParams;
+    expect(params.get("page")).toBe("1");
+    expect(params.get("limit")).toBe("200");
+  });
+
+  it("throws a typed error when the envelope is malformed", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ total: 3 }));
+    await expect(listIniciativas()).rejects.toThrow(OpenArError);
   });
 });

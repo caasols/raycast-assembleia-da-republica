@@ -188,12 +188,19 @@ function ListItem(props: {
   );
 }
 
-function ListEmptyView(props: { title?: string; description?: string; actions?: ReactNode; section?: string }) {
+function ListEmptyView(props: {
+  title?: string;
+  description?: string;
+  actions?: ReactNode;
+  section?: string;
+  icon?: unknown;
+}) {
   return (
     <div
       data-testid="empty-view"
       data-title={props.title}
       data-description={props.description}
+      data-icon={iconAttr(props.icon)}
       data-section={props.section}
     >
       {props.actions}

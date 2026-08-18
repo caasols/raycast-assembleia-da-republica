@@ -8,7 +8,7 @@
  */
 import { OpenArError, parseRetryAfterSeconds } from "./errors";
 import { buildQueryString, clampLimit, clampPage, isQueryStringWithinLimit, truncateQ } from "./query";
-import type { Paginated, VotacaoListItem } from "./types";
+import type { Iniciativa, Paginated, VotacaoListItem } from "./types";
 import type { QueryValue } from "./query";
 
 /**
@@ -150,6 +150,57 @@ export async function listVotacoes(
     signal,
   );
   return asPaginated<VotacaoListItem>(payload);
+}
+
+export interface ListIniciativasParams {
+  legislatura?: string;
+  tipo?: string;
+  /** Repeatable — the API explodes this into multiple keys, not a CSV. */
+  estado?: string[];
+  grupo?: string;
+  /** Lowercase here: `aprovado` | `rejeitado` | `pendente`. Not the vote casing. */
+  resultado?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  /** A numeric deputy id, or a partial case-insensitive parliamentary name. */
+  deputado?: string;
+  /** Free-text search over the title. Truncated to the API's 100-char cap. */
+  q?: string;
+  sort?: "desc" | "asc";
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * List legislative initiatives.
+ *
+ * `q` is truncated rather than rejected: a search box produces over-long input
+ * by ordinary typing, and silently searching the first 100 characters is a
+ * better answer than a 400 the user cannot act on.
+ */
+export async function listIniciativas(
+  params: ListIniciativasParams = {},
+  signal?: AbortSignal,
+): Promise<Paginated<Iniciativa>> {
+  const payload = await request(
+    "/iniciativas",
+    {
+      legislatura: params.legislatura,
+      tipo: params.tipo,
+      estado: params.estado,
+      grupo: params.grupo,
+      resultado: params.resultado,
+      data_inicio: params.dataInicio,
+      data_fim: params.dataFim,
+      deputado: params.deputado,
+      q: params.q === undefined ? undefined : truncateQ(params.q),
+      sort: params.sort,
+      page: params.page === undefined ? undefined : clampPage(params.page),
+      limit: params.limit === undefined ? undefined : clampLimit(params.limit),
+    },
+    signal,
+  );
+  return asPaginated<Iniciativa>(payload);
 }
 
 /** Re-exported so callers get the length rule with the search parameter. */

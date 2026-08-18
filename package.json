@@ -42,6 +42,37 @@
         "deputados",
         "iniciativas"
       ]
+    },
+    {
+      "name": "search-initiatives",
+      "title": "Search Initiatives",
+      "subtitle": "Assembleia da República",
+      "description": "Search legislative initiatives — bills, resolutions and proposals — by title",
+      "mode": "view",
+      "keywords": [
+        "initiatives",
+        "bills",
+        "laws",
+        "legislation",
+        "proposals",
+        "resolutions",
+        "iniciativas",
+        "iniciativa",
+        "lei",
+        "leis",
+        "projeto de lei",
+        "projetos de lei",
+        "projecto de lei",
+        "proposta de lei",
+        "propostas de lei",
+        "resolução",
+        "resolucao",
+        "diploma",
+        "legislação",
+        "legislacao",
+        "parlamento",
+        "assembleia"
+      ]
     }
   ],
   "tools": [],

@@ -144,7 +144,9 @@ describe("Browse Today's Votes", () => {
     mocks.listVotacoes.mockRejectedValue(new OpenArError("openAR returned an unexpected response shape", 500));
     render(<Command />);
     const empty = await waitFor(() => screen.getByTestId("empty-view"));
-    expect(empty).toHaveAttribute("data-title", "Could not load today's votes");
+    // The shared RequestEmptyView owns this copy now, so it reads the same in
+    // every openAR-backed list rather than being re-worded per command.
+    expect(empty).toHaveAttribute("data-title", "Could not reach openAR");
     expect(empty.getAttribute("data-description")).toContain("unexpected response shape");
   });
 
