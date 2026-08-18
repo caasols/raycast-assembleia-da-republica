@@ -1,9 +1,10 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { useCachedPromise, usePromise } from "@raycast/utils";
+import { usePromise } from "@raycast/utils";
 import { useState } from "react";
-import { getMeta, listVotacoes } from "./lib/openar-client";
+import { listVotacoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { voteResultIcon } from "./components/vote-result-icon";
+import { useParties } from "./components/use-parties";
 import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
 import { displayDate } from "./lib/dates";
 
@@ -34,10 +35,6 @@ export default function Command() {
   const [party, setParty] = useState<string | undefined>(undefined);
   const [position, setPosition] = useState<PositionId>("a_favor");
 
-  // Cached: /meta carries the longest max-age openAR sets (an hour), and the
-  // party list does not change between keystrokes.
-  const { data: meta } = useCachedPromise(async () => getMeta(), []);
-
   const { isLoading, data, error } = usePromise(
     async (sigla: string | undefined, how: PositionId) => {
       if (!sigla) {
@@ -50,7 +47,8 @@ export default function Command() {
   );
 
   const votes = data ?? [];
-  const parties = meta?.grupos ?? [];
+  // "authors": /votacoes?grupo= accepts the institutional authors, so they stay.
+  const parties = useParties("authors");
 
   return (
     <List

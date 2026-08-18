@@ -6,15 +6,16 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { VotacaoListItem } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn(), getMeta: vi.fn() }));
-vi.mock("./lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes, getMeta: mocks.getMeta }));
+const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn(), useParties: vi.fn() }));
+vi.mock("./lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
+vi.mock("./components/use-parties", () => ({ useParties: mocks.useParties }));
 
 import Command from "./browse-party-votes";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.getMeta.mockResolvedValue({ legislaturas: ["XVII"], grupos: ["Governo", "PS", "CH"], tipos: [], estados: [] });
+  mocks.useParties.mockReturnValue(["Governo", "PS", "CH"]);
 });
 
 function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
@@ -57,12 +58,13 @@ describe("Browse Party Votes", () => {
     expect(mocks.listVotacoes).not.toHaveBeenCalled();
   });
 
-  it("offers the institutional authors, which /votacoes accepts", async () => {
+  it("asks for the author-scoped party list, which /votacoes accepts", async () => {
     mocks.listVotacoes.mockResolvedValue(page([]));
     render(<Command />);
     // Unlike /deputados, /votacoes?grupo= takes Governo, PAR, Madeira, Açores
     // and Mesa, so this dropdown must not filter them out.
-    await waitFor(() => expect(screen.getAllByText("Governo").length).toBeGreaterThan(0));
+    await waitFor(() => expect(mocks.useParties).toHaveBeenCalledWith("authors"));
+    expect(screen.getAllByText("Governo").length).toBeGreaterThan(0);
   });
 
   it("filters by the chosen party and position", async () => {

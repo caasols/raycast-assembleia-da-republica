@@ -8,27 +8,23 @@ import type { Deputado } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({
   listDeputados: vi.fn(),
-  getMeta: vi.fn(),
   deputadoPhotoUrl: vi.fn((id: number) => `https://api.openar.pt/v1/deputados/${id}/foto`),
-  parliamentaryGroups: vi.fn((grupos: string[]) => grupos.filter((g) => !["Governo", "Mesa"].includes(g))),
+  useParties: vi.fn(),
 }));
-vi.mock("./lib/openar-client", () => mocks);
+vi.mock("./lib/openar-client", () => ({
+  listDeputados: mocks.listDeputados,
+  deputadoPhotoUrl: mocks.deputadoPhotoUrl,
+}));
+vi.mock("./components/use-parties", () => ({ useParties: mocks.useParties }));
 
 import Command from "./browse-deputies";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.getMeta.mockResolvedValue({
-    legislaturas: [],
-    grupos: ["Governo", "Mesa", "PS", "CH"],
-    tipos: [],
-    estados: [],
-  });
   mocks.deputadoPhotoUrl.mockImplementation((id: number) => `https://api.openar.pt/v1/deputados/${id}/foto`);
-  mocks.parliamentaryGroups.mockImplementation((grupos: string[]) =>
-    grupos.filter((g) => !["Governo", "Mesa"].includes(g)),
-  );
+  // The hook owns the filtering now; the command only chooses the scope.
+  mocks.useParties.mockReturnValue(["PS", "CH"]);
 });
 
 function deputy(overrides: Partial<Deputado> = {}): Deputado {
@@ -64,8 +60,9 @@ describe("Browse Deputies", () => {
     mocks.listDeputados.mockResolvedValue(page([]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    // /deputados?grupo=Governo is a 400, so offering it would build a broken filter.
-    expect(mocks.parliamentaryGroups).toHaveBeenCalledWith(["Governo", "Mesa", "PS", "CH"]);
+    // /deputados?grupo=Governo is a 400, so offering it would build a broken
+    // filter. The scope is the guarantee — the hook owns the filtering.
+    expect(mocks.useParties).toHaveBeenCalledWith("members");
     expect(screen.queryByText("Governo")).toBeNull();
     expect(screen.getByText("PS")).toBeInTheDocument();
   });
@@ -89,9 +86,10 @@ describe("Browse Deputies", () => {
     mocks.listDeputados.mockResolvedValue(page([deputy()]));
     render(<Command />);
     const item = await waitFor(() => screen.getByTestId("list-item"));
-    // The icon carries both the URL and the fallback; without the fallback a
-    // deputy with no photo renders as a broken image.
+    // Both halves matter: the URL, and the fallback that covers the CDN 404
+    // for a deputy with no photo. Without the fallback those rows render broken.
     expect(item.getAttribute("data-icon")).toContain("/deputados/4321/foto");
+    expect(item.getAttribute("data-icon")).toContain("fallback:Person");
   });
 
   it("shows group and constituency", async () => {

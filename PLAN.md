@@ -44,10 +44,12 @@ Also possible, if a detail view is wanted later: **Initiative Detail**
 - **P6.1** ⚠️ **Run `npm run smoke` on a networked machine.** Nothing in this
   repo has touched the live API; every test runs against a stubbed `fetch`.
   This is the highest-value outstanding task and blocks trusting anything else.
-- **P6.2** Real `README.md` in raycast-publico's format: badges, hero image,
-  a command table, and openAR credited (MIT — D20).
-- **P6.3** `metadata/` screenshots — needs a working local install.
-- **P6.4** `CHANGELOG.md`.
+- **P6.2** ✅ `README.md` written in raycast-publico's format: badges, feature
+  list, command table, data caveats, openAR credited (MIT — D20). **No hero
+  image yet** — needs a working install.
+- **P6.3** ⚠️ `metadata/` screenshots — **blocked**, needs a working local
+  install. Store review requires them, so this gates submission.
+- **P6.4** ✅ `CHANGELOG.md` with the `{PR_MERGE_DATE}` placeholder Raycast fills on merge.
 - **P6.5** Re-run `ray lint` on a networked machine: confirm the author
   validation passes, and settle **O9** — whether the Title-Case warning on
   `Assembleia da República` blocks review.

@@ -1,8 +1,9 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { useCachedPromise, usePromise } from "@raycast/utils";
+import { usePromise } from "@raycast/utils";
 import { useState } from "react";
-import { deputadoPhotoUrl, getMeta, listDeputados, parliamentaryGroups } from "./lib/openar-client";
+import { deputadoPhotoUrl, listDeputados } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
+import { useParties } from "./components/use-parties";
 import { deputyDetailMarkdown, deputySubtitle } from "./lib/deputies";
 
 /** `situacao=ativo` is the API's shortcut for the 230 sitting seats. */
@@ -12,8 +13,6 @@ const PAGE_SIZE = 200;
 export default function Command() {
   const [searchText, setSearchText] = useState("");
   const [party, setParty] = useState("");
-
-  const { data: meta } = useCachedPromise(async () => getMeta(), []);
 
   const { isLoading, data, error } = usePromise(
     async (query: string, sigla: string) => {
@@ -30,9 +29,9 @@ export default function Command() {
   );
 
   const deputies = data ?? [];
-  // /deputados rejects the five institutional authors that /meta prefixes onto
-  // `grupos`, so this dropdown must not offer them — unlike the votes one.
-  const parties = parliamentaryGroups(meta?.grupos ?? []);
+  // "members": /deputados rejects the five institutional authors, unlike the
+  // votes command's dropdown.
+  const parties = useParties("members");
 
   return (
     <List

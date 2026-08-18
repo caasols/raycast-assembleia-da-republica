@@ -117,11 +117,25 @@ export function __resetLocalStorage(): void {
  */
 type CacheSubscriber = (key: string | undefined, data: string | undefined) => void;
 
+// Every instance is tracked so `__resetCaches` can clear them all. Necessary
+// because @raycast/utils holds a module-level Cache: without a reset, a value
+// cached by one test leaks into the next and a "still loading" assertion sees
+// the previous test's data.
+const cacheInstances = new Set<Cache>();
+
+export function __resetCaches(): void {
+  for (const instance of cacheInstances) {
+    instance.clear();
+  }
+}
+
 export class Cache {
   private readonly store = new Map<string, string>();
   private readonly subscribers = new Set<CacheSubscriber>();
 
-  constructor(_options?: { namespace?: string; capacity?: number }) {}
+  constructor(_options?: { namespace?: string; capacity?: number }) {
+    cacheInstances.add(this);
+  }
 
   // Arrow properties rather than prototype methods: useCachedPromise pulls
   // these off the instance and calls them detached, which would leave `this`
@@ -189,8 +203,16 @@ function iconAttr(icon: unknown): string | undefined {
   // yields "[object Object]", which no test can meaningfully assert on, so the
   // two fields are joined instead.
   if (typeof icon === "object") {
-    const { source, tintColor } = icon as { source?: unknown; tintColor?: unknown };
-    return [source, tintColor]
+    // `fallback` is included because it is load-bearing for remote images: the
+    // deputy photo endpoint redirects to a CDN that 404s when no photo exists,
+    // and without a fallback those rows render broken. A test cannot assert
+    // what it cannot see, so it is serialised alongside source and tint.
+    const { source, tintColor, fallback } = icon as {
+      source?: unknown;
+      tintColor?: unknown;
+      fallback?: unknown;
+    };
+    return [source, tintColor, fallback === undefined ? undefined : `fallback:${String(fallback)}`]
       .filter((part) => part !== undefined && part !== null)
       .map(String)
       .join(" ");
