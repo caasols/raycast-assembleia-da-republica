@@ -48,6 +48,8 @@ stated explicitly — correct these rather than inherit them as fact.
 | D10 | 2026-08-18 | Data source is **openAR** (`api.openar.pt`), not the raw parlamento.pt dumps | openAR normalises the official bulk XML/JSON into a queryable API and needs no auth. Consuming raw dumps would mean shipping a parser and a sync story inside a launcher extension. | Settled |
 | D11 | 2026-08-18 | **Mirror raycast-buzz's structure and test strategy wholesale** | It already solves the hard parts: stubbing `@raycast/api` under vitest, split tsconfigs, 100% coverage thresholds, `lib`/`components`/command split. Divergence costs more than it buys. | Settled |
 | D12 | 2026-08-18 | Working rules captured in `CLAUDE.md` | Per user request; see `CLAUDE.md` R1–R6 | Settled |
+| D13 | 2026-08-18 | `caasols/raycast-buzz` — **not** `block/buzz` — is the Raycast reference | `block/buzz` is the Buzz *product*: a Rust workspace (~20 crates) plus desktop/mobile/web, with zero `@raycast/api` anywhere. It is the backend the extension talks to. Useful only for contributor-guide/testing conventions. | Settled |
+| D14 | 2026-08-18 | **`CLAUDE.md` and `context.md` are now tracked in git** | Supersedes D6/D8 for these two files. User asked for them in the GitHub repo. Removed from `.gitignore`; `docs/` and `PROJECT_BRIEF.md` stay ignored. Neither contains secrets. | Settled |
 
 ### Open questions
 
@@ -58,6 +60,7 @@ stated explicitly — correct these rather than inherit them as fact.
 | O4 | Scope of "today" — plenary only, or committees too? Behaviour on a non-sitting day? | Shapes queries and the empty state | P1, P3 |
 | O5 | Windows **and** macOS, or macOS only? | D2 claims both; raycast-buzz ships macOS-only. Cross-platform means no macOS-only APIs and doubles manual test surface. | P2, P5 |
 | O6 | Portuguese or English UI copy? Both? | Data arrives in Portuguese. Mixed-language UI reads badly; an English UI over Portuguese content is a real trade-off. Store listings skew English. | P3 |
+| O7 | What do the pre-existing iCloud `CLAUDE.md` / `context.md` contain? | They may hold decisions from local sessions that this log has never seen. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not file contents — see §3.1. Until recovered, this log may be missing history. | — |
 
 ---
 
@@ -76,7 +79,9 @@ this environment.** The egress proxy blocks the hosts we need:
 
 This is an organisation egress policy on the remote environment, not a
 transient failure, and the proxy documentation is explicit that it must be
-reported rather than worked around.
+reported rather than worked around. **Re-tested 2026-08-18 after being given
+the `https://api.openar.pt/` URL directly — still blocked.** Supplying the URL
+does not help; the block is on the host, not on knowing the address.
 
 **To unblock, do one of:**
 1. Add `openar.pt` and `api.openar.pt` to the environment's network allowlist —
@@ -87,6 +92,22 @@ reported rather than worked around.
 
 **Option 2 is the recommendation** — vendoring the spec makes the contract
 reviewable in diffs and unblocks every future session, not just this one.
+
+### 3.1 Secondary blocker — iCloud docs not recovered
+
+An attempt to restore the original `CLAUDE.md` and `context.md` from iCloud
+delivered **macOS bookmark alias stubs**, not the files: both uploads are
+2.5 KB Apple binary property lists (`NSKeyedArchiver` / `NSURL` bookmark data)
+pointing at
+`/private/var/mobile/Library/Mobile Documents/com~apple~CloudDocs/Documents/raycast-assembleia-da-republica/`.
+They contain zero markdown.
+
+This is the standard iOS Files behaviour when a file is in iCloud but not
+downloaded locally — sharing hands over a reference instead of the content.
+
+**To recover:** open each file in the Files app first so it downloads fully
+(the cloud-with-arrow icon disappears), *then* share it — or simply paste the
+contents into chat, or upload from a Mac with iCloud Drive synced. Tracked as O7.
 
 ### What we know about openAR so far
 

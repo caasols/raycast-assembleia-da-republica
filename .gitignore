@@ -21,8 +21,10 @@ coverage/
 # internal working docs: kept on disk, never published to the public repo
 docs/
 PROJECT_BRIEF.md
-CLAUDE.md
-context.md
+
+# CLAUDE.md and context.md are deliberately TRACKED (see PLAN.md D14): they are
+# the agent working agreement and the decision log, and both are worthless if
+# they die with an ephemeral dev container. They contain no secrets.
 
 # build output
 dist/
