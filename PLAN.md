@@ -1,13 +1,15 @@
 # PLAN — what we build next
 
-The forward plan. Completed phases are pruned; project state, decisions and
-audit findings live in **`context.md`**, and the working rules in **`CLAUDE.md`**.
-Read both before starting a phase.
+The forward plan. **Only undone work lives here** — completed phases are pruned
+the moment they land. Project state, decisions and audit findings are in
+**`context.md`**; the working rules are in **`CLAUDE.md`**. Read both before
+starting an item.
 
-- **Status:** seven commands, four pushed detail views, nine AI tools, 447 tests at 100% coverage
-- **Next:** Track B — everything in Track A is done
-- **Needs you:** B1 `npm run smoke` — validates everything above it
-- **Outstanding risk:** nothing has ever run against the live API — `context.md` §3 B1
+- **Status:** seven commands, five pushed detail views, nine AI tools, 462 tests at 100% coverage
+- **CI:** green — run #2 on `0de59c7`, the first run in the project's history (`context.md` D92/D94)
+- **Next:** A6 — the extension still ships Raycast's placeholder icon
+- **Needs you:** B1 `npm run smoke`, which validates everything built so far
+- **Outstanding risk:** nothing has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-19
 
 ---
@@ -24,88 +26,67 @@ Read both before starting a phase.
 | `Browse Committees` | `/comissoes` |
 | `Browse Longest-Serving Deputies` | `/deputados/carreiras` |
 
-**Nine AI tools** in `src/tools/`: today's votes, party votes, search
-initiatives / petitions / committees / deputies, and detail lookups for an
-initiative, a deputy and a deputy's activity.
-
-`src/lib/`: `openar-client` (13 endpoints), `query`, `errors`, `types`, `dates`,
-`votes`, `initiatives`, `petitions`, `deputies`, `careers`.
-`src/components/`: `request-empty-view`, `vote-result-icon`.
+Every list pushes into a detail view: initiative, deputy, deputy activity,
+committee, petition. **Nine AI tools** in `src/tools/`. `src/lib/` carries the
+client (13 endpoints), query building, pagination, preferences, errors, the
+ETag store and the per-entity presentation helpers.
 
 ## 2. Roadmap — what is left
 
-Two tracks. **Track A** needs nothing from the author and is ordered so each
-item makes the next one cheaper. **Track B** needs a networked or installable
-machine, and is deliberately last — but B1 is the one that validates everything
-in Track A, so it should happen as soon as a laptop is to hand.
+Re-prioritised 2026-08-19 after the first CI run. Two changes from the previous
+ordering: **the old B4 is gone** — CI answered O9 for free, exactly as D29
+predicted once a run actually happened — and **A6 is new**, found by auditing
+what store submission needs rather than what the code needs.
+
+**Track A** needs nothing from the author. **Track B** needs a networked or
+installable machine and is deliberately last — except that B1 validates
+everything in Track A, so it should happen as soon as a laptop is to hand.
 
 ---
 
-### Track A — ✅ complete
+### Track A — can be done here
 
-#### A1 · Retry action on error states ✅ *done*
-A failed request currently means re-running the whole command. With a 100
-req/min budget, a transient 429 is the *expected* failure, not an exotic one —
-and the one thing a user can do about it is exactly what the UI doesn't offer.
+#### A6 · Replace the placeholder extension icon ⬅ *next*
+`assets/extension-icon.png` is still the generic red chip Raycast's scaffold
+generates — unchanged since commit `f20313a`. It is 512×512 and technically
+valid, so no lint or build catches it, but shipping a template icon to the store
+is the most visible possible sign that nobody finished the extension.
 
-`RequestEmptyView` is the single place to add it, so all seven lists and the
-three detail views gain it at once. Cheapest item on the list and it compounds.
+**A hard submission blocker, and the only one that does not need the author.**
+Pillow is available in this container, so the artwork can be produced here and
+reviewed as a committed PNG.
 
-#### A2 · Legislature filter ✅ *done*
-**Today the extension can only see the present.** Nothing filters by
-legislature, so every command implicitly shows the current one — while openAR
-carries the record back to 1976. This is the difference between "what is
-parliament doing" and "what has parliament ever done".
+Brainstorm the mark before drawing anything (R1): the obvious candidates are the
+Palácio de São Bento's colonnade, a ballot/vote glyph, and the Portuguese
+armillary sphere. The last one is state iconography and is best avoided —
+looking official for an unofficial extension is a liability, not a feature.
 
-Needs `listLegislaturas()` first — the endpoint is **not implemented**; only the
-`legislaturas` field nested inside other responses is. Then a shared
-`useLegislatures` hook and a dropdown, following the `useParties` shape.
-
-`dataFim: null` identifies the current legislature, so the default stays correct
-without hardcoding `XVII` — which goes stale at the next election.
-
-#### A3 · Default-legislature preference ✅ *done*
-Same session as A2 ideally: the dropdown and the preference are the same
-decision seen twice, and `pageSize` already established the pattern.
-
-#### A4 · AI extension `tools` ✅ *done — nine tools*
-Raycast's AI can call extension tools directly, so *"how did PS vote on the
-budget?"* is answerable without opening a command. Nothing else on this list
-changes what the extension **is**.
-
-Deliberately after A2: tools that cannot express "in the XV legislature" would
-need rewriting the moment legislature filtering lands. Building on the finished
-data model costs less than retrofitting it.
-
-#### A5 · ETag caching on detail views ✅ *done — but see the caveat*
-The client models weak ETags in `OPENAR-API.md` §4 and implements none of them.
-`/iniciativas/{id}` and `/peticoes/{id}` would return 304s.
-
-⚠️ **Verified against a stubbed 304, never a real one.** The tests prove the
-client sends `If-None-Match`, handles a 304 before the `!ok` check, and reuses
-the held body — but openAR has never actually returned one to us. Worth
-re-checking during B1.
+#### A7 · CHANGELOG omits the AI tools
+`CHANGELOG.md` lists the seven commands and stops. The nine tools are the whole
+AI-extension surface and a reader of the store page learns nothing about them.
+Ten minutes, no dependencies — worth doing in whatever session touches A6.
 
 ---
 
 ### Track B — needs a networked or installable machine
 
 #### B1 · Run `npm run smoke` ⚠️ *do this first of all*
-Nothing in this repo has ever touched the live API. 343 tests all run against a
+Nothing in this repo has ever touched the live API. All 462 tests run against a
 stubbed `fetch`, so the base URL, envelope handling, pagination arithmetic and
 the 429 path are verified against *our reading of the spec*.
 
 **This validates the foundation every other item sits on.** If the client is
-wrong, all seven commands are wrong in the same way. Worth ten minutes before
-any more building.
+wrong, all seven commands are wrong in the same way. Ten minutes.
 
-#### B2 · Do per-deputy vote positions exist?
-**Narrowed — most of what this blocked is now built.** Deputy Activity ships
-(D89): 17 of the endpoint's 18 arrays needed nothing unverified, and marking the
-whole command blocked because one facet was uncertain was a decomposition
-failure.
+Two things to check in the same session, since the connection is already open:
 
-What remains is one array. `actp` is described as *"outras actividades em
+- **A real `304`.** A5's ETag work is verified against a *stubbed* 304 only —
+  the client provably sends `If-None-Match` and reuses the held body, but openAR
+  has never actually returned one to us.
+- **B2 below**, which is one request.
+
+#### B2 · Do per-deputy vote positions exist? *(one request, fold into B1)*
+Narrowed to a single array. `actp` is described as *"outras actividades em
 plenário (votos, etc.)"* and its element shape is undeclared, so it is the only
 place an individual vote position could live — the alternative being that they
 exist only inside `detalhe`'s unsanitised HTML (D40). One live request against a
@@ -113,17 +94,15 @@ long-serving deputy settles it.
 
 Until then both the view and the tool say plainly that plenary votes are
 recorded per party, so the absence reads as a property of the data rather than a
-missing feature.
+missing feature (D91).
 
 #### B3 · `metadata/` screenshots
-Store review requires them. Hard blocker on submission, and it needs a working
-`npm run dev`.
+Store review requires them; the directory does not exist yet. Needs a working
+`npm run dev`, and should come after B1 so the screenshots show real data rather
+than an error state.
 
-#### B4 · Settle O9 and re-run `ray lint` networked
-Whether store review accepts `Assembleia da República` as the title. CI already
-runs `ray lint`, so the first green Actions run may answer it for free.
-
-#### B5 · `npm run publish`
+#### B4 · `npm run publish`
+Last. Everything above is a precondition.
 
 ---
 

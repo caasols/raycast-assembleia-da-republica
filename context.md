@@ -140,6 +140,8 @@ stated explicitly — correct these rather than inherit them as fact.
 | D91 | 2026-08-19 | The absence of a voting record is **stated, not left as a gap** | Both the view and the tool say plainly that plenary votes are recorded per party rather than per deputy. Otherwise a reader — or a model — infers from an empty field that a deputy never votes, when the data simply is not published per person. | Settled |
 | D92 | 2026-08-19 | **CI had never run once** — the workflow only triggered on `main` | Twenty-nine commits, all to a feature branch with no PR, against `push: branches: [main]`. GitHub reported zero registered workflows. Every claim that "CI is green" was unfounded. Triggers now cover any branch, plus `workflow_dispatch`. | Settled |
 | D93 | 2026-08-19 | **`keywords` are capped at 12 per command** — four commands were over | `must NOT have more than 12 items`, a hard **error** from `ray lint`'s manifest schema. Only visible with network, since the schema is fetched from raycast.com — which is exactly the check the dev container cannot do. Trimmed to the Portuguese terms a speaker would type (accented and unaccented) plus the English ones the title does not already cover. | Settled |
+| D94 | 2026-08-19 | **CI is green — for the first time verifiably** | Run #2 (`0de59c7`) passed `ray lint` → `ray build` → `typecheck` → `test:coverage` end to end on GitHub's runners: 462 tests, 100% coverage, and the manifest validated against the real remote schema. This is the first evidence in the project's history that the extension passes checks the dev container cannot perform. | Settled |
+| D95 | 2026-08-19 | **The extension still ships Raycast's placeholder icon** — a store blocker nothing catches | `assets/extension-icon.png` is the generic red chip the scaffold generated, untouched since `f20313a`. It is a valid 512×512 PNG, so `ray lint`, `ray build` and CI all pass it without comment — the failure mode is purely a human one. Found by auditing what *submission* needs rather than what the code needs, which is a different question and had never been asked. Queued as `PLAN.md` A6; Pillow is available in this container, so it does not need the author. | Open |
 
 ### Open questions
 
@@ -160,13 +162,14 @@ stated explicitly — correct these rather than inherit them as fact.
 ## 3. What is blocked
 
 Everything below needs something this environment cannot provide. Nothing else
-on the roadmap is blocked.
+on the roadmap is blocked — and the list is shorter than it looks: B3 is closed
+(D94), and B1 and B2 both dissolve on the same networked machine.
 
 | # | Blocker | Why it matters | Unblocks |
 |---|---|---|---|
-| B1 | **Nothing has ever run against the live API.** `api.openar.pt` is denied by the dev container's egress proxy (403 on CONNECT, re-tested three times). All 343 tests run against a stubbed `fetch`, so URL shape, envelope handling, pagination and the 429 path are verified against *our reading of the vendored spec* — not against openAR. | The single largest outstanding risk in the project. | `npm run smoke` on any networked machine (`PLAN.md` B1), or allowlisting `openar.pt` + `api.openar.pt` in the [environment settings](https://code.claude.com/docs/en/claude-code-on-the-web). |
+| B1 | **Nothing has ever run against the live API.** `api.openar.pt` is denied by the dev container's egress proxy (403 on CONNECT, re-tested three times). All 462 tests run against a stubbed `fetch`, so URL shape, envelope handling, pagination and the 429 path are verified against *our reading of the vendored spec* — not against openAR. | The single largest outstanding risk in the project. | `npm run smoke` on any networked machine (`PLAN.md` B1), or allowlisting `openar.pt` + `api.openar.pt` in the [environment settings](https://code.claude.com/docs/en/claude-code-on-the-web). |
 | B2 | **No screenshots.** `metadata/` needs images from a working local install. | Raycast Store review requires them, so this gates submission outright. | A machine that can run `npm run dev` (`PLAN.md` B3). |
-| B3 | **O9 unanswered** — whether store review accepts `Assembleia da República` as the title. `ray lint` warns it is not Title Case and wants `Assembleia Da República`, which is wrong Portuguese. Raycast's own guidelines are also egress-blocked. | Cosmetic, and titles are editable after publish — unlike `name`. | CI now runs `ray lint`, so the first Actions run shows whether the warning fails the build (`PLAN.md` B4). |
+| ~~B3~~ | ~~**O9 unanswered** — the extension title~~ | **Resolved 2026-08-19 (D94).** The first real CI run showed the Title-Case complaint is a `warning`, not an error. The title stays. | — |
 | B4 | **O7 unrecovered** — the original iCloud `CLAUDE.md` / `context.md`. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not the files. | They may hold decisions from local sessions this log never saw. | Open each file in the Files app so it downloads fully, *then* share it — or paste the contents. |
 
 **The API contract itself is no longer blocked.** The full OpenAPI 3.1 spec is
@@ -184,7 +187,9 @@ tests, no CI. All of it is fixed — see D21–D31 and the P0 commit.
 
 Two findings were **not** defects and remain true today: `ray lint` reports
 `Invalid author "caasols"` and a JSON-schema compile failure *locally only*,
-because both are raycast.com calls the egress proxy blocks. They pass in CI.
+because both are raycast.com calls the egress proxy blocks. They pass in CI —
+**now verified rather than assumed** (D92, D94). The same blindness hid a real
+error for twenty-nine commits: the 12-item `keywords` cap (D93).
 
 The audit's lasting lesson is R6 in `CLAUDE.md`: **a green build proves almost
 nothing.** `ray build` compiling an empty file is why every command has a test

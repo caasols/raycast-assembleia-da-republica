@@ -10,7 +10,6 @@ session. Three tracked documents, three jobs — keep them in their lanes:
 | **`PLAN.md`** | *What we do next* — candidate commands, phased roadmap |
 | **`OPENAR-API.md`** | *What the API does* — the openAR contract and its traps |
 | **`docs/openar-openapi.json`** | The full OpenAPI 3.1 spec — source of truth when the prose is ambiguous |
-| **`docs/openar-openapi.json`** | Full OpenAPI 3.1 spec — source of truth when the prose is ambiguous |
 
 The repo is **private**, so internal working notes belong here rather than in a
 side channel. Keep credentials out regardless.
@@ -33,6 +32,12 @@ Decompose aggressively. A task that cannot be described in one sentence is not
 yet broken down. Prefer many small, independently testable, independently
 reviewable units over one large change. Each unit should be shippable on its
 own and have a clear "done" condition.
+
+The corollary bites harder than the rule: **do not mark a whole unit blocked
+because one facet of it is uncertain.** Deputy Activity sat on the roadmap as
+"blocked" while 17 of the endpoint's 18 arrays needed nothing unverified — the
+uncertainty was one array, and the block should have been scoped to it
+(`context.md` D89).
 
 ### R3 — Pros and cons for every option
 When there is more than one way to do something — and there usually is —
@@ -106,6 +111,8 @@ src/
     request-empty-view.tsx  the three ways a list shows nothing
     use-parties.ts          /meta party lists, scoped per endpoint
     <entity>-detail.tsx     pushed detail views
+  tools/                    AI-extension tools, one per file
+    <tool-name>.ts          default-exported async fn + Input type
 test/
   raycast-api-stub.tsx      stand-in for @raycast/api under vitest
   setup.ts                  jest-dom matchers + per-test cache reset
@@ -115,6 +122,12 @@ docs/openar-openapi.json    vendored spec, the contract's source of truth
 
 `components/` holds hooks as well as components: they are the shared *React*
 layer, and `lib/` is the part with no React in it at all.
+
+`src/tools/` is the AI-extension surface. Each file default-exports one async
+function and declares its own `Input` type; every entry needs a matching object
+in `package.json`'s `tools` array, keyed by filename. Tools import the same
+`lib/` helpers the commands do — that is the point, since a tool and a command
+that disagreed about what "approved" means would be worse than having no tool.
 
 ### Architectural rules
 
@@ -226,5 +239,15 @@ Each of these has already cost time once.
 - **Network egress is restricted in remote dev containers.** `openar.pt`,
   `api.openar.pt`, `parlamento.pt` and Raycast's own docs are blocked. Do not
   route around it — report it. Work from `OPENAR-API.md` and the vendored spec.
+- **A workflow that only triggers on `main` never runs.** Development happens on
+  feature branches that may never open a PR, and CI sat at *zero* registered
+  runs for twenty-nine commits while every session assumed it was green. Check
+  that a run exists before citing one (`context.md` D92).
+- **`keywords` cap at 12 items per command** — a hard `ray lint` **error**, and
+  invisible locally: the manifest schema is fetched from raycast.com, which the
+  dev container blocks. Anything schema-shaped can only be trusted after CI.
+- **Not every `ray lint` complaint fails the build.** The Title-Case grumble
+  about the extension title is a `warning`; the keyword cap was the error. Read
+  the severity before rewriting copy to satisfy it.
 - **All four docs are tracked** (`context.md` D14/D18). The repo is private.
   Keep credentials out regardless.
