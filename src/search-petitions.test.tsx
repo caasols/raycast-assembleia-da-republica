@@ -6,13 +6,17 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { Peticao } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ listPeticoes: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listPeticoes: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listPeticoes: mocks.listPeticoes }));
+vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import Command from "./search-petitions";
 
 afterEach(cleanup);
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.getPageSize.mockReturnValue(50);
+});
 
 function petition(overrides: Partial<Peticao> = {}): Peticao {
   return {

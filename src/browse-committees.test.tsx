@@ -6,13 +6,17 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { Comissao } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ listComissoes: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listComissoes: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listComissoes: mocks.listComissoes }));
+vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import Command from "./browse-committees";
 
 afterEach(cleanup);
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.getPageSize.mockReturnValue(200);
+});
 
 const page = (data: Comissao[], total = data.length) => ({ data, total, page: 1, limit: 200 });
 const COMMITTEE: Comissao = { id: 42, sigla: "CACDLG", nome: "Comissão de Assuntos Constitucionais" };

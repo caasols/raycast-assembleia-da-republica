@@ -29,14 +29,17 @@ jobs:
       # belongs here rather than in a local pre-commit step.
       - run: npm run lint
 
+      # Build BEFORE typecheck: `ray build` is what generates raycast-env.d.ts,
+      # which is gitignored and holds the Preferences type read by
+      # src/lib/preferences.ts. `ray lint` does not generate it, so typechecking
+      # first would fail on a clean checkout. Deliberately not trusted on its
+      # own either: `ray build` once compiled a 0-byte command file and reported
+      # success (context.md §4) — the tests below are what prove the commands work.
+      - run: npm run build
+
       # Both tsconfigs: the extension without the DOM lib, the tests with it.
       - run: npm run typecheck
 
       # The ratchet. Thresholds are pinned at 100% in vitest.config.ts, so new
       # uncovered code fails here rather than quietly lowering the bar.
       - run: npm run test:coverage
-
-      # Kept last and deliberately not trusted on its own: `ray build` once
-      # compiled a 0-byte command file and reported success (context.md §4).
-      # The tests above are what actually prove the commands work.
-      - run: npm run build

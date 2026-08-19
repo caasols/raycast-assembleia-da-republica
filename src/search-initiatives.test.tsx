@@ -6,13 +6,17 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { Iniciativa } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ listIniciativas: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listIniciativas: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listIniciativas: mocks.listIniciativas }));
+vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import Command from "./search-initiatives";
 
 afterEach(cleanup);
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.getPageSize.mockReturnValue(50);
+});
 
 function initiative(overrides: Partial<Iniciativa> = {}): Iniciativa {
   return {
@@ -87,6 +91,14 @@ describe("Search Initiatives", () => {
     // Native filtering is off once onSearchTextChange is set — the server has
     // already matched, and filtering again locally would hide returned rows.
     expect(screen.getByTestId("list")).toHaveAttribute("data-native-filtering", "false");
+  });
+
+  it("fetches the page size the user chose, not a hardcoded one", async () => {
+    mocks.getPageSize.mockReturnValue(25);
+    mocks.listIniciativas.mockResolvedValue(page([], 0));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listIniciativas).toHaveBeenCalled());
+    expect(mocks.listIniciativas.mock.calls[0][0].limit).toBe(25);
   });
 
   it("starts at openAR's first page, not page zero", async () => {

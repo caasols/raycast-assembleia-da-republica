@@ -6,13 +6,17 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
 import type { Carreira } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ listCarreiras: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listCarreiras: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listCarreiras: mocks.listCarreiras }));
+vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import Command from "./longest-serving-deputies";
 
 afterEach(cleanup);
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.getPageSize.mockReturnValue(100);
+});
 
 function career(overrides: Partial<Carreira> = {}): Carreira {
   return {
@@ -32,6 +36,13 @@ describe("Longest-Serving Deputies", () => {
     mocks.listCarreiras.mockResolvedValue({ data: [], stats: null });
     render(<Command />);
     expect(screen.getByTestId("list")).toBeInTheDocument();
+  });
+
+  it("asks for as many ranked deputies as the user chose", async () => {
+    mocks.getPageSize.mockReturnValue(25);
+    mocks.listCarreiras.mockResolvedValue({ data: [], stats: null });
+    render(<Command />);
+    await waitFor(() => expect(mocks.listCarreiras).toHaveBeenCalledWith(25));
   });
 
   it("numbers the ranking, since the rank is positional rather than a field", async () => {

@@ -7,6 +7,7 @@ import { OpenArError } from "./lib/errors";
 import type { Deputado } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({
+  getPageSize: vi.fn(),
   listDeputados: vi.fn(),
   deputadoPhotoUrl: vi.fn((id: number) => `https://api.openar.pt/v1/deputados/${id}/foto`),
   useParties: vi.fn(),
@@ -16,12 +17,14 @@ vi.mock("./lib/openar-client", () => ({
   deputadoPhotoUrl: mocks.deputadoPhotoUrl,
 }));
 vi.mock("./components/use-parties", () => ({ useParties: mocks.useParties }));
+vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import Command from "./browse-deputies";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getPageSize.mockReturnValue(100);
   mocks.deputadoPhotoUrl.mockImplementation((id: number) => `https://api.openar.pt/v1/deputados/${id}/foto`);
   // The hook owns the filtering now; the command only chooses the scope.
   mocks.useParties.mockReturnValue(["PS", "CH"]);

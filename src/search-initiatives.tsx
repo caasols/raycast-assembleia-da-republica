@@ -7,9 +7,7 @@ import { InitiativeDetail } from "./components/initiative-detail";
 import { initiativeDetailMarkdown, initiativeLabel } from "./lib/initiatives";
 import { displayDate } from "./lib/dates";
 import { hasMorePages, toApiPage } from "./lib/pagination";
-
-/** Comfortably more than a screenful, well under the API's 200 maximum. */
-const PAGE_SIZE = 50;
+import { getPageSize } from "./lib/preferences";
 
 /**
  * Search legislative initiatives.
@@ -21,6 +19,7 @@ const PAGE_SIZE = 50;
  * request per keystroke would exhaust that in seconds.
  */
 export default function Command() {
+  const pageSize = getPageSize();
   const [searchText, setSearchText] = useState("");
 
   const { isLoading, data, error, pagination } = useCachedPromise(
@@ -32,9 +31,9 @@ export default function Command() {
         q: query.trim() === "" ? undefined : query.trim(),
         sort: "desc",
         page: apiPage,
-        limit: PAGE_SIZE,
+        limit: pageSize,
       });
-      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
+      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
     },
     [searchText],
   );

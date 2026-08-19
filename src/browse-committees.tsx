@@ -5,8 +5,7 @@ import { listComissoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { CommitteeDetail } from "./components/committee-detail";
 import { hasMorePages, toApiPage } from "./lib/pagination";
-
-const PAGE_SIZE = 200;
+import { getPageSize } from "./lib/preferences";
 
 /**
  * Parliamentary committees.
@@ -17,6 +16,7 @@ const PAGE_SIZE = 200;
  * to a committee.
  */
 export default function Command() {
+  const pageSize = getPageSize();
   const [searchText, setSearchText] = useState("");
 
   const { isLoading, data, error, pagination } = useCachedPromise(
@@ -26,9 +26,9 @@ export default function Command() {
         q: query.trim() === "" ? undefined : query.trim(),
         sort: "asc",
         page: apiPage,
-        limit: PAGE_SIZE,
+        limit: pageSize,
       });
-      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
+      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
     },
     [searchText],
   );

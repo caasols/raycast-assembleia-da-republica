@@ -9,8 +9,7 @@ import { useParties } from "./components/use-parties";
 import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
 import { displayDate } from "./lib/dates";
 import { hasMorePages, toApiPage } from "./lib/pagination";
-
-const PAGE_SIZE = 100;
+import { getPageSize } from "./lib/preferences";
 
 /** How a party voted, as the three filters `/votacoes` offers. */
 const POSITIONS = [
@@ -34,6 +33,7 @@ type PositionId = (typeof POSITIONS)[number]["id"];
  * `/deputados` — so the list is used unfiltered.
  */
 export default function Command() {
+  const pageSize = getPageSize();
   const [party, setParty] = useState<string | undefined>(undefined);
   const [position, setPosition] = useState<PositionId>("a_favor");
 
@@ -43,8 +43,8 @@ export default function Command() {
         return { data: [], hasMore: false };
       }
       const apiPage = toApiPage(options.page);
-      const result = await listVotacoes({ [how]: sigla, sort: "desc", page: apiPage, limit: PAGE_SIZE });
-      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
+      const result = await listVotacoes({ [how]: sigla, sort: "desc", page: apiPage, limit: pageSize });
+      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
     },
     [party, position],
   );

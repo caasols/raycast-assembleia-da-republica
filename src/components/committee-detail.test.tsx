@@ -6,13 +6,17 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "../lib/errors";
 import type { Iniciativa } from "../lib/types";
 
-const mocks = vi.hoisted(() => ({ getComissao: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), getComissao: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ getComissao: mocks.getComissao }));
+vi.mock("../lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import { CommitteeDetail } from "./committee-detail";
 
 afterEach(cleanup);
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.getPageSize.mockReturnValue(100);
+});
 
 const INITIATIVE: Iniciativa = {
   id: 1,

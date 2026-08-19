@@ -42,6 +42,12 @@ needs **no account, key, or binary installed** — every endpoint is public.
 | `Browse Committees` | Parliamentary committees and their acronyms |
 | `Browse Longest-Serving Deputies` | Ranked by legislatures served |
 
+## Preferences
+
+| Preference | Default | What it does |
+| --- | --- | --- |
+| `Results per Page` | 50 | How many results each request fetches — 25, 50, 100 or 200. Lists load more as you scroll, so a smaller page shows the first results sooner and a larger one scrolls further before fetching again. |
+
 ## Notes on the data
 
 - **"Today" means today in Lisbon.** Parliament sits in Lisbon, so the sitting

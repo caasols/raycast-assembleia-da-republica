@@ -6,15 +6,17 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { VotacaoListItem } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn(), useParties: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listVotacoes: vi.fn(), useParties: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
 vi.mock("./components/use-parties", () => ({ useParties: mocks.useParties }));
+vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import Command from "./browse-party-votes";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getPageSize.mockReturnValue(100);
   mocks.useParties.mockReturnValue(["Governo", "PS", "CH"]);
 });
 

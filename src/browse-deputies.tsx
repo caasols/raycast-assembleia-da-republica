@@ -6,19 +6,13 @@ import { RequestEmptyView } from "./components/request-empty-view";
 import { useParties } from "./components/use-parties";
 import { DeputyDetail } from "./components/deputy-detail";
 import { hasMorePages, toApiPage } from "./lib/pagination";
+import { getPageSize } from "./lib/preferences";
 import { deputyDetailMarkdown, deputySubtitle } from "./lib/deputies";
 
 /** `situacao=ativo` is the API's shortcut for the 230 sitting seats. */
 const SITTING = "ativo";
-/**
- * Below the API's maximum of 200 on purpose. There are 230 sitting deputies and
- * `limit` caps at 200, so no single request can return them all — before
- * pagination, 30 members of parliament were simply unreachable here. A smaller
- * page also gets the first screenful up faster.
- */
-const PAGE_SIZE = 100;
-
 export default function Command() {
+  const pageSize = getPageSize();
   const [searchText, setSearchText] = useState("");
   const [party, setParty] = useState("");
 
@@ -31,9 +25,9 @@ export default function Command() {
         situacao: SITTING,
         sort: "asc",
         page: apiPage,
-        limit: PAGE_SIZE,
+        limit: pageSize,
       });
-      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
+      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
     },
     [searchText, party],
   );

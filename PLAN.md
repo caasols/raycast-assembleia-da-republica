@@ -62,7 +62,8 @@ API's endpoints are detail endpoints and none are wired up.
 - **P8.2** Legislature filter — everything is implicitly the current
   legislature. `/legislaturas` exists and `dataFim: null` identifies the
   current one without hardcoding `XVII`.
-- **P8.3** Preferences — default legislature, results per page.
+- **P8.3** ⬜ Preferences — **results per page ✅ done** (D67–D71). Default
+  legislature still outstanding.
 - **P8.4** ETag caching on detail views. The client already models weak ETags
   (`OPENAR-API.md` §4); nothing uses them yet.
 
