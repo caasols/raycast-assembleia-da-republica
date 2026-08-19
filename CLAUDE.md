@@ -9,6 +9,7 @@ session. Three tracked documents, three jobs — keep them in their lanes:
 | **`context.md`** | *What we know* — project context, decision log, open questions, blockers, audit findings |
 | **`PLAN.md`** | *What we do next* — candidate commands, phased roadmap |
 | **`OPENAR-API.md`** | *What the API does* — the openAR contract and its traps |
+| **`docs/openar-openapi.json`** | The full OpenAPI 3.1 spec — source of truth when the prose is ambiguous |
 | **`docs/openar-openapi.json`** | Full OpenAPI 3.1 spec — source of truth when the prose is ambiguous |
 
 The repo is **private**, so internal working notes belong here rather than in a
@@ -88,24 +89,32 @@ about **manifest, copy or store presentation**, match `raycast-publico`. Where
 they disagree — buzz colocates tests, publico uses `src/__tests__/` — buzz wins
 (`context.md` D32).
 
-### Directory layout (mirrors raycast-buzz)
+### Directory layout
 
 ```
 src/
-  <command-name>.tsx        one file per command, named to match package.json
+  <command-name>.tsx        one root command per file, name matching package.json
   <command-name>.test.tsx
-  lib/                      pure logic: API client, parsing, formatting, errors
-    <module>.ts
-    <module>.test.ts
-  components/               shared UI used by more than one command
-    <component>.tsx
-    <component>.test.tsx
+  lib/                      pure logic — no JSX, no Raycast UI imports
+    openar-client.ts        the ONLY module that calls fetch
+    query.ts                query building, clamping, the API's input limits
+    pagination.ts           Raycast's zero-based page ↔ openAR's one-based
+    preferences.ts          reads the generated `Preferences` type
+    errors.ts types.ts dates.ts
+    <entity>.ts             presentation helpers: votes, initiatives, deputies…
+  components/               shared React — UI *and* hooks
+    request-empty-view.tsx  the three ways a list shows nothing
+    use-parties.ts          /meta party lists, scoped per endpoint
+    <entity>-detail.tsx     pushed detail views
 test/
   raycast-api-stub.tsx      stand-in for @raycast/api under vitest
-  setup.ts                  registers jest-dom matchers
-scripts/
-  smoke.ts                  hits the real API, run manually
+  setup.ts                  jest-dom matchers + per-test cache reset
+scripts/smoke.ts            hits the real API, run manually
+docs/openar-openapi.json    vendored spec, the contract's source of truth
 ```
+
+`components/` holds hooks as well as components: they are the shared *React*
+layer, and `lib/` is the part with no React in it at all.
 
 ### Architectural rules
 
@@ -120,6 +129,14 @@ scripts/
 - **Comment the *why*, not the *what*.** Match the density and voice of
   raycast-buzz — it explains non-obvious decisions and fidelity trade-offs
   inline, and that is the house style.
+- **Extract on the second use, never in anticipation.** `RequestEmptyView`,
+  `voteResultIcon` and `useParties` were each extracted the moment a second
+  caller appeared — and the two party dropdowns were deliberately *not* merged,
+  because they only look alike (D54).
+- **A list that goes nowhere is unfinished.** Rows push into a detail view where
+  the API offers one.
+- **Never invent a number a user might reasonably want to choose.** Page sizes
+  come from the `pageSize` preference, not from constants (D67).
 
 ---
 
@@ -158,27 +175,56 @@ npm run build         # ray build
 ```
 
 `tsconfig.test.json` is separate on purpose: it adds the `DOM` lib for the
-component tests without letting the extension itself see browser globals.
+component tests without letting the extension itself see browser globals. The
+main `tsconfig.json` **excludes** the test files and declares `types` explicitly
+— without both, `tsc --noEmit` checks the tests without the DOM lib and every
+jest-dom matcher fails to resolve.
+
+**Extend the stub rather than weakening an assertion.** It has grown
+`List.Item.Detail`, `List.Dropdown`, `Detail`, `Cache`, pagination and icon
+`fallback` serialisation, each added because a real behaviour was otherwise
+invisible to a test. Stub-only helpers such as `__resetCaches` are imported from
+`../test/raycast-api-stub` directly — the real `@raycast/api` has no such export,
+and `tsc` checks against the real one.
+
+**`test/setup.ts` resets the cache before every test.** `useCachedPromise` keeps
+a module-level `Cache` that outlives a test; two tests were once passing on the
+*previous* test's data.
+
+**CI order is load-bearing: build → typecheck → coverage.** Only `ray build`
+generates `raycast-env.d.ts` (verified — `ray lint` does not), and that file is
+gitignored but holds the `Preferences` type, so typechecking first fails on a
+clean checkout.
 
 ---
 
 ## 4. Gotchas
 
-- **`ray build` succeeding proves almost nothing.** It compiled a 0-byte
-  command file and reported success. A `no-view` command with no default export
-  builds clean and fails at invocation. Trust tests, not the build.
-- **All three docs are tracked** (`context.md` D14/D15). `docs/` and
-  `PROJECT_BRIEF.md` remain ignored. Keep secrets out of all four regardless.
-- **Network egress is restricted in remote dev containers.** `openar.pt`,
-  `api.openar.pt` and `parlamento.pt` are currently blocked by the egress
-  proxy. Do not try to route around it — report it. See `context.md` §3.
-  Work from `OPENAR-API.md` and `docs/openar-openapi.json` instead — the
-  contract is fully vendored, so no session needs network access to know it.
-- **`estado` is not a verdict.** `Aprovado` is not a valid `/iniciativas?estado=`
-  value — use `resultado=aprovado`. See `OPENAR-API.md` §14.
-- **The API base URL is `https://api.openar.pt/v1`** — the `/v1` is in
+Each of these has already cost time once.
+
+- **`ray build` succeeding proves almost nothing.** It compiled a 0-byte command
+  file and reported success. Trust tests, not the build.
+- **The API base URL is `https://api.openar.pt/v1`.** The `/v1` lives in
   `servers[0].url`, not in the documented paths. Omitting it 404s everything.
+- **`estado` is a stage, not a verdict.** `Aprovado` is not a valid
+  `/iniciativas?estado=` value — use `resultado=aprovado`. And `resultado` is
+  capitalised on `/votacoes` but lowercase on `/iniciativas`.
 - **Vote ids are unique per initiative, not globally.** `/votacoes/{id}` requires
-  an `iniciativa_id`; the real key is the pair. See `OPENAR-API.md` §8.
-- **The `name` field in `package.json` is permanent after publishing** — it
-  becomes the store URL. It is currently misspelled. Fix before first publish.
+  an `iniciativa_id`; the real key is the pair.
+- **The five institutional authors** (`Governo`, `PAR`, `Madeira`, `Açores`,
+  `Mesa`) are valid on `/iniciativas` and `/votacoes` but **400 on
+  `/deputados`**. Use `useParties("members")` there.
+- **Raycast pages are zero-based, openAR's start at 1** — and openAR *clamps*
+  page 0 up to 1, so an off-by-one shows as a list that silently repeats its
+  first page. Always go through `toApiPage`.
+- **`limit` caps at 200 but there are 230 sitting deputies**, so no single
+  request can return them all.
+- **Omitting `include` on a detail endpoint** returns every relation — hundreds
+  of KB. Always pass it explicitly.
+- **Don't redeclare the `Preferences` type.** The generated one keeps its literal
+  union; a hand-written copy widens to `string` and drifts.
+- **Network egress is restricted in remote dev containers.** `openar.pt`,
+  `api.openar.pt`, `parlamento.pt` and Raycast's own docs are blocked. Do not
+  route around it — report it. Work from `OPENAR-API.md` and the vendored spec.
+- **All four docs are tracked** (`context.md` D14/D18). The repo is private.
+  Keep credentials out regardless.

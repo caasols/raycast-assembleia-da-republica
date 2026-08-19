@@ -19,7 +19,7 @@ Keep credentials out regardless.
 
 - **Repo:** `caasols/raycast-assembleia-da-republica` (private)
 - **Reference implementation:** [`caasols/raycast-buzz`](https://github.com/caasols/raycast-buzz)
-- **Last updated:** 2026-08-18
+- **Last updated:** 2026-08-19
 
 ---
 
@@ -123,10 +123,10 @@ stated explicitly — correct these rather than inherit them as fact.
 
 | # | Question | Why it matters | Blocks |
 |---|---|---|---|
-| O2 | `no-view` or `view` for the vote command? | Determines `.ts` vs `.tsx` and the whole command shape. `no-view` can only fire a HUD/toast — too thin for a list of votes. **Recommendation: `view`.** | P2 |
-| O3 | Raycast Store, or private use? | Store review enforces naming, description, README and screenshot rules. If private, most manifest findings drop to cosmetic and P5 disappears. | P5 |
+| ~~O2~~ | ~~`no-view` or `view`?~~ | **Closed (D21).** `view`. | — |
+| ~~O3~~ | ~~Store or private use?~~ | **Closed (D22).** Raycast Store, so the manifest, README and screenshot rules are binding. | — |
 | ~~O4~~ | ~~Scope of "today"; non-sitting days~~ | **Closed 2026-08-18 (D38, D39, D41).** Plenary only, per the endpoint's own definition; "today" is Lisbon's date; a non-sitting day gets its own empty state, distinct from an error. | — |
-| O5 | Windows **and** macOS, or macOS only? | D2 claims both; raycast-buzz ships macOS-only. Cross-platform means no macOS-only APIs and doubles manual test surface. | P2, P5 |
+| ~~O5~~ | ~~Windows too, or macOS only?~~ | **Closed (D23).** Both. No macOS-only APIs anywhere. | — |
 | O9 | Does store review accept `Assembleia da República` as the title? | `ray lint` warns it is not Title Case and wants `Assembleia Da República`, which is wrong Portuguese. raycast-publico keeps its Portuguese brand (`Público`) but is a single word, so it does not test the rule. Raycast's guidelines are egress-blocked. **CI now runs `ray lint` (D29), so the first run shows empirically whether the warning fails the build.** Fallback: an English title such as `Portuguese Parliament`. Titles are editable after publish — unlike `name`. | P5 |
 | ~~O6~~ | ~~Portuguese or English UI copy?~~ | **Closed 2026-08-18 (D28).** English copy, Portuguese keywords — the pattern raycast-publico already uses. | — |
 | ~~O8~~ | ~~`/votacoes`, `/peticoes`, `/comissoes` contracts~~ | **Closed 2026-08-18 (D18).** The full OpenAPI spec was supplied and vendored; all 16 endpoints are documented. | — |
@@ -134,137 +134,48 @@ stated explicitly — correct these rather than inherit them as fact.
 
 ---
 
-## 3. ⚠️ Current blocker — openAR docs unreachable
+## 3. What is blocked
 
-**Step 2 of the plan (read the openAR documentation) cannot be completed from
-this environment.** The egress proxy blocks the hosts we need:
+Everything below needs something this environment cannot provide. Nothing else
+on the roadmap is blocked.
 
-| Host | Status |
-|---|---|
-| `api.openar.pt` | ❌ blocked (403 CONNECT) |
-| `openar.pt` | ❌ blocked |
-| `www.parlamento.pt` | ❌ blocked |
-| `glama.ai` | ❌ blocked |
-| `github.com`, `raw.githubusercontent.com`, `registry.npmjs.org` | ✅ reachable |
+| # | Blocker | Why it matters | Unblocks |
+|---|---|---|---|
+| B1 | **Nothing has ever run against the live API.** `api.openar.pt` is denied by the dev container's egress proxy (403 on CONNECT, re-tested three times). All 343 tests run against a stubbed `fetch`, so URL shape, envelope handling, pagination and the 429 path are verified against *our reading of the vendored spec* — not against openAR. | The single largest outstanding risk in the project. | `npm run smoke` on any networked machine, or allowlisting `openar.pt` + `api.openar.pt` in the [environment settings](https://code.claude.com/docs/en/claude-code-on-the-web). |
+| B2 | **No screenshots.** `metadata/` needs images from a working local install. | Raycast Store review requires them, so this gates submission outright. | A machine that can run `npm run dev`. |
+| B3 | **O9 unanswered** — whether store review accepts `Assembleia da República` as the title. `ray lint` warns it is not Title Case and wants `Assembleia Da República`, which is wrong Portuguese. Raycast's own guidelines are also egress-blocked. | Cosmetic, and titles are editable after publish — unlike `name`. | CI now runs `ray lint`, so the first Actions run shows whether the warning fails the build. |
+| B4 | **O7 unrecovered** — the original iCloud `CLAUDE.md` / `context.md`. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not the files. | They may hold decisions from local sessions this log never saw. | Open each file in the Files app so it downloads fully, *then* share it — or paste the contents. |
 
-This is an organisation egress policy on the remote environment, not a
-transient failure, and the proxy documentation is explicit that it must be
-reported rather than worked around. **Re-tested 2026-08-18 after being given
-the `https://api.openar.pt/` URL directly — still blocked.** Supplying the URL
-does not help; the block is on the host, not on knowing the address.
-
-**Resolved for development purposes, 2026-08-18.** The complete OpenAPI 3.1
-spec was supplied directly and is vendored at **`docs/openar-openapi.json`**,
-with `OPENAR-API.md` rewritten from it (D18). All 16 endpoints, all schemas.
-Sessions no longer need network access to know the contract.
-
-**Still blocked: anything that must touch the live API.** `scripts/smoke.ts`
-(P2.4) cannot run from a remote container, and neither can any manual
-verification of real responses. To fix that, do one of:
-1. Add `openar.pt` and `api.openar.pt` to the environment's network allowlist —
-   see the [environment docs](https://code.claude.com/docs/en/claude-code-on-the-web).
-2. Run the openAR exploration locally instead, and paste `openapi.json` into the
-   repo (e.g. `docs/openar-openapi.json`) so sessions can work from it offline.
-3. Point at a GitHub mirror of the spec, since GitHub is reachable.
-
-**Option 2 is the recommendation** — vendoring the spec makes the contract
-reviewable in diffs and unblocks every future session, not just this one.
-
-### 3.1 Secondary blocker — iCloud docs not recovered
-
-An attempt to restore the original `CLAUDE.md` and `context.md` from iCloud
-delivered **macOS bookmark alias stubs**, not the files: both uploads are
-2.5 KB Apple binary property lists (`NSKeyedArchiver` / `NSURL` bookmark data)
-pointing at
-`/private/var/mobile/Library/Mobile Documents/com~apple~CloudDocs/Documents/raycast-assembleia-da-republica/`.
-They contain zero markdown.
-
-This is the standard iOS Files behaviour when a file is in iCloud but not
-downloaded locally — sharing hands over a reference instead of the content.
-
-**To recover:** open each file in the Files app first so it downloads fully
-(the cloud-with-arrow icon disappears), *then* share it — or simply paste the
-contents into chat, or upload from a Mac with iCloud Drive synced. Tracked as O7.
-
-### What we know about openAR
-
-See **`OPENAR-API.md`** and `docs/openar-openapi.json`. The pre-D18 summary that
-sat here — assembled from web search and a truncated PDF — has been removed
-rather than left to mislead: it had the base URL wrong and listed licensing and
-rate limits as unknown.
-
-## 4. Findings — repo audit, 2026-08-18
-
-Audit of commit `eef5791`.
-
-### Blocking
-
-- **`src/what-was-the-vote-today.ts` is 0 bytes.** The only command has no code.
-- **`ray build` reports success anyway — a false green.** esbuild compiles an
-  empty module happily, but a `no-view` command with no default export fails at
-  invocation. Never treat a passing build as a working extension.
-
-### Manifest issues (block Store review — see O3)
-
-| Field | Issue |
-|---|---|
-| `name` | `assembleia-da-rep-blica` — the `ú` was **dropped**, not transliterated. Should be `assembleia-da-republica`. **Permanent store URL once published — fix first.** |
-| `title` | `ray lint` wants Title Case: `Assembleia Da República` |
-| command `title` | lowercase `what was the vote today` → `What Was the Vote Today` |
-| command `subtitle` | `what was bvoted today you know d` — placeholder, typo, trailing noise |
-| `description` | duplicates the title verbatim; Store rejects non-descriptive text |
-| `mode` | `no-view` — see O2 |
-| `@raycast/utils` | declared but never imported |
-
-### Not defects — environment artifacts
-
-Two `ray lint` **errors** come from blocked network calls to raycast.com, not
-from the code. Re-verify on a networked machine:
-`Invalid author "caasols" — forbidden` and
-`Failed compiling JSON schema: Unexpected token 'H', "Host not i"...`.
-
-### Hygiene
-
-- **No lockfile committed** — `package-lock.json` isn't ignored, just absent.
-  raycast-buzz commits one.
-- **`README.md` is a 2-line placeholder.**
-- **No CI, no tests, no test tooling** — raycast-buzz has all of it.
-- **`LICENSE`** reads `Copyright (c) 2026 Sol` — partial holder name.
-- **`.gitignore` carries dead weight** copied from raycast-buzz: Python entries,
-  `graphify-out/`, `.superpowers/`, `.next`, `.nuxt`, `.svelte-kit`, `.turbo`.
-  `node_modules` is listed twice.
-
-### Verified clean
-
-- `assets/extension-icon.png` is **512×512 RGBA PNG** — correct.
-- All dependency ranges resolve and install (170 packages, ~12s).
-- `tsconfig.json` is the standard Raycast template, correct.
-- ESLint and Prettier pass.
+**The API contract itself is no longer blocked.** The full OpenAPI 3.1 spec is
+vendored at `docs/openar-openapi.json` with `OPENAR-API.md` written from it
+(D18), so no session needs network access to know the contract.
 
 ---
 
-## 5. Reference architecture — what raycast-buzz teaches us
+## 4. The opening audit — resolved
 
-Studied at `caasols/raycast-buzz`. This is the template to copy.
+The 2026-08-18 audit of commit `eef5791` found a scaffold that did nothing: a
+**0-byte command file** that `ray build` compiled and reported success on, a
+misspelled permanent store slug, placeholder copy throughout, no lockfile, no
+tests, no CI. All of it is fixed — see D21–D31 and the P0 commit.
 
-**Layout:** `src/lib/` for pure logic (23 files), `src/components/` for shared UI
-(8), `src/*.tsx` for commands (8), `test/` for the harness, `scripts/smoke.ts`
-for a manual live-API check.
+Two findings were **not** defects and remain true today: `ray lint` reports
+`Invalid author "caasols"` and a JSON-schema compile failure *locally only*,
+because both are raycast.com calls the egress proxy blocks. They pass in CI.
 
-**Every single source file has a colocated `.test.ts(x)`.** That is the bar.
-
-**Key mechanics worth stealing verbatim:**
-
-- `@raycast/api` has no resolvable Node entry point, so vitest **cannot import
-  or even mock it**. buzz aliases it to `test/raycast-api-stub.tsx`, a plain-DOM
-  stand-in that lets tests drive real command code. This is the single biggest
-  time-saver available to us.
-- Coverage thresholds pinned at **100/100/100/100**, so new uncovered code fails
-  the build rather than drifting.
-- Split `tsconfig.test.json` adds the `DOM` lib for component tests without
-  leaking browser globals into the extension.
-- Scripts worth mirroring: `test`, `test:watch`, `test:coverage`, `typecheck`
-  (runs *both* tsconfigs), `smoke`.
-- `metadata/` holds Store screenshots; `CHANGELOG.md` is maintained.
+The audit's lasting lesson is R6 in `CLAUDE.md`: **a green build proves almost
+nothing.** `ray build` compiling an empty file is why every command has a test
+that renders its real default export.
 
 ---
+
+## 5. What the reference repos taught us
+
+| Repo | What we took |
+|---|---|
+| [`caasols/raycast-buzz`](https://github.com/caasols/raycast-buzz) | Layout (`lib`/`components`/commands), colocated tests, the `@raycast/api` vitest stub, split tsconfigs, 100% coverage thresholds. The stub is the single biggest time-saver in the project: `@raycast/api` has no resolvable Node entry point, so vitest cannot import *or mock* it. |
+| [`caasols/raycast-publico`](https://github.com/caasols/raycast-publico) | Everything store-facing: English `Browse X` titles with Portuguese keywords (D28), brand as `subtitle`, the README shape, `ray lint` in CI on Node 24, and the `maxArticles` preference pattern this project's `pageSize` follows. |
+| [`block/buzz`](https://github.com/block/buzz) | Contributor-guide conventions only — it is the Buzz *product*, a Rust workspace, with no Raycast code. Its line "green CI and runtime evidence answer different questions" became R6. |
+
+Where the two Raycast repos disagree — buzz colocates tests, publico uses
+`src/__tests__/` — buzz wins (D32).
