@@ -57,6 +57,13 @@ describe("Longest-Serving Deputies", () => {
     expect(second).toHaveAttribute("data-title", "2. Maria Silva");
   });
 
+  it("pushes into the deputy it names, rather than ending there", async () => {
+    mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+    expect(screen.queryAllByTestId("action").map((a) => a.getAttribute("data-title"))).toContain("Show Deputy");
+  });
+
   it("shows the legislature count as the accessory", async () => {
     mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
     render(<Command />);

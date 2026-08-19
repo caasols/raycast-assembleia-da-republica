@@ -3,6 +3,7 @@ import { useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { listPeticoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
+import { PetitionDetail } from "./components/petition-detail";
 import { LegislatureDropdown } from "./components/legislature-dropdown";
 import { useLegislatures } from "./components/use-legislatures";
 import { petitionDetailMarkdown, signatureLabel } from "./lib/petitions";
@@ -77,6 +78,11 @@ export default function Command() {
           detail={<List.Item.Detail markdown={petitionDetailMarkdown(petition)} />}
           actions={
             <ActionPanel>
+              <Action.Push
+                title="Show Details"
+                icon={Icon.Sidebar}
+                target={<PetitionDetail id={petition.id} subject={petition.assunto ?? "Untitled petition"} />}
+              />
               {petition.urlTexto && <Action.OpenInBrowser title="Open Petition Text" url={petition.urlTexto} />}
               <Action.CopyToClipboard title="Copy Subject" content={petition.assunto ?? ""} />
             </ActionPanel>

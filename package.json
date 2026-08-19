@@ -21,12 +21,6 @@
       "description": "Browse today's plenary votes — the result of each one and how every party voted",
       "mode": "view",
       "keywords": [
-        "votes",
-        "voting",
-        "vote",
-        "today",
-        "parliament",
-        "plenary",
         "votações",
         "votacoes",
         "votação",
@@ -38,9 +32,7 @@
         "plenario",
         "parlamento",
         "assembleia",
-        "ar",
-        "deputados",
-        "iniciativas"
+        "ar"
       ]
     },
     {
@@ -50,28 +42,18 @@
       "description": "Search legislative initiatives — bills, resolutions and proposals — by title",
       "mode": "view",
       "keywords": [
-        "initiatives",
-        "bills",
-        "laws",
-        "legislation",
-        "proposals",
-        "resolutions",
         "iniciativas",
         "iniciativa",
-        "lei",
-        "leis",
         "projeto de lei",
         "projetos de lei",
-        "projecto de lei",
         "proposta de lei",
-        "propostas de lei",
+        "lei",
+        "leis",
         "resolução",
         "resolucao",
-        "diploma",
         "legislação",
         "legislacao",
-        "parlamento",
-        "assembleia"
+        "diploma"
       ]
     },
     {
@@ -81,11 +63,9 @@
       "description": "See how a party voted — in favour, against or abstaining",
       "mode": "view",
       "keywords": [
-        "party votes",
-        "party",
-        "voted",
-        "how did",
         "partido",
+        "bancada",
+        "grupo parlamentar",
         "votos",
         "votações",
         "votacoes",
@@ -93,8 +73,8 @@
         "contra",
         "abstenção",
         "abstencao",
-        "bancada",
-        "grupo parlamentar"
+        "como votou",
+        "sigla"
       ]
     },
     {
@@ -124,19 +104,18 @@
       "description": "Browse the 230 sitting members of parliament, by name or party",
       "mode": "view",
       "keywords": [
-        "deputies",
-        "deputy",
-        "members",
-        "mp",
-        "parliament",
         "deputados",
         "deputado",
         "deputada",
         "parlamentares",
+        "membros",
         "bancada",
         "círculo",
         "circulo",
-        "eleitoral"
+        "eleitoral",
+        "mandato",
+        "mp",
+        "230"
       ]
     },
     {

@@ -115,6 +115,13 @@ describe("Search Petitions", () => {
     await waitFor(() => expect(screen.getByTestId("list-item")).not.toHaveAttribute("data-subtitle"));
   });
 
+  it("pushes into the petition, so the list is not a dead end", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([petition()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+    expect(actionTitles()).toContain("Show Details");
+  });
+
   it("offers the petition text when one is published", async () => {
     mocks.listPeticoes.mockResolvedValue(page([petition()]));
     render(<Command />);

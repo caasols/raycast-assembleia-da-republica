@@ -4,6 +4,7 @@ import { listCarreiras } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { careerDetailMarkdown, careerSubtitle } from "./lib/careers";
 import { getPageSize } from "./lib/preferences";
+import { DeputyDetail } from "./components/deputy-detail";
 
 /**
  * Deputies ranked by how many legislatures they have served.
@@ -47,6 +48,13 @@ export default function Command() {
           detail={<List.Item.Detail markdown={careerDetailMarkdown(career, stats)} />}
           actions={
             <ActionPanel>
+              {/* The ranking names deputies and carries their ids, so ending
+                  here would be a dead end for no reason. */}
+              <Action.Push
+                title="Show Deputy"
+                icon={Icon.Sidebar}
+                target={<DeputyDetail id={career.id} name={career.nomeParlamentar} />}
+              />
               <Action.CopyToClipboard title="Copy Name" content={career.nomeParlamentar} />
             </ActionPanel>
           }
