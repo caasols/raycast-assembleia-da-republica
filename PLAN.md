@@ -5,9 +5,9 @@ the moment they land. Project state, decisions and audit findings are in
 **`context.md`**; the working rules are in **`CLAUDE.md`**. Read both before
 starting an item.
 
-- **Status:** seven commands, five pushed detail views, nine AI tools, 462 tests at 100% coverage
+- **Status:** seven commands, five pushed detail views, nine AI tools, 462 tests at 100% coverage, real icon
 - **CI:** green — run #2 on `0de59c7`, the first run in the project's history (`context.md` D92/D94)
-- **Next:** A6 — the extension still ships Raycast's placeholder icon
+- **Next:** B1 — Track A is complete
 - **Needs you:** B1 `npm run smoke`, which validates everything built so far
 - **Outstanding risk:** nothing has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-19
@@ -33,38 +33,9 @@ ETag store and the per-entity presentation helpers.
 
 ## 2. Roadmap — what is left
 
-Re-prioritised 2026-08-19 after the first CI run. Two changes from the previous
-ordering: **the old B4 is gone** — CI answered O9 for free, exactly as D29
-predicted once a run actually happened — and **A6 is new**, found by auditing
-what store submission needs rather than what the code needs.
-
-**Track A** needs nothing from the author. **Track B** needs a networked or
-installable machine and is deliberately last — except that B1 validates
-everything in Track A, so it should happen as soon as a laptop is to hand.
-
----
-
-### Track A — can be done here
-
-#### A6 · Replace the placeholder extension icon ⬅ *next*
-`assets/extension-icon.png` is still the generic red chip Raycast's scaffold
-generates — unchanged since commit `f20313a`. It is 512×512 and technically
-valid, so no lint or build catches it, but shipping a template icon to the store
-is the most visible possible sign that nobody finished the extension.
-
-**A hard submission blocker, and the only one that does not need the author.**
-Pillow is available in this container, so the artwork can be produced here and
-reviewed as a committed PNG.
-
-Brainstorm the mark before drawing anything (R1): the obvious candidates are the
-Palácio de São Bento's colonnade, a ballot/vote glyph, and the Portuguese
-armillary sphere. The last one is state iconography and is best avoided —
-looking official for an unofficial extension is a liability, not a feature.
-
-#### A7 · CHANGELOG omits the AI tools
-`CHANGELOG.md` lists the seven commands and stops. The nine tools are the whole
-AI-extension surface and a reader of the store page learns nothing about them.
-Ten minutes, no dependencies — worth doing in whatever session touches A6.
+Track A is **complete** — everything that could be done without the author is
+done. What remains needs a networked or installable machine, and B1 comes first
+because it validates every line written so far.
 
 ---
 
