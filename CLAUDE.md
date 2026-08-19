@@ -1,18 +1,23 @@
 # CLAUDE.md — working agreement
 
 Operating rules for any Claude session in this repo. Read this first, every
-session. Three tracked documents, three jobs — keep them in their lanes:
+session. Four tracked documents, four jobs — keep them in their lanes:
 
 | File | Holds |
 |---|---|
 | **`CLAUDE.md`** (this file) | *How we work* — standing rules, conventions, test mechanics |
 | **`context.md`** | *What we know* — project context, decision log, open questions, blockers, audit findings |
-| **`PLAN.md`** | *What we do next* — candidate commands, phased roadmap |
+| **`PLAN.md`** | *What we do next* — forward-only, undone work exclusively |
 | **`OPENAR-API.md`** | *What the API does* — the openAR contract and its traps |
 | **`docs/openar-openapi.json`** | The full OpenAPI 3.1 spec — source of truth when the prose is ambiguous |
 
 The repo is **private**, so internal working notes belong here rather than in a
 side channel. Keep credentials out regardless.
+
+**Keep them in their lanes literally.** `PLAN.md` is forward-only: an item is
+*deleted* when it lands, not ticked and left in place, and the record of what
+shipped belongs in `context.md` §1.1. The plan had drifted into carrying a
+"What exists" section before this rule was written down (`context.md` D99).
 
 ---
 
@@ -171,10 +176,11 @@ cannot load it — not even to mock it. `vitest.config.ts` aliases it to
 `test/raycast-api-stub.tsx`, which renders plain DOM so tests drive real command
 code. Extend that stub when a command needs an API surface it doesn't yet cover.
 
-**Coverage thresholds are set to 100%** in raycast-buzz on statements, branches,
-functions and lines, so new uncovered code fails `npm run test:coverage` rather
-than quietly drifting. Start this project at the same bar. Exclude only files
-that emit no runtime code (e.g. a types-only `types.ts`), and say so in a
+**Coverage thresholds are 100%** on statements, branches, functions and lines,
+so new uncovered code fails `npm run test:coverage` rather than quietly
+drifting. The project currently sits at that bar — **462 tests across 42 files**
+— so a drop is a regression, not a starting point to work up from. Exclude only
+files that emit no runtime code (e.g. a types-only `types.ts`), and say so in a
 comment where excluded.
 
 Commands to keep green:
@@ -204,10 +210,14 @@ and `tsc` checks against the real one.
 a module-level `Cache` that outlives a test; two tests were once passing on the
 *previous* test's data.
 
-**CI order is load-bearing: build → typecheck → coverage.** Only `ray build`
-generates `raycast-env.d.ts` (verified — `ray lint` does not), and that file is
-gitignored but holds the `Preferences` type, so typechecking first fails on a
-clean checkout.
+**CI order is load-bearing: lint → build → typecheck → coverage.** Only
+`ray build` generates `raycast-env.d.ts` (verified — `ray lint` does not), and
+that file is gitignored but holds the `Preferences` type, so typechecking first
+fails on a clean checkout.
+
+**CI is green and that is now a verified statement**, not an assumption — it
+runs on every branch and on pull requests (`context.md` D92/D94). Cite a run
+only after checking one exists.
 
 ---
 
@@ -217,6 +227,10 @@ Each of these has already cost time once.
 
 - **`ray build` succeeding proves almost nothing.** It compiled a 0-byte command
   file and reported success. Trust tests, not the build.
+- **No check in the toolchain can see a placeholder asset.** The scaffold's
+  generic icon was a valid 512×512 PNG, so `ray lint`, `ray build` and CI passed
+  it for thirty commits (`context.md` D98). Assets are verified by looking at
+  them — the 0-byte command file's lesson in a different costume.
 - **The API base URL is `https://api.openar.pt/v1`.** The `/v1` lives in
   `servers[0].url`, not in the documented paths. Omitting it 404s everything.
 - **`estado` is a stage, not a verdict.** `Aprovado` is not a valid

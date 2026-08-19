@@ -18,6 +18,7 @@ git (D14/D18) — the repo is **private**, so internal working notes are fine he
 Keep credentials out regardless.
 
 - **Repo:** `caasols/raycast-assembleia-da-republica` (private)
+- **State:** feature-complete for v1; everything outstanding needs the author's machine (§3)
 - **Reference implementation:** [`caasols/raycast-buzz`](https://github.com/caasols/raycast-buzz)
 - **Last updated:** 2026-08-19
 
@@ -37,6 +38,31 @@ voted today, how did this party vote, who is this deputy* — which today means
 opening a browser and navigating a portal.
 
 **Scope for v1: read-only lookups.** No accounts, no writes, no notifications.
+
+### 1.1 What exists today
+
+Moved here from `PLAN.md`, which holds only undone work. Seven commands, each
+opening a detail view rather than dead-ending (D66):
+
+| Command | Endpoint |
+|---|---|
+| `Browse Today's Votes` | `/votacoes`, filtered to the current Lisbon date |
+| `Search Initiatives` | `/iniciativas` |
+| `Browse Party Votes` | `/votacoes`, by `a_favor`/`contra`/`abstencao` |
+| `Search Petitions` | `/peticoes` |
+| `Browse Deputies` | `/deputados?situacao=ativo` |
+| `Browse Committees` | `/comissoes` |
+| `Browse Longest-Serving Deputies` | `/deputados/carreiras` |
+
+Five detail views — initiative, deputy, deputy activity, committee, petition.
+**Nine AI tools** in `src/tools/` (D88). `src/lib/` carries the client (13
+endpoints), query building, pagination, preferences, errors, the ETag store and
+the per-entity presentation helpers. Every command filters by legislature, back
+to 1976, with page size and default legislature as preferences.
+
+**462 tests across 42 files at 100% coverage**, green in CI on GitHub's runners
+— verified, not assumed (D92, D94). The extension icon is the AR's own mark
+(D96). Both `main` and the working branch are at the same commit.
 
 ---
 
@@ -145,6 +171,7 @@ stated explicitly — correct these rather than inherit them as fact.
 | D96 | 2026-08-19 | **The extension icon is the AR's own mark, supplied by the author** | Closes D95. Two prior positions were wrong and are corrected here. First, "an institutional mark is a liability" was too strong — `raycast-publico` ships *Público*'s own red serif P and passed store review, so a third party's brand mark is an accepted pattern. Second, the concern that the AR's avatar would be the Republic's coat of arms — state insignia, a different legal category — turned out not to apply: their mark is a stylised São Bento facade with an `AR` lockup, an institutional logo rather than the national arms. | Settled |
 | D97 | 2026-08-19 | The 360×360 source is **upscaled to 512×512 with Lanczos**, not redrawn | The store wants 512. A 1.42× upscale on art that is already smooth-edged loses nothing visible, checked on a contact sheet at 512/128/64/32. Redrawing it would have risked drifting from a mark we do not own — a worse failure than slight softness. If a larger original ever surfaces, dropping it in is a one-file change. | Settled |
 | D98 | 2026-08-19 | **Nothing in the toolchain can catch a placeholder icon** | `ray lint`, `ray build` and CI all passed the scaffold's generic chip for thirty commits, because it was a valid 512×512 PNG the whole time. The check that finds this class of defect is a person looking at the artefact — the same lesson as the 0-byte command file (§4), in a different costume. | Settled |
+| D99 | 2026-08-19 | **The inventory of finished work moved from `PLAN.md` to here** | `PLAN.md` had grown a "What exists" section, which is exactly the drift `CLAUDE.md`'s three-document table exists to prevent: the plan is *what we do next*, and a list of what shipped is *what we know*. `PLAN.md` is now forward-only — an item is deleted the moment it lands, rather than being marked done and left in place. | Settled |
 
 ### Open questions
 
@@ -164,14 +191,15 @@ stated explicitly — correct these rather than inherit them as fact.
 
 ## 3. What is blocked
 
-Everything below needs something this environment cannot provide. Nothing else
-on the roadmap is blocked — and the list is shorter than it looks: B3 is closed
-(D94), and B1 and B2 both dissolve on the same networked machine.
+Everything below needs something this environment cannot provide. **Two live
+blockers remain**, and both dissolve on the same networked machine: B1 and B2
+are one session's work. B3 is closed (D94); B4 is inert — a nice-to-have that
+gates nothing.
 
 | # | Blocker | Why it matters | Unblocks |
 |---|---|---|---|
 | B1 | **Nothing has ever run against the live API.** `api.openar.pt` is denied by the dev container's egress proxy (403 on CONNECT, re-tested three times). All 462 tests run against a stubbed `fetch`, so URL shape, envelope handling, pagination and the 429 path are verified against *our reading of the vendored spec* — not against openAR. | The single largest outstanding risk in the project. | `npm run smoke` on any networked machine (`PLAN.md` B1), or allowlisting `openar.pt` + `api.openar.pt` in the [environment settings](https://code.claude.com/docs/en/claude-code-on-the-web). |
-| B2 | **No screenshots.** `metadata/` needs images from a working local install. | Raycast Store review requires them, so this gates submission outright. | A machine that can run `npm run dev` (`PLAN.md` B3). |
+| B2 | **No screenshots.** `metadata/` needs images from a working local install, and the directory does not exist. | Raycast Store review requires them, so this gates submission outright — it is the last hard gate. | A machine that can run `npm run dev` (`PLAN.md` B3). |
 | ~~B3~~ | ~~**O9 unanswered** — the extension title~~ | **Resolved 2026-08-19 (D94).** The first real CI run showed the Title-Case complaint is a `warning`, not an error. The title stays. | — |
 | B4 | **O7 unrecovered** — the original iCloud `CLAUDE.md` / `context.md`. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not the files. | They may hold decisions from local sessions this log never saw. | Open each file in the Files app so it downloads fully, *then* share it — or paste the contents. |
 
