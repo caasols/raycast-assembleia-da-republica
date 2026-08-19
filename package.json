@@ -242,6 +242,31 @@
       "name": "search-deputies",
       "title": "Search Deputies",
       "description": "Find members of the Portuguese parliament by name, party, or legislature."
+    },
+    {
+      "name": "search-petitions",
+      "title": "Search Petitions",
+      "description": "Search petitions to the Portuguese parliament by subject, legislature or status, with signature counts."
+    },
+    {
+      "name": "search-committees",
+      "title": "Search Committees",
+      "description": "Find parliamentary committees in the Portuguese parliament by name."
+    },
+    {
+      "name": "get-initiative",
+      "title": "Get Initiative",
+      "description": "Get the full record of one legislative initiative, including its authors and how each stage was voted."
+    },
+    {
+      "name": "get-deputy",
+      "title": "Get Deputy",
+      "description": "Get one member of the Portuguese parliament's profile, mandates and authorship record."
+    },
+    {
+      "name": "get-deputy-activity",
+      "title": "Get Deputy Activity",
+      "description": "Get how much of each kind of parliamentary work a member does: interventions, requests, committee work and rapporteurships."
     }
   ],
   "dependencies": {

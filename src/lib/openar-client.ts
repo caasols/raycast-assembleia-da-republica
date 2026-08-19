@@ -15,6 +15,7 @@ import type {
   Carreiras,
   Deputado,
   DeputadoDetail,
+  DeputadoAtividade,
   Iniciativa,
   IniciativaDetail,
   Legislatura,
@@ -427,6 +428,24 @@ export async function getDeputado(id: number, signal?: AbortSignal): Promise<Dep
     stats: payload.stats ?? null,
     iniciativas: payload.iniciativas ?? [],
   };
+}
+
+/**
+ * A deputy's parliamentary activity, optionally scoped to one legislature.
+ *
+ * Without `legislatura` this returns a deputy's entire career, which for a
+ * long-serving member is a large payload — so the scope is worth passing.
+ */
+export async function getDeputadoAtividade(
+  id: number,
+  legislatura?: string,
+  signal?: AbortSignal,
+): Promise<DeputadoAtividade> {
+  const payload = (await request(`/deputados/${id}/atividade`, { legislatura }, signal)) as DeputadoAtividade | null;
+  if (!payload || typeof payload !== "object") {
+    throw new OpenArError("openAR returned an unexpected response shape", 500);
+  }
+  return payload;
 }
 
 export interface GetComissaoParams {

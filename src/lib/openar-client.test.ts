@@ -4,6 +4,7 @@ import {
   deputadoPhotoUrl,
   getComissao,
   getDeputado,
+  getDeputadoAtividade,
   getIniciativa,
   getMeta,
   getPeticao,
@@ -792,5 +793,30 @@ describe("getPeticao", () => {
   it("throws when the payload is null", async () => {
     fetchMock.mockResolvedValue(jsonResponse(null));
     await expect(getPeticao(7)).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("getDeputadoAtividade", () => {
+  it("requests the activity endpoint for the deputy", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ deputado: { id: 7 } }));
+    await getDeputadoAtividade(7);
+    expect(requestedUrl().pathname).toBe("/v1/deputados/7/atividade");
+  });
+
+  it("scopes to a legislature when given one", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({}));
+    await getDeputadoAtividade(7, "XVII");
+    expect(requestedUrl().searchParams.get("legislatura")).toBe("XVII");
+  });
+
+  it("returns the whole career when unscoped", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({}));
+    await getDeputadoAtividade(7);
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/deputados/7/atividade`);
+  });
+
+  it("throws when the payload is null", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null));
+    await expect(getDeputadoAtividade(7)).rejects.toThrow(OpenArError);
   });
 });

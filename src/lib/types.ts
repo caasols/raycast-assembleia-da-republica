@@ -290,3 +290,37 @@ export interface PeticaoDetail extends Peticao {
   comissoes?: { nome: string | null; situacao: string | null }[];
   documentos?: { nome: string | null; url: string | null }[];
 }
+
+/**
+ * A deputy's parliamentary activity.
+ *
+ * The API returns 18 parallel arrays. Seventeen of them are ordinary records —
+ * interventions, requerimentos, committee work, rapporteurships — and are
+ * modelled as opaque objects because the spec declares them `type: object` with
+ * no properties: their shape is only knowable from live data, so pretending to
+ * know it would be inventing a contract.
+ *
+ * `actp` is described as "outras actividades em plenário (votos, etc.)" and is
+ * the *only* place a per-deputy vote position might live. Whether it does is
+ * unverified — see `context.md` O10. Nothing here depends on it.
+ */
+export interface DeputadoAtividade {
+  deputado?: { id: number; nomeParlamentar: string };
+  iniciativas?: unknown[];
+  requerimentos?: unknown[];
+  intervencoes?: unknown[];
+  actp?: unknown[];
+  comissoes?: unknown[];
+  atividadesComissao?: unknown[];
+  gpa?: unknown[];
+  dlp?: unknown[];
+  dle?: unknown[];
+  relIni?: unknown[];
+  relPet?: unknown[];
+  relContas?: unknown[];
+  relIniEur?: unknown[];
+  relPareceres?: unknown[];
+  parlJovens?: unknown[];
+  dadosLegis?: unknown[];
+  scgt?: unknown[];
+}
