@@ -8,7 +8,19 @@
  */
 import { OpenArError, parseRetryAfterSeconds } from "./errors";
 import { buildQueryString, clampLimit, clampPage, isQueryStringWithinLimit, truncateQ } from "./query";
-import type { Comissao, Carreiras, Deputado, Iniciativa, Meta, Paginated, Peticao, VotacaoListItem } from "./types";
+import type {
+  Comissao,
+  ComissaoDetail,
+  Carreiras,
+  Deputado,
+  DeputadoDetail,
+  Iniciativa,
+  IniciativaDetail,
+  Meta,
+  Paginated,
+  Peticao,
+  VotacaoListItem,
+} from "./types";
 import type { QueryValue } from "./query";
 
 /**
@@ -353,6 +365,94 @@ export async function listComissoes(
     signal,
   );
   return asPaginated<Comissao>(payload);
+}
+
+/**
+ * The relations this extension needs from an initiative.
+ *
+ * Sent explicitly, always. Omitting `include` makes openAR return *everything*
+ * — authors, every event, every sub-relation including the debate transcripts —
+ * which the spec warns reaches hundreds of KB for an old, heavily-debated
+ * initiative. In a launcher that is a visible stall, so the cost is opted into
+ * rather than inherited.
+ */
+export const INICIATIVA_INCLUDE = "autores,eventos.votacoes,eventos.publicacoes";
+
+/** One initiative, with only the relations named in `include`. */
+export async function getIniciativa(
+  id: number,
+  include: string = INICIATIVA_INCLUDE,
+  signal?: AbortSignal,
+): Promise<IniciativaDetail> {
+  const payload = (await request(`/iniciativas/${id}`, { include }, signal)) as IniciativaDetail | null;
+  if (!payload || typeof payload.id !== "number") {
+    throw new OpenArError("openAR returned an unexpected response shape", 500);
+  }
+  return payload;
+}
+
+/**
+ * One deputy, with mandates, biography, authorship stats and their 20 most
+ * recent initiatives. No `include` parameter — this endpoint returns the lot.
+ */
+export async function getDeputado(id: number, signal?: AbortSignal): Promise<DeputadoDetail> {
+  const payload = (await request(`/deputados/${id}`, {}, signal)) as DeputadoDetail | null;
+  if (!payload || typeof payload.id !== "number") {
+    throw new OpenArError("openAR returned an unexpected response shape", 500);
+  }
+  return {
+    ...payload,
+    mandatos: payload.mandatos ?? [],
+    bio: payload.bio ?? null,
+    stats: payload.stats ?? null,
+    iniciativas: payload.iniciativas ?? [],
+  };
+}
+
+export interface GetComissaoParams {
+  legislatura?: string;
+  estado?: string;
+  tipo?: string;
+  q?: string;
+  sort?: "desc" | "asc";
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * One committee and the initiatives that passed through it.
+ *
+ * Note the envelope: the pagination fields sit alongside the committee's own
+ * metadata rather than wrapping it, so this cannot reuse `asPaginated`.
+ */
+export async function getComissao(
+  id: number,
+  params: GetComissaoParams = {},
+  signal?: AbortSignal,
+): Promise<ComissaoDetail> {
+  const payload = (await request(
+    `/comissoes/${id}`,
+    {
+      legislatura: params.legislatura,
+      estado: params.estado,
+      tipo: params.tipo,
+      q: params.q === undefined ? undefined : truncateQ(params.q),
+      sort: params.sort,
+      page: params.page === undefined ? undefined : clampPage(params.page),
+      limit: params.limit === undefined ? undefined : clampLimit(params.limit),
+    },
+    signal,
+  )) as ComissaoDetail | null;
+  if (!payload || !Array.isArray(payload.data)) {
+    throw new OpenArError("openAR returned an unexpected response shape", 500);
+  }
+  return {
+    ...payload,
+    legislaturas: payload.legislaturas ?? [],
+    total: typeof payload.total === "number" ? payload.total : payload.data.length,
+    page: typeof payload.page === "number" ? payload.page : 1,
+    limit: typeof payload.limit === "number" ? payload.limit : payload.data.length,
+  };
 }
 
 /** Re-exported so callers get the length rule with the search parameter. */

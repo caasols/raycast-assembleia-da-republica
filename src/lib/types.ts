@@ -164,3 +164,108 @@ export interface Comissao {
   sigla: string | null;
   nome: string | null;
 }
+
+/** Who put an initiative forward. */
+export interface Autor {
+  tipo: "deputado" | "grupo" | "governo" | "comissao" | "outro";
+  deputadoId: number | null;
+  grupoParlamentar: string | null;
+  nome: string | null;
+}
+
+/** A reference into the Diário da Assembleia da República. */
+export interface Publicacao {
+  data: string | null;
+  tipo: string | null;
+  paginas: string[];
+  urlDiario: string | null;
+}
+
+/**
+ * One stage in an initiative's passage — a committee referral, a debate, a
+ * vote. `votacoes` is present only when `eventos.votacoes` was requested.
+ */
+export interface Evento {
+  id: number;
+  fase: string;
+  dataFase: string | null;
+  obs: string | null;
+  votacoes?: Votacao[];
+  publicacoes?: Publicacao[];
+}
+
+/**
+ * An initiative with the relations that were asked for.
+ *
+ * Every relation is optional because presence depends on `?include=`. Omitting
+ * `include` returns them all — and for an old, heavily-debated initiative that
+ * runs to hundreds of KB, so callers always ask explicitly.
+ */
+export interface IniciativaDetail extends Iniciativa {
+  autores?: Autor[];
+  /** Ordered by `dataFase` ascending. */
+  eventos?: Evento[];
+}
+
+/** A deputy's mandate in one legislature. */
+export interface Mandato {
+  id: number;
+  legislaturaId: string;
+  grupoParlamentar: string | null;
+  circuloEleitoral: string | null;
+  dataInicio: string | null;
+  dataFim: string | null;
+  situacao: string | null;
+}
+
+export interface DeputadoStats {
+  total: number;
+  aprovadas: number;
+  por_tipo: Record<string, number> | null;
+}
+
+/** One line of the AR's published biography. */
+export interface BioEntrada {
+  id: number;
+  descricao: string | null;
+  ordem: number | null;
+}
+
+export interface DeputadoBio {
+  habilitacoes?: BioEntrada[];
+  titulos?: BioEntrada[];
+  cargosFuncoes?: BioEntrada[];
+  condecoracoes?: BioEntrada[];
+  obrasPublicadas?: BioEntrada[];
+}
+
+export interface DeputadoDetail extends Deputado {
+  /**
+   * `DepId` — an internal identifier **distinct from** the `DepCadId` in `id`.
+   * Modelled separately so the two cannot be swapped by accident.
+   */
+  depId: number | null;
+  dataNascimento: string | null;
+  sexo: string | null;
+  profissao: string | null;
+  mandatos: Mandato[];
+  bio: DeputadoBio | null;
+  stats: DeputadoStats | null;
+  /** The 20 most recent initiatives the deputy authored. */
+  iniciativas: Iniciativa[];
+}
+
+/** An initiative as it appears under a committee, with its stages there. */
+export interface ComissaoIniciativa extends Iniciativa {
+  comissoesFases?: { nome: string | null; competente: boolean | null; dataRelatorio: string | null }[];
+}
+
+/** A committee plus the paginated initiatives that passed through it. */
+export interface ComissaoDetail extends Comissao {
+  /** Legislatures the committee was active in, most recent first. */
+  legislaturas: string[];
+  total: number;
+  page: number;
+  limit: number;
+  data: ComissaoIniciativa[];
+}

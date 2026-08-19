@@ -439,6 +439,33 @@ List.Item = ListItem;
 List.EmptyView = ListEmptyView;
 List.Section = ListSection;
 
+/* ------------------------------------------------------------------- Detail */
+
+/**
+ * `Detail`, Raycast's full-pane markdown view — what `Action.Push` navigates to.
+ * The markdown is exposed as an attribute rather than rendered, because these
+ * tests assert what a view *says*, not how Raycast lays it out.
+ */
+export function Detail(props: {
+  markdown?: string;
+  isLoading?: boolean;
+  navigationTitle?: string;
+  actions?: ReactNode;
+  metadata?: ReactNode;
+}) {
+  return (
+    <div
+      data-testid="detail"
+      data-markdown={props.markdown}
+      data-loading={String(Boolean(props.isLoading))}
+      data-navigation-title={props.navigationTitle}
+    >
+      {props.actions}
+      {props.metadata}
+    </div>
+  );
+}
+
 /* --------------------------------------------------------------------- Form */
 
 function FormTextField(props: { id: string; title?: string; placeholder?: string; defaultValue?: string }) {

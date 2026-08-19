@@ -3,6 +3,7 @@ import { usePromise } from "@raycast/utils";
 import { useState } from "react";
 import { listComissoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
+import { CommitteeDetail } from "./components/committee-detail";
 
 const PAGE_SIZE = 200;
 
@@ -59,6 +60,18 @@ export default function Command() {
           keywords={[committee.sigla].filter((k): k is string => Boolean(k))}
           actions={
             <ActionPanel>
+              {/* Without this the command is a dead end: a committee you can
+                  find but cannot look inside. */}
+              <Action.Push
+                title="Show Initiatives"
+                icon={Icon.Sidebar}
+                target={
+                  <CommitteeDetail
+                    id={committee.id}
+                    name={committee.nome ?? committee.sigla ?? `Committee ${committee.id}`}
+                  />
+                }
+              />
               <Action.CopyToClipboard title="Copy Name" content={committee.nome ?? committee.sigla ?? ""} />
               {committee.sigla && <Action.CopyToClipboard title="Copy Acronym" content={committee.sigla} />}
             </ActionPanel>

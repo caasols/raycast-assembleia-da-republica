@@ -4,6 +4,7 @@ import { useState } from "react";
 import { deputadoPhotoUrl, listDeputados } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { useParties } from "./components/use-parties";
+import { DeputyDetail } from "./components/deputy-detail";
 import { deputyDetailMarkdown, deputySubtitle } from "./lib/deputies";
 
 /** `situacao=ativo` is the API's shortcut for the 230 sitting seats. */
@@ -76,6 +77,11 @@ export default function Command() {
           detail={<List.Item.Detail markdown={deputyDetailMarkdown(deputy)} />}
           actions={
             <ActionPanel>
+              <Action.Push
+                title="Show Details"
+                icon={Icon.Sidebar}
+                target={<DeputyDetail id={deputy.id} name={deputy.nomeParlamentar} />}
+              />
               <Action.CopyToClipboard title="Copy Name" content={deputy.nomeParlamentar} />
               <Action.CopyToClipboard title="Copy Full Name" content={deputy.nomeCompleto} />
             </ActionPanel>

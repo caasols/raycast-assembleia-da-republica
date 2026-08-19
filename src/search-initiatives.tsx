@@ -3,6 +3,7 @@ import { usePromise } from "@raycast/utils";
 import { useState } from "react";
 import { listIniciativas } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
+import { InitiativeDetail } from "./components/initiative-detail";
 import { initiativeDetailMarkdown, initiativeLabel } from "./lib/initiatives";
 import { displayDate } from "./lib/dates";
 
@@ -70,6 +71,11 @@ export default function Command() {
           detail={<List.Item.Detail markdown={initiativeDetailMarkdown(initiative)} />}
           actions={
             <ActionPanel>
+              <Action.Push
+                title="Show Details"
+                icon={Icon.Sidebar}
+                target={<InitiativeDetail id={initiative.id} title={initiative.titulo} />}
+              />
               {/* Only offered when the record carries a link; the detail pane
                   says so explicitly when it does not. */}
               {initiative.linkTexto && <Action.OpenInBrowser title="Open Full Text" url={initiative.linkTexto} />}

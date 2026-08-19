@@ -4,6 +4,7 @@ import { useState } from "react";
 import { listVotacoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { voteResultIcon } from "./components/vote-result-icon";
+import { InitiativeDetail } from "./components/initiative-detail";
 import { useParties } from "./components/use-parties";
 import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
 import { displayDate } from "./lib/dates";
@@ -100,6 +101,13 @@ export default function Command() {
           detail={<List.Item.Detail markdown={voteDetailMarkdown(vote)} />}
           actions={
             <ActionPanel>
+              {/* Every vote row carries its initiative's id, so the whole
+                  record is one push away rather than a separate search. */}
+              <Action.Push
+                title="Show Initiative"
+                icon={Icon.Sidebar}
+                target={<InitiativeDetail id={vote.iniciativaId} title={vote.iniciativaTitulo} />}
+              />
               <Action.CopyToClipboard
                 title="Copy Vote Summary"
                 content={`${vote.iniciativaTitulo} — ${resultLabel(vote)}. ${voteSummary(vote)}`}

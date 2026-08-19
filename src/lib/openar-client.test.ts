@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   BASE_URL,
   deputadoPhotoUrl,
+  getComissao,
+  getDeputado,
+  getIniciativa,
   getMeta,
+  INICIATIVA_INCLUDE,
   INSTITUTIONAL_AUTHORS,
   listCarreiras,
   listComissoes,
@@ -511,5 +515,127 @@ describe("listComissoes", () => {
   it("throws on a malformed envelope", async () => {
     fetchMock.mockResolvedValue(jsonResponse({}));
     await expect(listComissoes()).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("getIniciativa", () => {
+  it("always sends an explicit include, so the default hundreds-of-KB payload is never fetched", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 42, titulo: "Bill" }));
+    await getIniciativa(42);
+    const include = requestedUrl().searchParams.get("include");
+    expect(include).toBe(INICIATIVA_INCLUDE);
+    // Omitting include makes openAR return every relation, including debate
+    // transcripts — a visible stall in a launcher.
+    expect(include).toContain("eventos.votacoes");
+  });
+
+  it("lets a caller narrow the relations further", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 42 }));
+    await getIniciativa(42, "autores");
+    expect(requestedUrl().searchParams.get("include")).toBe("autores");
+  });
+
+  it("requests the initiative by id", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 42 }));
+    await getIniciativa(42);
+    expect(requestedUrl().pathname).toBe("/v1/iniciativas/42");
+  });
+
+  it("throws when the payload is not an initiative", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: "nope" }));
+    await expect(getIniciativa(42)).rejects.toThrow(OpenArError);
+  });
+
+  it("throws when the payload is null", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null));
+    await expect(getIniciativa(42)).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("getDeputado", () => {
+  it("requests the deputy by id, with no include parameter", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7, mandatos: [], iniciativas: [] }));
+    await getDeputado(7);
+    expect(requestedUrl().pathname).toBe("/v1/deputados/7");
+    expect(requestedUrl().searchParams.get("include")).toBeNull();
+  });
+
+  it("defaults the collections so a view can map over them unguarded", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7 }));
+    const deputy = await getDeputado(7);
+    expect(deputy).toMatchObject({ mandatos: [], iniciativas: [], bio: null, stats: null });
+  });
+
+  it("keeps the collections the API did send", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ id: 7, mandatos: [{ id: 1 }], iniciativas: [{ id: 2 }], bio: {}, stats: { total: 3 } }),
+    );
+    const deputy = await getDeputado(7);
+    expect(deputy.mandatos).toHaveLength(1);
+    expect(deputy.stats?.total).toBe(3);
+  });
+
+  it("throws when the payload is not a deputy", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ nome: "no id" }));
+    await expect(getDeputado(7)).rejects.toThrow(OpenArError);
+  });
+
+  it("throws when the payload is null", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null));
+    await expect(getDeputado(7)).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("getComissao", () => {
+  it("requests the committee by id", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 42, data: [], total: 0, page: 1, limit: 100 }));
+    await getComissao(42);
+    expect(requestedUrl().pathname).toBe("/v1/comissoes/42");
+  });
+
+  it("passes its filters through and clamps paging", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 42, data: [] }));
+    await getComissao(42, {
+      legislatura: "XVII",
+      estado: "Lei",
+      tipo: "J",
+      q: "saúde",
+      sort: "asc",
+      page: 0,
+      limit: 900,
+    });
+    expect(Object.fromEntries(requestedUrl().searchParams)).toMatchObject({
+      legislatura: "XVII",
+      estado: "Lei",
+      tipo: "J",
+      q: "saúde",
+      sort: "asc",
+      page: "1",
+      limit: "200",
+    });
+  });
+
+  it("truncates an over-long query", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 42, data: [] }));
+    await getComissao(42, { q: "q".repeat(150) });
+    expect(requestedUrl().searchParams.get("q")).toHaveLength(100);
+  });
+
+  it("fills in the envelope counters the API omitted", async () => {
+    // This endpoint puts pagination alongside the committee's metadata rather
+    // than wrapping it, so it cannot reuse the shared envelope handling.
+    fetchMock.mockResolvedValue(jsonResponse({ id: 42, data: [{ id: 1 }] }));
+    const committee = await getComissao(42);
+    expect(committee).toMatchObject({ total: 1, page: 1, limit: 1, legislaturas: [] });
+  });
+
+  it("throws when the initiatives list is missing", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 42 }));
+    await expect(getComissao(42)).rejects.toThrow(OpenArError);
+  });
+
+  it("throws when the payload is null", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null));
+    await expect(getComissao(42)).rejects.toThrow(OpenArError);
   });
 });
