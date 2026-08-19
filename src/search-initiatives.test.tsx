@@ -6,15 +6,23 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { Iniciativa } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listIniciativas: vi.fn() }));
+const mocks = vi.hoisted(() => ({ useLegislatures: vi.fn(), getPageSize: vi.fn(), listIniciativas: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listIniciativas: mocks.listIniciativas }));
 vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
+vi.mock("./components/use-legislatures", () => ({
+  useLegislatures: mocks.useLegislatures,
+  ALL_LEGISLATURES: "",
+}));
 
 import Command from "./search-initiatives";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.useLegislatures.mockReturnValue({
+    legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
+    initialId: "XVII",
+  });
   mocks.getPageSize.mockReturnValue(50);
 });
 
@@ -91,6 +99,24 @@ describe("Search Initiatives", () => {
     // Native filtering is off once onSearchTextChange is set — the server has
     // already matched, and filtering again locally would hide returned rows.
     expect(screen.getByTestId("list")).toHaveAttribute("data-native-filtering", "false");
+  });
+
+  it("scopes the search to the legislature the preference resolved to", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([], 0));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listIniciativas).toHaveBeenCalled());
+    expect(mocks.listIniciativas.mock.calls[0][0].legislatura).toBe("XVII");
+  });
+
+  it("lets the user widen the search to every legislature", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([], 0));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    fireEvent.change(screen.getByTestId("dropdown"), { target: { value: "" } });
+    // "" means no filter at all — not a legislature literally named "".
+    await waitFor(() =>
+      expect(mocks.listIniciativas).toHaveBeenLastCalledWith(expect.objectContaining({ legislatura: undefined })),
+    );
   });
 
   it("fetches the page size the user chose, not a hardcoded one", async () => {

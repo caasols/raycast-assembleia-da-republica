@@ -16,6 +16,7 @@ import type {
   DeputadoDetail,
   Iniciativa,
   IniciativaDetail,
+  Legislatura,
   Meta,
   Paginated,
   Peticao,
@@ -453,6 +454,32 @@ export async function getComissao(
     page: typeof payload.page === "number" ? payload.page : 1,
     limit: typeof payload.limit === "number" ? payload.limit : payload.data.length,
   };
+}
+
+/**
+ * Every legislature, oldest first.
+ *
+ * The documented exception to the listing envelope: a bare array, no
+ * pagination, no `{ data, total }` wrapper — so this deliberately does not go
+ * through `asPaginated`.
+ */
+export async function listLegislaturas(signal?: AbortSignal): Promise<Legislatura[]> {
+  const payload = await request("/legislaturas", {}, signal);
+  if (!Array.isArray(payload)) {
+    throw new OpenArError("openAR returned an unexpected response shape", 500);
+  }
+  return payload as Legislatura[];
+}
+
+/**
+ * The legislature currently sitting, identified by `dataFim === null`.
+ *
+ * Resolved from the data rather than hardcoded: `XVII` is correct today and
+ * wrong the day after the next election, and a hardcoded value fails silently
+ * by quietly showing a closed legislature as if it were live.
+ */
+export function currentLegislature(legislaturas: Legislatura[]): Legislatura | undefined {
+  return legislaturas.find((l) => l.dataFim === null);
 }
 
 /** Re-exported so callers get the length rule with the search parameter. */

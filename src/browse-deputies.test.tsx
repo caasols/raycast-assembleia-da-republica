@@ -7,6 +7,7 @@ import { OpenArError } from "./lib/errors";
 import type { Deputado } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({
+  useLegislatures: vi.fn(),
   getPageSize: vi.fn(),
   listDeputados: vi.fn(),
   deputadoPhotoUrl: vi.fn((id: number) => `https://api.openar.pt/v1/deputados/${id}/foto`),
@@ -18,12 +19,17 @@ vi.mock("./lib/openar-client", () => ({
 }));
 vi.mock("./components/use-parties", () => ({ useParties: mocks.useParties }));
 vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
+vi.mock("./components/use-legislatures", () => ({
+  useLegislatures: mocks.useLegislatures,
+  ALL_LEGISLATURES: "",
+}));
 
 import Command from "./browse-deputies";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.useLegislatures.mockReturnValue({ legislatures: [], initialId: "XVII" });
   mocks.getPageSize.mockReturnValue(100);
   mocks.deputadoPhotoUrl.mockImplementation((id: number) => `https://api.openar.pt/v1/deputados/${id}/foto`);
   // The hook owns the filtering now; the command only chooses the scope.
@@ -69,6 +75,23 @@ describe("Browse Deputies", () => {
     fireEvent.click(loadMore);
     await waitFor(() => expect(mocks.listDeputados).toHaveBeenCalledTimes(2));
     expect(mocks.listDeputados.mock.calls[1][0].page).toBe(2);
+  });
+
+  it("scopes to the preference's legislature, having no accessory slot for a dropdown", async () => {
+    // Raycast allows one search-bar accessory and the party filter is the more
+    // useful one here, so the legislature comes from the preference alone.
+    mocks.listDeputados.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listDeputados).toHaveBeenCalled());
+    expect(mocks.listDeputados.mock.calls[0][0].legislatura).toBe("XVII");
+  });
+
+  it("sends no legislature filter when the preference is set to all legislatures", async () => {
+    mocks.useLegislatures.mockReturnValue({ legislatures: [], initialId: "" });
+    mocks.listDeputados.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listDeputados).toHaveBeenCalled());
+    expect(mocks.listDeputados.mock.calls[0][0].legislatura).toBeUndefined();
   });
 
   it("excludes the institutional authors from the group dropdown", async () => {

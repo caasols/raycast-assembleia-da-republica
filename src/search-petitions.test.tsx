@@ -6,15 +6,23 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { Peticao } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listPeticoes: vi.fn() }));
+const mocks = vi.hoisted(() => ({ useLegislatures: vi.fn(), getPageSize: vi.fn(), listPeticoes: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listPeticoes: mocks.listPeticoes }));
 vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
+vi.mock("./components/use-legislatures", () => ({
+  useLegislatures: mocks.useLegislatures,
+  ALL_LEGISLATURES: "",
+}));
 
 import Command from "./search-petitions";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.useLegislatures.mockReturnValue({
+    legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
+    initialId: "XVII",
+  });
   mocks.getPageSize.mockReturnValue(50);
 });
 
@@ -57,6 +65,17 @@ describe("Search Petitions", () => {
     render(<Command />);
     fireEvent.change(screen.getByTestId("search-bar"), { target: { value: "  tua  " } });
     await waitFor(() => expect(mocks.listPeticoes).toHaveBeenLastCalledWith(expect.objectContaining({ q: "tua" })));
+  });
+
+  it("sends no legislature filter when widened to all", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    fireEvent.change(screen.getByTestId("dropdown"), { target: { value: "" } });
+    // "" means no filter at all, not a legislature literally named "".
+    await waitFor(() =>
+      expect(mocks.listPeticoes).toHaveBeenLastCalledWith(expect.objectContaining({ legislatura: undefined })),
+    );
   });
 
   it("loads the next page on demand", async () => {

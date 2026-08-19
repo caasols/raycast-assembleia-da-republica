@@ -202,6 +202,24 @@
           "value": "200"
         }
       ]
+    },
+    {
+      "name": "defaultLegislature",
+      "title": "Default Legislature",
+      "description": "Which legislature lists start on. \"Current\" follows the sitting legislature automatically, so it stays right after an election. Commands with a legislature dropdown let you change it per search.",
+      "type": "dropdown",
+      "required": false,
+      "default": "current",
+      "data": [
+        {
+          "title": "Current legislature",
+          "value": "current"
+        },
+        {
+          "title": "All legislatures",
+          "value": "all"
+        }
+      ]
     }
   ],
   "tools": [],

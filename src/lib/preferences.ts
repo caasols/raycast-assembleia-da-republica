@@ -27,3 +27,19 @@ export function getPageSize(): number {
   const parsed = Number.parseInt(pageSize, 10);
   return Number.isNaN(parsed) ? DEFAULT_PAGE_SIZE : clampLimit(parsed);
 }
+
+/**
+ * Which legislature lists start on.
+ *
+ * `"current"` is resolved from the data at runtime rather than stored as an id,
+ * so it keeps following the sitting legislature after an election instead of
+ * pinning to whichever one was current when the preference was set.
+ */
+export type LegislatureScope = "current" | "all";
+
+export function getDefaultLegislatureScope(): LegislatureScope {
+  const { defaultLegislature } = getPreferenceValues<Preferences>();
+  // Anything unrecognised falls back to "current": the narrower, faster default,
+  // and the one that matches what most lookups are actually about.
+  return defaultLegislature === "all" ? "all" : "current";
+}

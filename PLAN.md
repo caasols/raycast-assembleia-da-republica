@@ -5,7 +5,7 @@ audit findings live in **`context.md`**, and the working rules in **`CLAUDE.md`*
 Read both before starting a phase.
 
 - **Status:** seven commands plus three pushed detail views, paginated, 343 tests at 100% coverage
-- **Next:** A1 retry action → A2 legislature filter → A3 preference → A4 AI tools
+- **Next:** A4 AI tools → A5 ETag caching (A1–A3 done)
 - **Needs you:** B1 `npm run smoke` — validates everything above it
 - **Outstanding risk:** nothing has ever run against the live API — `context.md` §3 B1
 - **Last updated:** 2026-08-19
@@ -39,7 +39,7 @@ in Track A, so it should happen as soon as a laptop is to hand.
 
 ### Track A — buildable now, in this order
 
-#### A1 · Retry action on error states *(small)*
+#### A1 · Retry action on error states ✅ *done*
 A failed request currently means re-running the whole command. With a 100
 req/min budget, a transient 429 is the *expected* failure, not an exotic one —
 and the one thing a user can do about it is exactly what the UI doesn't offer.
@@ -47,7 +47,7 @@ and the one thing a user can do about it is exactly what the UI doesn't offer.
 `RequestEmptyView` is the single place to add it, so all seven lists and the
 three detail views gain it at once. Cheapest item on the list and it compounds.
 
-#### A2 · Legislature filter *(largest functional unlock)*
+#### A2 · Legislature filter ✅ *done*
 **Today the extension can only see the present.** Nothing filters by
 legislature, so every command implicitly shows the current one — while openAR
 carries the record back to 1976. This is the difference between "what is
@@ -60,7 +60,7 @@ Needs `listLegislaturas()` first — the endpoint is **not implemented**; only t
 `dataFim: null` identifies the current legislature, so the default stays correct
 without hardcoding `XVII` — which goes stale at the next election.
 
-#### A3 · Default-legislature preference *(trivial after A2)*
+#### A3 · Default-legislature preference ✅ *done*
 Same session as A2 ideally: the dropdown and the preference are the same
 decision seen twice, and `pageSize` already established the pattern.
 

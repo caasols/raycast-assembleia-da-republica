@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // A stub-only surface: `getPreferenceValues` is a vi.fn in the @raycast/api
 // stand-in, so tests drive it the same way they drive showToast.
 import { getPreferenceValues } from "@raycast/api";
-import { DEFAULT_PAGE_SIZE, getPageSize } from "./preferences";
+import { DEFAULT_PAGE_SIZE, getDefaultLegislatureScope, getPageSize } from "./preferences";
 import { MAX_LIMIT, MIN_LIMIT } from "./query";
 
 const mockPreferences = getPreferenceValues as unknown as ReturnType<typeof vi.fn>;
@@ -42,5 +42,25 @@ describe("getPageSize", () => {
   it("clamps a hand-edited value below the minimum", () => {
     mockPreferences.mockReturnValue({ pageSize: "0" });
     expect(getPageSize()).toBe(MIN_LIMIT);
+  });
+});
+
+describe("getDefaultLegislatureScope", () => {
+  it("returns the chosen scope", () => {
+    mockPreferences.mockReturnValue({ defaultLegislature: "all" });
+    expect(getDefaultLegislatureScope()).toBe("all");
+    mockPreferences.mockReturnValue({ defaultLegislature: "current" });
+    expect(getDefaultLegislatureScope()).toBe("current");
+  });
+
+  it("defaults to the current legislature when unset", () => {
+    mockPreferences.mockReturnValue({});
+    expect(getDefaultLegislatureScope()).toBe("current");
+  });
+
+  it("falls back to current for an unrecognised value", () => {
+    // The narrower, faster default, and what most lookups are about.
+    mockPreferences.mockReturnValue({ defaultLegislature: "XVII" });
+    expect(getDefaultLegislatureScope()).toBe("current");
   });
 });

@@ -6,6 +6,7 @@ import { RequestEmptyView } from "./components/request-empty-view";
 import { voteResultIcon } from "./components/vote-result-icon";
 import { InitiativeDetail } from "./components/initiative-detail";
 import { useParties } from "./components/use-parties";
+import { useLegislatures } from "./components/use-legislatures";
 import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
 import { displayDate } from "./lib/dates";
 import { hasMorePages, toApiPage } from "./lib/pagination";
@@ -34,19 +35,29 @@ type PositionId = (typeof POSITIONS)[number]["id"];
  */
 export default function Command() {
   const pageSize = getPageSize();
+  // No dropdown here: Raycast allows one search-bar accessory and the party
+  // filter is the more useful one for these two commands, so the legislature
+  // comes from the Default Legislature preference alone.
+  const { initialId: legislatura } = useLegislatures();
   const [party, setParty] = useState<string | undefined>(undefined);
   const [position, setPosition] = useState<PositionId>("a_favor");
 
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (sigla: string | undefined, how: PositionId) => async (options: { page: number }) => {
+    (sigla: string | undefined, how: PositionId, legislaturaId: string) => async (options: { page: number }) => {
       if (!sigla) {
         return { data: [], hasMore: false };
       }
       const apiPage = toApiPage(options.page);
-      const result = await listVotacoes({ [how]: sigla, sort: "desc", page: apiPage, limit: pageSize });
+      const result = await listVotacoes({
+        [how]: sigla,
+        legislatura: legislaturaId === "" ? undefined : legislaturaId,
+        sort: "desc",
+        page: apiPage,
+        limit: pageSize,
+      });
       return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
     },
-    [party, position],
+    [party, position, legislatura],
   );
 
   const votes = data ?? [];

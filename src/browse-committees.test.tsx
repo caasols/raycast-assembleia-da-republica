@@ -6,15 +6,23 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { Comissao } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listComissoes: vi.fn() }));
+const mocks = vi.hoisted(() => ({ useLegislatures: vi.fn(), getPageSize: vi.fn(), listComissoes: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listComissoes: mocks.listComissoes }));
 vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
+vi.mock("./components/use-legislatures", () => ({
+  useLegislatures: mocks.useLegislatures,
+  ALL_LEGISLATURES: "",
+}));
 
 import Command from "./browse-committees";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.useLegislatures.mockReturnValue({
+    legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
+    initialId: "XVII",
+  });
   mocks.getPageSize.mockReturnValue(200);
 });
 
@@ -27,6 +35,17 @@ describe("Browse Committees", () => {
     mocks.listComissoes.mockResolvedValue(page([]));
     render(<Command />);
     expect(screen.getByTestId("list")).toBeInTheDocument();
+  });
+
+  it("sends no legislature filter when widened to all", async () => {
+    mocks.listComissoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    fireEvent.change(screen.getByTestId("dropdown"), { target: { value: "" } });
+    // "" means no filter at all, not a legislature literally named "".
+    await waitFor(() =>
+      expect(mocks.listComissoes).toHaveBeenLastCalledWith(expect.objectContaining({ legislatura: undefined })),
+    );
   });
 
   it("loads the next page on demand", async () => {

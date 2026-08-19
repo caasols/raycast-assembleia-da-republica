@@ -11,6 +11,8 @@ import {
   listCarreiras,
   listComissoes,
   listDeputados,
+  listLegislaturas,
+  currentLegislature,
   listIniciativas,
   listPeticoes,
   listVotacoes,
@@ -637,5 +639,56 @@ describe("getComissao", () => {
   it("throws when the payload is null", async () => {
     fetchMock.mockResolvedValue(jsonResponse(null));
     await expect(getComissao(42)).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("listLegislaturas", () => {
+  it("returns the bare array, since this endpoint has no envelope", async () => {
+    // The documented exception: no { data, total, page, limit } wrapper.
+    fetchMock.mockResolvedValue(jsonResponse([{ id: "XVII", dataFim: null }]));
+    const result = await listLegislaturas();
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("XVII");
+  });
+
+  it("requests the endpoint with no parameters", async () => {
+    fetchMock.mockResolvedValue(jsonResponse([]));
+    await listLegislaturas();
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/legislaturas`);
+  });
+
+  it("throws when the payload is an envelope rather than an array", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [] }));
+    await expect(listLegislaturas()).rejects.toThrow(OpenArError);
+  });
+
+  it("throws when the payload is null", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null));
+    await expect(listLegislaturas()).rejects.toThrow(OpenArError);
+  });
+});
+
+describe("currentLegislature", () => {
+  const leg = (id: string, dataFim: string | null) => ({
+    id,
+    nome: `${id} Legislatura`,
+    dataInicio: "2020-01-01",
+    dataFim,
+    arId: null,
+    siglaAntiga: null,
+  });
+
+  it("finds the one still sitting, by its null end date", () => {
+    // Resolved from the data rather than hardcoded: XVII is correct today and
+    // wrong the day after the next election.
+    expect(currentLegislature([leg("XVI", "2025-06-02"), leg("XVII", null)])?.id).toBe("XVII");
+  });
+
+  it("returns undefined when every legislature has ended", () => {
+    expect(currentLegislature([leg("XVI", "2025-06-02")])).toBeUndefined();
+  });
+
+  it("returns undefined for an empty list", () => {
+    expect(currentLegislature([])).toBeUndefined();
   });
 });

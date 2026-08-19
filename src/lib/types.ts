@@ -269,3 +269,18 @@ export interface ComissaoDetail extends Comissao {
   limit: number;
   data: ComissaoIniciativa[];
 }
+
+/**
+ * A legislature. Note this endpoint is the documented exception to the
+ * envelope: `/legislaturas` returns a bare array with no pagination.
+ */
+export interface Legislatura {
+  /** `Constituinte`, or Roman numerals `I` to `XVII`. */
+  id: string;
+  nome: string;
+  dataInicio: string | null;
+  /** **`null` marks the legislature in progress** — how "current" is resolved. */
+  dataFim: string | null;
+  arId: string | null;
+  siglaAntiga: string | null;
+}

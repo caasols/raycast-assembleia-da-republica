@@ -4,6 +4,7 @@ import { useState } from "react";
 import { deputadoPhotoUrl, listDeputados } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { useParties } from "./components/use-parties";
+import { useLegislatures } from "./components/use-legislatures";
 import { DeputyDetail } from "./components/deputy-detail";
 import { hasMorePages, toApiPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
@@ -13,13 +14,18 @@ import { deputyDetailMarkdown, deputySubtitle } from "./lib/deputies";
 const SITTING = "ativo";
 export default function Command() {
   const pageSize = getPageSize();
+  // No dropdown here: Raycast allows one search-bar accessory and the party
+  // filter is the more useful one for these two commands, so the legislature
+  // comes from the Default Legislature preference alone.
+  const { initialId: legislatura } = useLegislatures();
   const [searchText, setSearchText] = useState("");
   const [party, setParty] = useState("");
 
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (query: string, sigla: string) => async (options: { page: number }) => {
+    (query: string, sigla: string, legislaturaId: string) => async (options: { page: number }) => {
       const apiPage = toApiPage(options.page);
       const result = await listDeputados({
+        legislatura: legislaturaId === "" ? undefined : legislaturaId,
         q: query.trim() === "" ? undefined : query.trim(),
         grupo: sigla === "" ? undefined : sigla,
         situacao: SITTING,
@@ -29,7 +35,7 @@ export default function Command() {
       });
       return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
     },
-    [searchText, party],
+    [searchText, party, legislatura],
   );
 
   const deputies = data ?? [];

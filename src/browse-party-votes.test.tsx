@@ -6,16 +6,26 @@ import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/re
 import { OpenArError } from "./lib/errors";
 import type { VotacaoListItem } from "./lib/types";
 
-const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listVotacoes: vi.fn(), useParties: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  useLegislatures: vi.fn(),
+  getPageSize: vi.fn(),
+  listVotacoes: vi.fn(),
+  useParties: vi.fn(),
+}));
 vi.mock("./lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
 vi.mock("./components/use-parties", () => ({ useParties: mocks.useParties }));
 vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
+vi.mock("./components/use-legislatures", () => ({
+  useLegislatures: mocks.useLegislatures,
+  ALL_LEGISLATURES: "",
+}));
 
 import Command from "./browse-party-votes";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.useLegislatures.mockReturnValue({ legislatures: [], initialId: "XVII" });
   mocks.getPageSize.mockReturnValue(100);
   mocks.useParties.mockReturnValue(["Governo", "PS", "CH"]);
 });
@@ -105,6 +115,16 @@ describe("Browse Party Votes", () => {
     await waitFor(() => expect(screen.getByTestId("empty-view")).toBeInTheDocument());
     expect(mocks.listVotacoes).not.toHaveBeenCalled();
     expect(screen.queryByTestId("load-more")).toBeNull();
+  });
+
+  it("sends no legislature filter when the preference is set to all legislatures", async () => {
+    mocks.useLegislatures.mockReturnValue({ legislatures: [], initialId: "" });
+    mocks.listVotacoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("PS|a_favor");
+    await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalled());
+    expect(mocks.listVotacoes.mock.calls[0][0].legislatura).toBeUndefined();
   });
 
   it("renders the votes it gets back", async () => {

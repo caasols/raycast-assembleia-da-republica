@@ -23,6 +23,7 @@ needs **no account, key, or binary installed** — every endpoint is public.
 - Filter votes by how a specific party voted, so "everything Chega voted
   against" is one request
 - Search legislative initiatives by title and open the full text
+- Filter by legislature, back to 1976 — or follow whichever one is sitting
 - Browse the 230 sitting deputies, by name or parliamentary group
 - Search petitions, with signature counts and debate dates
 - Browse parliamentary committees
@@ -46,6 +47,7 @@ needs **no account, key, or binary installed** — every endpoint is public.
 
 | Preference | Default | What it does |
 | --- | --- | --- |
+| `Default Legislature` | Current | Which legislature lists start on. "Current" follows the sitting legislature automatically, so it stays right after an election. Search Initiatives, Search Petitions and Browse Committees let you change it per search. |
 | `Results per Page` | 50 | How many results each request fetches — 25, 50, 100 or 200. Lists load more as you scroll, so a smaller page shows the first results sooner and a larger one scrolls further before fetching again. |
 
 ## Notes on the data
