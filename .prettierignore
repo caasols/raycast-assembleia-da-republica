@@ -1,0 +1,12 @@
+# Vendored verbatim from api.openar.pt — reformatting would obscure real diffs
+# when the spec is refreshed.
+docs/
+
+# Prose docs are hand-formatted (tables, callouts); Prettier's reflow fights it.
+*.md
+
+# Generated
+build/
+dist/
+coverage/
+raycast-env.d.ts

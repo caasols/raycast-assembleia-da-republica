@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  # Not just `main`: development happens on feature branches that may never open
+  # a PR, and a workflow that only triggers on main is a workflow that never
+  # runs — which is exactly what happened here for twenty-nine commits.
+  push:
+  pull_request:
+  # So a run can be forced without pushing, e.g. to re-check `ray lint` against
+  # raycast.com after a change there.
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          # @raycast/api declares engines node >=22.22.2 and local development
+          # runs on 24, so anything older validates a configuration Raycast does
+          # not support and that nobody develops on. Matches raycast-publico.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # `ray lint` also validates the manifest and icons, which ESLint and
+      # Prettier cannot see. It reaches raycast.com to check the author, which
+      # works in Actions but not inside the restricted dev containers — so it
+      # belongs here rather than in a local pre-commit step.
+      - run: npm run lint
+
+      # Build BEFORE typecheck: `ray build` is what generates raycast-env.d.ts,
+      # which is gitignored and holds the Preferences type read by
+      # src/lib/preferences.ts. `ray lint` does not generate it, so typechecking
+      # first would fail on a clean checkout. Deliberately not trusted on its
+      # own either: `ray build` once compiled a 0-byte command file and reported
+      # success (context.md §4) — the tests below are what prove the commands work.
+      - run: npm run build
+
+      # Both tsconfigs: the extension without the DOM lib, the tests with it.
+      - run: npm run typecheck
+
+      # The ratchet. Thresholds are pinned at 100% in vitest.config.ts, so new
+      # uncovered code fails here rather than quietly lowering the bar.
+      - run: npm run test:coverage
