@@ -31,7 +31,7 @@ function petition(overrides: Partial<Peticao> = {}): Peticao {
     ...overrides,
   };
 }
-const page = (data: Peticao[]) => ({ data, total: data.length, page: 1, limit: 50 });
+const page = (data: Peticao[], total = data.length) => ({ data, total, page: 1, limit: 50 });
 const actionTitles = () => screen.getAllByTestId("action").map((a) => a.getAttribute("data-title"));
 
 describe("Search Petitions", () => {
@@ -53,6 +53,14 @@ describe("Search Petitions", () => {
     render(<Command />);
     fireEvent.change(screen.getByTestId("search-bar"), { target: { value: "  tua  " } });
     await waitFor(() => expect(mocks.listPeticoes).toHaveBeenLastCalledWith(expect.objectContaining({ q: "tua" })));
+  });
+
+  it("loads the next page on demand", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([petition()], 400));
+    render(<Command />);
+    fireEvent.click(await waitFor(() => screen.getByTestId("load-more")));
+    await waitFor(() => expect(mocks.listPeticoes).toHaveBeenCalledTimes(2));
+    expect(mocks.listPeticoes.mock.calls[1][0].page).toBe(2);
   });
 
   it("shows the subject, author and signature count", async () => {

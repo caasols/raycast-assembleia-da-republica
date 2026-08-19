@@ -40,7 +40,7 @@ function deputy(overrides: Partial<Deputado> = {}): Deputado {
     ...overrides,
   };
 }
-const page = (data: Deputado[]) => ({ data, total: data.length, page: 1, limit: 200 });
+const page = (data: Deputado[], total = data.length) => ({ data, total, page: 1, limit: 100 });
 
 describe("Browse Deputies", () => {
   it("has a default export that renders a List", () => {
@@ -54,6 +54,18 @@ describe("Browse Deputies", () => {
     render(<Command />);
     await waitFor(() => expect(mocks.listDeputados).toHaveBeenCalled());
     expect(mocks.listDeputados.mock.calls[0][0]).toMatchObject({ situacao: "ativo", sort: "asc" });
+  });
+
+  it("can reach all 230 sitting deputies, which one request cannot return", async () => {
+    // The API caps `limit` at 200 and there are 230 seats, so before pagination
+    // 30 members of parliament were unreachable from this command entirely.
+    mocks.listDeputados.mockResolvedValue(page([deputy()], 230));
+    render(<Command />);
+    const loadMore = await waitFor(() => screen.getByTestId("load-more"));
+    expect(mocks.listDeputados.mock.calls[0][0].page).toBe(1);
+    fireEvent.click(loadMore);
+    await waitFor(() => expect(mocks.listDeputados).toHaveBeenCalledTimes(2));
+    expect(mocks.listDeputados.mock.calls[1][0].page).toBe(2);
   });
 
   it("excludes the institutional authors from the group dropdown", async () => {

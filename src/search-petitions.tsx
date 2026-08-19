@@ -1,9 +1,10 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { usePromise } from "@raycast/utils";
+import { useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { listPeticoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { petitionDetailMarkdown, signatureLabel } from "./lib/petitions";
+import { hasMorePages, toApiPage } from "./lib/pagination";
 
 const PAGE_SIZE = 50;
 
@@ -17,14 +18,16 @@ const PAGE_SIZE = 50;
 export default function Command() {
   const [searchText, setSearchText] = useState("");
 
-  const { isLoading, data, error } = usePromise(
-    async (query: string) => {
-      const page = await listPeticoes({
+  const { isLoading, data, error, pagination } = useCachedPromise(
+    (query: string) => async (options: { page: number }) => {
+      const apiPage = toApiPage(options.page);
+      const result = await listPeticoes({
         q: query.trim() === "" ? undefined : query.trim(),
         sort: "desc",
+        page: apiPage,
         limit: PAGE_SIZE,
       });
-      return page.data;
+      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
     },
     [searchText],
   );
@@ -37,6 +40,7 @@ export default function Command() {
       isShowingDetail={petitions.length > 0}
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search petitions by subject"
+      pagination={pagination}
       throttle
     >
       {petitions.length === 0 && (

@@ -1,30 +1,39 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { usePromise } from "@raycast/utils";
+import { useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { deputadoPhotoUrl, listDeputados } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { useParties } from "./components/use-parties";
 import { DeputyDetail } from "./components/deputy-detail";
+import { hasMorePages, toApiPage } from "./lib/pagination";
 import { deputyDetailMarkdown, deputySubtitle } from "./lib/deputies";
 
 /** `situacao=ativo` is the API's shortcut for the 230 sitting seats. */
 const SITTING = "ativo";
-const PAGE_SIZE = 200;
+/**
+ * Below the API's maximum of 200 on purpose. There are 230 sitting deputies and
+ * `limit` caps at 200, so no single request can return them all — before
+ * pagination, 30 members of parliament were simply unreachable here. A smaller
+ * page also gets the first screenful up faster.
+ */
+const PAGE_SIZE = 100;
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
   const [party, setParty] = useState("");
 
-  const { isLoading, data, error } = usePromise(
-    async (query: string, sigla: string) => {
-      const page = await listDeputados({
+  const { isLoading, data, error, pagination } = useCachedPromise(
+    (query: string, sigla: string) => async (options: { page: number }) => {
+      const apiPage = toApiPage(options.page);
+      const result = await listDeputados({
         q: query.trim() === "" ? undefined : query.trim(),
         grupo: sigla === "" ? undefined : sigla,
         situacao: SITTING,
         sort: "asc",
+        page: apiPage,
         limit: PAGE_SIZE,
       });
-      return page.data;
+      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
     },
     [searchText, party],
   );
@@ -40,6 +49,7 @@ export default function Command() {
       isShowingDetail={deputies.length > 0}
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search sitting deputies by name"
+      pagination={pagination}
       throttle
       searchBarAccessory={
         <List.Dropdown tooltip="Parliamentary group" value={party} onChange={setParty}>

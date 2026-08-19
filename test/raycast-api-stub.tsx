@@ -370,6 +370,7 @@ export function List(props: {
   filtering?: boolean | { keepSectionOrder: boolean };
   actions?: ReactNode;
   searchBarAccessory?: ReactNode;
+  pagination?: { pageSize: number; hasMore: boolean; onLoadMore: () => void };
 }) {
   const items: ReactNode[] = [];
   const emptyViews: ReactNode[] = [];
@@ -417,6 +418,17 @@ export function List(props: {
       )}
     >
       {props.searchBarAccessory}
+      {/* Raycast calls `onLoadMore` when the user scrolls to the bottom, which
+          jsdom cannot reproduce. Rendering it as a button when `hasMore` lets a
+          test trigger the same call the way a scroll would, and its absence is
+          itself assertable — "there is no more to load". */}
+      {props.pagination?.hasMore && (
+        <button
+          data-testid="load-more"
+          data-page-size={String(props.pagination.pageSize)}
+          onClick={() => props.pagination?.onLoadMore()}
+        />
+      )}
       <input
         data-testid="search-bar"
         placeholder={props.searchBarPlaceholder}

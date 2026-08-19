@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "../lib/errors";
 import type { Iniciativa } from "../lib/types";
 
@@ -46,6 +46,14 @@ describe("CommitteeDetail", () => {
     await waitFor(() => expect(mocks.getComissao).toHaveBeenCalled());
     expect(mocks.getComissao.mock.calls[0][0]).toBe(42);
     expect(mocks.getComissao.mock.calls[0][1]).toMatchObject({ sort: "desc" });
+  });
+
+  it("loads the next page of initiatives on demand", async () => {
+    mocks.getComissao.mockResolvedValue({ ...committee(), total: 400 });
+    render(<CommitteeDetail id={42} name="CACDLG" />);
+    fireEvent.click(await waitFor(() => screen.getByTestId("load-more")));
+    await waitFor(() => expect(mocks.getComissao).toHaveBeenCalledTimes(2));
+    expect(mocks.getComissao.mock.calls[1][1].page).toBe(2);
   });
 
   it("lists the initiatives that passed through it", async () => {

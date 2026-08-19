@@ -1,11 +1,12 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { usePromise } from "@raycast/utils";
+import { useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { listIniciativas } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { InitiativeDetail } from "./components/initiative-detail";
 import { initiativeDetailMarkdown, initiativeLabel } from "./lib/initiatives";
 import { displayDate } from "./lib/dates";
+import { hasMorePages, toApiPage } from "./lib/pagination";
 
 /** Comfortably more than a screenful, well under the API's 200 maximum. */
 const PAGE_SIZE = 50;
@@ -22,16 +23,18 @@ const PAGE_SIZE = 50;
 export default function Command() {
   const [searchText, setSearchText] = useState("");
 
-  const { isLoading, data, error } = usePromise(
-    async (query: string) => {
-      const page = await listIniciativas({
+  const { isLoading, data, error, pagination } = useCachedPromise(
+    (query: string) => async (options: { page: number }) => {
+      const apiPage = toApiPage(options.page);
+      const result = await listIniciativas({
         // Empty search is a valid request: it returns the most recent
         // initiatives, which is a better landing state than a blank screen.
         q: query.trim() === "" ? undefined : query.trim(),
         sort: "desc",
+        page: apiPage,
         limit: PAGE_SIZE,
       });
-      return page.data;
+      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
     },
     [searchText],
   );
@@ -44,6 +47,7 @@ export default function Command() {
       isShowingDetail={initiatives.length > 0}
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search initiatives by title"
+      pagination={pagination}
       // Native filtering is off once onSearchTextChange is set, which is
       // correct here: the server has already matched, and filtering the page
       // again locally would hide rows the search deliberately returned.

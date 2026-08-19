@@ -40,7 +40,7 @@ function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
     ...overrides,
   };
 }
-const page = (data: VotacaoListItem[]) => ({ data, total: data.length, page: 1, limit: 100 });
+const page = (data: VotacaoListItem[], total = data.length) => ({ data, total, page: 1, limit: 100 });
 const choose = (value: string) => fireEvent.change(screen.getByTestId("dropdown"), { target: { value } });
 
 describe("Browse Party Votes", () => {
@@ -85,6 +85,24 @@ describe("Browse Party Votes", () => {
     await waitFor(() =>
       expect(mocks.listVotacoes).toHaveBeenLastCalledWith(expect.objectContaining({ abstencao: "PS" })),
     );
+  });
+
+  it("loads the next page of a party's votes on demand", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote()], 300));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("PS|a_favor");
+    fireEvent.click(await waitFor(() => screen.getByTestId("load-more")));
+    await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalledTimes(2));
+    expect(mocks.listVotacoes.mock.calls[1][0].page).toBe(2);
+  });
+
+  it("does not fetch anything before a party is chosen, even paginated", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("empty-view")).toBeInTheDocument());
+    expect(mocks.listVotacoes).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("load-more")).toBeNull();
   });
 
   it("renders the votes it gets back", async () => {

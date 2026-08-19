@@ -1,9 +1,10 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { usePromise } from "@raycast/utils";
+import { useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { listComissoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { CommitteeDetail } from "./components/committee-detail";
+import { hasMorePages, toApiPage } from "./lib/pagination";
 
 const PAGE_SIZE = 200;
 
@@ -18,14 +19,16 @@ const PAGE_SIZE = 200;
 export default function Command() {
   const [searchText, setSearchText] = useState("");
 
-  const { isLoading, data, error } = usePromise(
-    async (query: string) => {
-      const page = await listComissoes({
+  const { isLoading, data, error, pagination } = useCachedPromise(
+    (query: string) => async (options: { page: number }) => {
+      const apiPage = toApiPage(options.page);
+      const result = await listComissoes({
         q: query.trim() === "" ? undefined : query.trim(),
         sort: "asc",
+        page: apiPage,
         limit: PAGE_SIZE,
       });
-      return page.data;
+      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
     },
     [searchText],
   );
@@ -37,6 +40,7 @@ export default function Command() {
       isLoading={isLoading}
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search committees by name"
+      pagination={pagination}
       throttle
     >
       {committees.length === 0 && (

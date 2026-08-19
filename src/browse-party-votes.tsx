@@ -1,5 +1,5 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { usePromise } from "@raycast/utils";
+import { useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { listVotacoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
@@ -8,6 +8,7 @@ import { InitiativeDetail } from "./components/initiative-detail";
 import { useParties } from "./components/use-parties";
 import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
 import { displayDate } from "./lib/dates";
+import { hasMorePages, toApiPage } from "./lib/pagination";
 
 const PAGE_SIZE = 100;
 
@@ -36,13 +37,14 @@ export default function Command() {
   const [party, setParty] = useState<string | undefined>(undefined);
   const [position, setPosition] = useState<PositionId>("a_favor");
 
-  const { isLoading, data, error } = usePromise(
-    async (sigla: string | undefined, how: PositionId) => {
+  const { isLoading, data, error, pagination } = useCachedPromise(
+    (sigla: string | undefined, how: PositionId) => async (options: { page: number }) => {
       if (!sigla) {
-        return [];
+        return { data: [], hasMore: false };
       }
-      const page = await listVotacoes({ [how]: sigla, sort: "desc", limit: PAGE_SIZE });
-      return page.data;
+      const apiPage = toApiPage(options.page);
+      const result = await listVotacoes({ [how]: sigla, sort: "desc", page: apiPage, limit: PAGE_SIZE });
+      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
     },
     [party, position],
   );
@@ -56,6 +58,7 @@ export default function Command() {
       isLoading={isLoading}
       isShowingDetail={votes.length > 0}
       searchBarPlaceholder="Filter these votes"
+      pagination={pagination}
       searchBarAccessory={
         <List.Dropdown
           tooltip="Party"

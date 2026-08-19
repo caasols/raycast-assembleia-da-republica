@@ -4,9 +4,9 @@ The forward plan. Completed phases are pruned; project state, decisions and
 audit findings live in **`context.md`**, and the working rules in **`CLAUDE.md`**.
 Read both before starting a phase.
 
-- **Status:** seven commands, now navigable — three pushed detail views
+- **Status:** seven commands, navigable and paginated
 - **Delivered:** P0 foundations · P1 API vendored · P2 client · P3–P5 seven commands
-- **Ready now:** P7.4 (pagination), then P8 polish. P6 is blocked on a local install.
+- **Ready now:** P8 (polish) or P9 (AI tools). P6 is blocked on a local install.
 - **Outstanding risk:** nothing has ever run against the live API — see P6.1
 - **Last updated:** 2026-08-18
 
@@ -40,7 +40,7 @@ Also possible, if a detail view is wanted later: **Initiative Detail**
 
 ## 3. Roadmap
 
-### P7 — Make the lists navigable *(Tier 1)* — 7.1–7.3 ✅ complete, 7.4 outstanding
+### P7 — Make the lists navigable *(Tier 1)* ✅ complete
 Every command is currently a flat list with no `Action.Push` anywhere: you find
 a committee, a deputy, an initiative, and there is nowhere to go. Half the
 API's endpoints are detail endpoints and none are wired up.
@@ -52,9 +52,9 @@ API's endpoints are detail endpoints and none are wired up.
   recent initiatives, pushed from Browse Deputies.
 - **P7.3** ✅ **Committee Detail** — the initiatives that passed through a
   committee, each pushing further into Initiative Detail (D61).
-- **P7.4** ⬜ **Pagination** — still outstanding. Every list fetches one page
-  and stops; Search Initiatives caps at 50 against a corpus spanning 1976 to
-  now. A real functional limit, not a missing nicety.
+- **P7.4** ✅ **Pagination** — infinite scroll on all six unbounded lists via
+  Raycast's `List.pagination` (D62). Fixed a real bug on the way: 30 of the 230
+  sitting deputies were unreachable, since `limit` caps at 200 (D64).
 
 ### P8 — Polish *(Tier 2)*
 - **P8.1** Retry action on error states — a failed request currently means

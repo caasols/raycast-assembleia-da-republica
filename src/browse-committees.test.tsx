@@ -14,7 +14,7 @@ import Command from "./browse-committees";
 afterEach(cleanup);
 beforeEach(() => vi.clearAllMocks());
 
-const page = (data: Comissao[]) => ({ data, total: data.length, page: 1, limit: 200 });
+const page = (data: Comissao[], total = data.length) => ({ data, total, page: 1, limit: 200 });
 const COMMITTEE: Comissao = { id: 42, sigla: "CACDLG", nome: "Comissão de Assuntos Constitucionais" };
 const actionTitles = () => screen.getAllByTestId("action").map((a) => a.getAttribute("data-title"));
 
@@ -23,6 +23,14 @@ describe("Browse Committees", () => {
     mocks.listComissoes.mockResolvedValue(page([]));
     render(<Command />);
     expect(screen.getByTestId("list")).toBeInTheDocument();
+  });
+
+  it("loads the next page on demand", async () => {
+    mocks.listComissoes.mockResolvedValue(page([COMMITTEE], 500));
+    render(<Command />);
+    fireEvent.click(await waitFor(() => screen.getByTestId("load-more")));
+    await waitFor(() => expect(mocks.listComissoes).toHaveBeenCalledTimes(2));
+    expect(mocks.listComissoes.mock.calls[1][0].page).toBe(2);
   });
 
   it("shows the name with the acronym beneath it", async () => {

@@ -1,10 +1,11 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
-import { usePromise } from "@raycast/utils";
+import { useCachedPromise } from "@raycast/utils";
 import { getComissao } from "../lib/openar-client";
 import { RequestEmptyView } from "./request-empty-view";
 import { InitiativeDetail } from "./initiative-detail";
 import { initiativeDetailMarkdown, initiativeLabel } from "../lib/initiatives";
 import { displayDate } from "../lib/dates";
+import { hasMorePages, toApiPage } from "../lib/pagination";
 
 const PAGE_SIZE = 100;
 
@@ -16,12 +17,16 @@ const PAGE_SIZE = 100;
  * navigable level, not a leaf.
  */
 export function CommitteeDetail({ id, name }: { id: number; name: string }) {
-  const { isLoading, data, error } = usePromise(
-    async (committeeId: number) => getComissao(committeeId, { sort: "desc", limit: PAGE_SIZE }),
+  const { isLoading, data, error, pagination } = useCachedPromise(
+    (committeeId: number) => async (options: { page: number }) => {
+      const apiPage = toApiPage(options.page);
+      const result = await getComissao(committeeId, { sort: "desc", page: apiPage, limit: PAGE_SIZE });
+      return { data: result.data, hasMore: hasMorePages(apiPage, PAGE_SIZE, result.total) };
+    },
     [id],
   );
 
-  const initiatives = data?.data ?? [];
+  const initiatives = data ?? [];
 
   return (
     <List
@@ -29,6 +34,7 @@ export function CommitteeDetail({ id, name }: { id: number; name: string }) {
       isShowingDetail={initiatives.length > 0}
       navigationTitle={name}
       searchBarPlaceholder="Filter these initiatives"
+      pagination={pagination}
     >
       {initiatives.length === 0 && (
         <RequestEmptyView

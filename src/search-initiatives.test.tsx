@@ -32,7 +32,7 @@ function initiative(overrides: Partial<Iniciativa> = {}): Iniciativa {
   };
 }
 
-const page = (data: Iniciativa[]) => ({ data, total: data.length, page: 1, limit: 50 });
+const page = (data: Iniciativa[], total = data.length) => ({ data, total, page: 1, limit: 50 });
 
 function search(text: string) {
   fireEvent.change(screen.getByTestId("search-bar"), { target: { value: text } });
@@ -87,6 +87,31 @@ describe("Search Initiatives", () => {
     // Native filtering is off once onSearchTextChange is set — the server has
     // already matched, and filtering again locally would hide returned rows.
     expect(screen.getByTestId("list")).toHaveAttribute("data-native-filtering", "false");
+  });
+
+  it("starts at openAR's first page, not page zero", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listIniciativas).toHaveBeenCalled());
+    // Raycast counts pages from 0 and openAR from 1. Sending 0 would be clamped
+    // back to 1, so the first two scrolls would return the same rows.
+    expect(mocks.listIniciativas.mock.calls[0][0].page).toBe(1);
+  });
+
+  it("offers more to load when the total exceeds the page, and fetches page 2", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([initiative()], 120));
+    render(<Command />);
+    const loadMore = await waitFor(() => screen.getByTestId("load-more"));
+    fireEvent.click(loadMore);
+    await waitFor(() => expect(mocks.listIniciativas).toHaveBeenCalledTimes(2));
+    expect(mocks.listIniciativas.mock.calls[1][0].page).toBe(2);
+  });
+
+  it("offers nothing more to load once the total is covered", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([initiative()], 1));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+    expect(screen.queryByTestId("load-more")).toBeNull();
   });
 
   it("renders one row per initiative, with the human-readable reference", async () => {

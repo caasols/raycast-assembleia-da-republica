@@ -3,9 +3,6 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor, cleanup } from "@testing-library/react";
-// A stub-only helper: the real @raycast/api has no such export, so it is
-// imported from the stub directly rather than through the alias.
-import { __resetCaches } from "../../test/raycast-api-stub";
 
 const mocks = vi.hoisted(() => ({
   getMeta: vi.fn(),
@@ -20,9 +17,6 @@ import { useParties } from "./use-parties";
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  // useCachedPromise keeps a module-level Cache; without this a value cached by
-  // an earlier test satisfies the next one before its promise ever settles.
-  __resetCaches();
   mocks.parliamentaryGroups.mockImplementation((grupos: string[]) =>
     grupos.filter((g) => !["Governo", "PAR", "Madeira", "Açores", "Mesa"].includes(g)),
   );
