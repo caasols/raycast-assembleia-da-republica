@@ -284,3 +284,9 @@ export interface Legislatura {
   arId: string | null;
   siglaAntiga: string | null;
 }
+
+/** A petition with the relations that were asked for. */
+export interface PeticaoDetail extends Peticao {
+  comissoes?: { nome: string | null; situacao: string | null }[];
+  documentos?: { nome: string | null; url: string | null }[];
+}

@@ -6,6 +6,7 @@
 import { beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { __resetCaches } from "./raycast-api-stub";
+import { __clearEtagCache } from "../src/lib/etag-cache";
 
 /**
  * `useCachedPromise` keeps a module-level `Cache`, which outlives an individual
@@ -15,3 +16,10 @@ import { __resetCaches } from "./raycast-api-stub";
  * here rather than per-file means no test has to remember.
  */
 beforeEach(__resetCaches);
+
+/**
+ * The openAR ETag store is module-level for the same reason and with the same
+ * hazard: a body cached by one test would otherwise be served to the next,
+ * letting a test pass on data its own request never returned.
+ */
+beforeEach(__clearEtagCache);

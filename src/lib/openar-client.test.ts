@@ -6,6 +6,7 @@ import {
   getDeputado,
   getIniciativa,
   getMeta,
+  getPeticao,
   INICIATIVA_INCLUDE,
   INSTITUTIONAL_AUTHORS,
   listCarreiras,
@@ -20,12 +21,14 @@ import {
   request,
 } from "./openar-client";
 import { OpenArError } from "./errors";
+import { __clearEtagCache } from "./etag-cache";
 import type { VotacaoListItem } from "./types";
 
 const fetchMock = vi.fn();
 
 beforeEach(() => {
   fetchMock.mockReset();
+  __clearEtagCache();
   vi.stubGlobal("fetch", fetchMock);
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -690,5 +693,104 @@ describe("currentLegislature", () => {
 
   it("returns undefined for an empty list", () => {
     expect(currentLegislature([])).toBeUndefined();
+  });
+});
+
+describe("conditional requests", () => {
+  const INITIATIVE = { id: 42, titulo: "Bill" };
+
+  it("sends no If-None-Match the first time a resource is seen", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(INITIATIVE, { headers: { ETag: 'W/"v1"' } }));
+    await getIniciativa(42);
+    expect(fetchMock.mock.calls[0][1].headers["If-None-Match"]).toBeUndefined();
+  });
+
+  it("sends the stored etag on the next request for the same resource", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(INITIATIVE, { headers: { ETag: 'W/"v1"' } }));
+    await getIniciativa(42);
+    await getIniciativa(42);
+    expect(fetchMock.mock.calls[1][1].headers["If-None-Match"]).toBe('W/"v1"');
+  });
+
+  it("reuses the held body on a 304, which carries none of its own", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(INITIATIVE, { headers: { ETag: 'W/"v1"' } }));
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 304,
+      statusText: "Not Modified",
+      headers: new Headers(),
+      // Reading this would throw on a real 304's empty body; the client must
+      // not call it.
+      json: async () => {
+        throw new SyntaxError("Unexpected end of JSON input");
+      },
+    });
+    // Two calls: the first stores the body and its etag, the second is the one
+    // that comes back 304 and must reuse what we already hold.
+    await getIniciativa(42);
+    expect(await getIniciativa(42)).toEqual(INITIATIVE);
+  });
+
+  it("does not treat a 304 as an error, despite `ok` being false", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(INITIATIVE, { headers: { ETag: 'W/"v1"' } }));
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 304,
+      statusText: "Not Modified",
+      headers: new Headers(),
+      json: async () => undefined,
+    });
+    await getIniciativa(42);
+    await expect(getIniciativa(42)).resolves.toBeDefined();
+  });
+
+  it("keeps the newer body when the resource changed", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 42, titulo: "Old" }, { headers: { ETag: 'W/"v1"' } }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 42, titulo: "New" }, { headers: { ETag: 'W/"v2"' } }));
+    await getIniciativa(42);
+    expect(await getIniciativa(42)).toMatchObject({ titulo: "New" });
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 42 }, { headers: { ETag: 'W/"v2"' } }));
+    await getIniciativa(42);
+    expect(fetchMock.mock.calls[2][1].headers["If-None-Match"]).toBe('W/"v2"');
+  });
+
+  it("does not revalidate endpoints openAR sends no etag on", async () => {
+    // Sending If-None-Match where the server ignores it would cache a body that
+    // can never be revalidated.
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listVotacoes();
+    await listVotacoes();
+    expect(fetchMock.mock.calls[1][1].headers["If-None-Match"]).toBeUndefined();
+  });
+
+  it("revalidates petition details too, the other etag endpoint", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7 }, { headers: { ETag: 'W/"p1"' } }));
+    await getPeticao(7);
+    await getPeticao(7);
+    expect(fetchMock.mock.calls[1][1].headers["If-None-Match"]).toBe('W/"p1"');
+  });
+});
+
+describe("getPeticao", () => {
+  it("always sends an explicit include", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7 }));
+    await getPeticao(7);
+    expect(requestedUrl().searchParams.get("include")).toBe("comissoes.relatorioFinal,documentos");
+  });
+
+  it("lets a caller narrow the relations", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7 }));
+    await getPeticao(7, "documentos");
+    expect(requestedUrl().searchParams.get("include")).toBe("documentos");
+  });
+
+  it("throws when the payload is not a petition", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: "nope" }));
+    await expect(getPeticao(7)).rejects.toThrow(OpenArError);
+  });
+
+  it("throws when the payload is null", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null));
+    await expect(getPeticao(7)).rejects.toThrow(OpenArError);
   });
 });

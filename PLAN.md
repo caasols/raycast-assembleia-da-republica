@@ -5,7 +5,7 @@ audit findings live in **`context.md`**, and the working rules in **`CLAUDE.md`*
 Read both before starting a phase.
 
 - **Status:** seven commands plus three pushed detail views, paginated, 343 tests at 100% coverage
-- **Next:** A5 ETag caching (A1–A4 done)
+- **Next:** Track B — everything in Track A is done
 - **Needs you:** B1 `npm run smoke` — validates everything above it
 - **Outstanding risk:** nothing has ever run against the live API — `context.md` §3 B1
 - **Last updated:** 2026-08-19
@@ -37,7 +37,7 @@ in Track A, so it should happen as soon as a laptop is to hand.
 
 ---
 
-### Track A — buildable now, in this order
+### Track A — ✅ complete
 
 #### A1 · Retry action on error states ✅ *done*
 A failed request currently means re-running the whole command. With a 100
@@ -73,14 +73,14 @@ Deliberately after A2: tools that cannot express "in the XV legislature" would
 need rewriting the moment legislature filtering lands. Building on the finished
 data model costs less than retrofitting it.
 
-#### A5 · ETag caching on detail views *(implementable, but unverifiable here)*
+#### A5 · ETag caching on detail views ✅ *done — but see the caveat*
 The client models weak ETags in `OPENAR-API.md` §4 and implements none of them.
 `/iniciativas/{id}` and `/peticoes/{id}` would return 304s.
 
-**Last in Track A on purpose.** The 304 path exists only server-side, so tests
-can prove we *send* `If-None-Match` but never that a real 304 is handled
-correctly. It is also an optimisation for something not yet shown to be slow.
-Best done alongside B1, when the live API can confirm it.
+⚠️ **Verified against a stubbed 304, never a real one.** The tests prove the
+client sends `If-None-Match`, handles a 304 before the `!ok` check, and reuses
+the held body — but openAR has never actually returned one to us. Worth
+re-checking during B1.
 
 ---
 

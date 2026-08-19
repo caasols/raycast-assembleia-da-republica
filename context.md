@@ -127,6 +127,10 @@ stated explicitly — correct these rather than inherit them as fact.
 | D78 | 2026-08-19 | Tools return **structured data, not markdown** | Phrasing is the model's job; pre-formatting only constrains the answer. They also reuse the same `lib/` helpers the views do, so a tool and a command cannot disagree about what a vote means. | Settled |
 | D79 | 2026-08-19 | Tools call the initiative field **`stage`**, never `result` or `approved` | Same trap as the UI (D46) with a worse failure mode: a model handed a field called `result` would report a bill as passed when `estado` merely records the phase of the last event. A test asserts those names are absent. | Settled |
 | D80 | 2026-08-19 | Tool failures **propagate** rather than returning empty | A tool that swallows an error lets the model report "no votes today" when the truth is "we could not reach openAR" — a confident wrong answer about parliament, which is the worst outcome this extension can produce. | Settled |
+| D81 | 2026-08-19 | **ETag revalidation is opt-in per call**, not automatic | Only `/iniciativas/{id}` and `/peticoes/{id}` send weak ETags. Sending `If-None-Match` elsewhere would cache a body the server never revalidates, so it could only ever be served stale. `request()` takes an explicit `revalidate` flag. | Settled |
+| D82 | 2026-08-19 | The ETag store is **in-memory, not Raycast's `Cache`** | A command's process is short-lived, so this saves repeat fetches *within* a session — reopening the same initiative while navigating — which is the case that actually happens. Persisting it would need eviction and staleness rules to buy the rarer across-session case, against an API that changes daily. | Settled |
+| D83 | 2026-08-19 | A response **without an `ETag` is not stored** | There would be nothing to send as `If-None-Match`, so the body could never be revalidated and would only ever be served stale. | Settled |
+| D84 | 2026-08-19 | `304` is handled **before** the `!response.ok` check | A 304 has `ok === false` but is a success, and it carries no body — calling `response.json()` on it throws. Order is load-bearing. | Settled |
 
 ### Open questions
 

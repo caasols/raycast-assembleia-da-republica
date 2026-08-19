@@ -8,6 +8,7 @@
  */
 import { OpenArError, parseRetryAfterSeconds } from "./errors";
 import { buildQueryString, clampLimit, clampPage, isQueryStringWithinLimit, truncateQ } from "./query";
+import { cachedBody, knownEtag, remember } from "./etag-cache";
 import type {
   Comissao,
   ComissaoDetail,
@@ -20,6 +21,7 @@ import type {
   Meta,
   Paginated,
   Peticao,
+  PeticaoDetail,
   VotacaoListItem,
 } from "./types";
 import type { QueryValue } from "./query";
@@ -63,6 +65,12 @@ export async function request(
   path: string,
   params: Record<string, QueryValue | QueryValue[]> = {},
   signal?: AbortSignal,
+  /**
+   * Opt in to conditional requests. Only the two detail endpoints openAR sends
+   * weak ETags on can use this; asking elsewhere would send a header the server
+   * ignores and cache a body that can never be revalidated.
+   */
+  revalidate = false,
 ): Promise<unknown> {
   const queryString = buildQueryString(params);
   if (!isQueryStringWithinLimit(queryString)) {
@@ -72,10 +80,17 @@ export async function request(
   }
 
   const url = `${BASE_URL}${path}${queryString ? `?${queryString}` : ""}`;
+  const etag = revalidate ? knownEtag(url) : undefined;
   const response = await fetch(url, {
-    headers: REQUEST_HEADERS,
+    headers: etag ? { ...REQUEST_HEADERS, "If-None-Match": etag } : REQUEST_HEADERS,
     signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
+
+  // 304 carries no body: the one we already hold is still current. Reading
+  // response.json() here would throw on an empty body.
+  if (response.status === 304) {
+    return cachedBody(url);
+  }
 
   if (!response.ok) {
     // 429 is the one status a caller can act on by waiting, so `Retry-After`
@@ -85,7 +100,11 @@ export async function request(
     throw new OpenArError(await errorDetail(response), response.status, retryAfter);
   }
 
-  return response.json();
+  const body: unknown = await response.json();
+  if (revalidate) {
+    remember(url, response.headers.get("ETag"), body);
+  }
+  return body;
 }
 
 /**
@@ -385,7 +404,7 @@ export async function getIniciativa(
   include: string = INICIATIVA_INCLUDE,
   signal?: AbortSignal,
 ): Promise<IniciativaDetail> {
-  const payload = (await request(`/iniciativas/${id}`, { include }, signal)) as IniciativaDetail | null;
+  const payload = (await request(`/iniciativas/${id}`, { include }, signal, true)) as IniciativaDetail | null;
   if (!payload || typeof payload.id !== "number") {
     throw new OpenArError("openAR returned an unexpected response shape", 500);
   }
@@ -454,6 +473,23 @@ export async function getComissao(
     page: typeof payload.page === "number" ? payload.page : 1,
     limit: typeof payload.limit === "number" ? payload.limit : payload.data.length,
   };
+}
+
+/** The relations this extension needs from a petition. */
+export const PETICAO_INCLUDE = "comissoes.relatorioFinal,documentos";
+
+/** One petition, with only the relations named in `include`. */
+export async function getPeticao(
+  id: number,
+  include: string = PETICAO_INCLUDE,
+  signal?: AbortSignal,
+): Promise<PeticaoDetail> {
+  // `true`: this is the second of the two endpoints openAR sends weak ETags on.
+  const payload = (await request(`/peticoes/${id}`, { include }, signal, true)) as PeticaoDetail | null;
+  if (!payload || typeof payload.id !== "number") {
+    throw new OpenArError("openAR returned an unexpected response shape", 500);
+  }
+  return payload;
 }
 
 /**
