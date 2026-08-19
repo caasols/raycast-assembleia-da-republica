@@ -74,6 +74,17 @@ Raycast's AI can query parliament directly, without opening a command:
   last recorded event, so it is labelled *Stage* rather than *Result*.
 - Data is published by the AR open-data programme and refreshed daily.
 
+## Not using Raycast?
+
+openAR also publishes an MCP server, so any MCP client can query the same data:
+
+```bash
+claude mcp add --scope user openar -- npx -y @openar/mcp
+```
+
+That covers the AI half. What it cannot do is put parliament in your launcher —
+which is what this extension is for.
+
 ## Credits
 
 Parliamentary data comes from **[openAR](https://openar.pt)**, which normalises
