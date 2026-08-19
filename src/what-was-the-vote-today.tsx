@@ -23,7 +23,7 @@ const MAX_VOTES_PER_DAY = 200;
 export default function Command() {
   const today = todayInLisbon();
 
-  const { isLoading, data, error } = usePromise(
+  const { isLoading, data, error, revalidate } = usePromise(
     async (date: string) => {
       const page = await listVotacoes({
         dataInicio: date,
@@ -42,6 +42,7 @@ export default function Command() {
       {votes.length === 0 && (
         <RequestEmptyView
           error={error}
+          onRetry={revalidate}
           icon={Icon.Calendar}
           title="No votes today"
           // Parliament does not sit every day, so an empty day is the normal

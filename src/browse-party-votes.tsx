@@ -37,7 +37,7 @@ export default function Command() {
   const [party, setParty] = useState<string | undefined>(undefined);
   const [position, setPosition] = useState<PositionId>("a_favor");
 
-  const { isLoading, data, error, pagination } = useCachedPromise(
+  const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
     (sigla: string | undefined, how: PositionId) => async (options: { page: number }) => {
       if (!sigla) {
         return { data: [], hasMore: false };
@@ -85,6 +85,7 @@ export default function Command() {
       {votes.length === 0 && (
         <RequestEmptyView
           error={error}
+          onRetry={revalidate}
           icon={Icon.TwoPeople}
           title={party ? "No votes found" : "Choose a party"}
           description={

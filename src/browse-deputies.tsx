@@ -16,7 +16,7 @@ export default function Command() {
   const [searchText, setSearchText] = useState("");
   const [party, setParty] = useState("");
 
-  const { isLoading, data, error, pagination } = useCachedPromise(
+  const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
     (query: string, sigla: string) => async (options: { page: number }) => {
       const apiPage = toApiPage(options.page);
       const result = await listDeputados({
@@ -57,6 +57,7 @@ export default function Command() {
       {deputies.length === 0 && (
         <RequestEmptyView
           error={error}
+          onRetry={revalidate}
           icon={Icon.Person}
           title="No deputies found"
           description={

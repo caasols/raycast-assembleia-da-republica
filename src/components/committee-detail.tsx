@@ -17,7 +17,7 @@ import { getPageSize } from "../lib/preferences";
  */
 export function CommitteeDetail({ id, name }: { id: number; name: string }) {
   const pageSize = getPageSize();
-  const { isLoading, data, error, pagination } = useCachedPromise(
+  const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
     (committeeId: number) => async (options: { page: number }) => {
       const apiPage = toApiPage(options.page);
       const result = await getComissao(committeeId, { sort: "desc", page: apiPage, limit: pageSize });
@@ -39,6 +39,7 @@ export function CommitteeDetail({ id, name }: { id: number; name: string }) {
       {initiatives.length === 0 && (
         <RequestEmptyView
           error={error}
+          onRetry={revalidate}
           icon={Icon.Document}
           title="No initiatives"
           description={`No initiatives are recorded as having passed through ${name}.`}

@@ -19,7 +19,7 @@ export default function Command() {
   // The size is a parameter rather than a closed-over value: usePromise types
   // its dependency array against the function's own arguments, and re-runs when
   // they change — which is what makes a changed preference take effect.
-  const { isLoading, data, error } = usePromise(async (size: number) => listCarreiras(size), [rankingSize]);
+  const { isLoading, data, error, revalidate } = usePromise(async (size: number) => listCarreiras(size), [rankingSize]);
 
   const careers = data?.data ?? [];
   const stats = data?.stats ?? null;
@@ -29,6 +29,7 @@ export default function Command() {
       {careers.length === 0 && (
         <RequestEmptyView
           error={error}
+          onRetry={revalidate}
           icon={Icon.Trophy}
           title="No ranking available"
           description="openAR returned no career data."

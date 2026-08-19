@@ -19,7 +19,7 @@ export default function Command() {
   const pageSize = getPageSize();
   const [searchText, setSearchText] = useState("");
 
-  const { isLoading, data, error, pagination } = useCachedPromise(
+  const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
     (query: string) => async (options: { page: number }) => {
       const apiPage = toApiPage(options.page);
       const result = await listComissoes({
@@ -46,6 +46,7 @@ export default function Command() {
       {committees.length === 0 && (
         <RequestEmptyView
           error={error}
+          onRetry={revalidate}
           icon={Icon.TwoPeople}
           title={searchText.trim() === "" ? "No committees" : "No matching committees"}
           description={

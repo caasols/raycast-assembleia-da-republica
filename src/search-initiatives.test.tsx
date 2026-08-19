@@ -186,6 +186,18 @@ describe("Search Initiatives", () => {
     expect(screen.getByTestId("empty-view").getAttribute("data-description")).toContain("zzzz");
   });
 
+  it("re-requests when the user retries a failure, instead of making them re-run the command", async () => {
+    mocks.listIniciativas.mockRejectedValue(new OpenArError("gateway exploded", 502));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("empty-view")).toBeInTheDocument());
+    const retry = screen.getAllByTestId("action").find((a) => a.getAttribute("data-title") === "Retry");
+    expect(retry).toBeDefined();
+
+    mocks.listIniciativas.mockResolvedValue(page([initiative()], 1));
+    fireEvent.click(retry as HTMLElement);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+  });
+
   it("reports a failure as a failure rather than as an empty search", async () => {
     mocks.listIniciativas.mockRejectedValue(new OpenArError("gateway exploded", 502));
     render(<Command />);

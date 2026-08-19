@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "../lib/errors";
 
 const mocks = vi.hoisted(() => ({ getIniciativa: vi.fn() }));
@@ -73,6 +73,16 @@ describe("InitiativeDetail", () => {
     render(<InitiativeDetail id={42} title="x" />);
     await waitFor(() => expect(actionTitles()).toContain("Copy Title"));
     expect(actionTitles()).not.toContain("Open Full Text");
+  });
+
+  it("can retry a failed load without popping back to the list", async () => {
+    mocks.getIniciativa.mockRejectedValue(new OpenArError("boom", 502));
+    render(<InitiativeDetail id={42} title="x" />);
+    await waitFor(() => expect(detail().getAttribute("data-markdown")).toContain("Could not load"));
+    const retry = screen.getAllByTestId("action").find((a) => a.getAttribute("data-title") === "Retry");
+    mocks.getIniciativa.mockResolvedValue(INITIATIVE);
+    fireEvent.click(retry as HTMLElement);
+    await waitFor(() => expect(detail().getAttribute("data-markdown")).toContain("**Authors:** PS"));
   });
 
   it("says the load failed, keeping the title so the pane is not just an error", async () => {

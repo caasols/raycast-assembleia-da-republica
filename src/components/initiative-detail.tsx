@@ -1,4 +1,4 @@
-import { Action, ActionPanel, Detail } from "@raycast/api";
+import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { getIniciativa } from "../lib/openar-client";
 import { errorMessage } from "../lib/errors";
@@ -13,7 +13,10 @@ import { initiativeLabel } from "../lib/initiatives";
  * this is a component rather than a root command.
  */
 export function InitiativeDetail({ id, title }: { id: number; title: string }) {
-  const { isLoading, data, error } = usePromise(async (initiativeId: number) => getIniciativa(initiativeId), [id]);
+  const { isLoading, data, error, revalidate } = usePromise(
+    async (initiativeId: number) => getIniciativa(initiativeId),
+    [id],
+  );
 
   // The pushed view opens instantly with the title the caller already had,
   // rather than a blank pane, and fills in as the request lands.
@@ -30,6 +33,8 @@ export function InitiativeDetail({ id, title }: { id: number; title: string }) {
       markdown={markdown}
       actions={
         <ActionPanel>
+          {/* A failed detail view was as much a dead end as a failed list. */}
+          {error && <Action title="Retry" icon={Icon.ArrowClockwise} onAction={revalidate} />}
           {data?.linkTexto && <Action.OpenInBrowser title="Open Full Text" url={data.linkTexto} />}
           <Action.CopyToClipboard title="Copy Title" content={title} />
         </ActionPanel>
