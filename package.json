@@ -222,7 +222,28 @@
       ]
     }
   ],
-  "tools": [],
+  "tools": [
+    {
+      "name": "get-todays-votes",
+      "title": "Get Today's Votes",
+      "description": "Get the plenary votes the Portuguese parliament held today, with each result and how every party voted."
+    },
+    {
+      "name": "search-initiatives",
+      "title": "Search Initiatives",
+      "description": "Search legislative initiatives in the Portuguese parliament by title, legislature, author party, or whether they were approved."
+    },
+    {
+      "name": "get-party-votes",
+      "title": "Get Party Votes",
+      "description": "Get the votes where a given party voted in favour, against, or abstained, in the Portuguese parliament."
+    },
+    {
+      "name": "search-deputies",
+      "title": "Search Deputies",
+      "description": "Find members of the Portuguese parliament by name, party, or legislature."
+    }
+  ],
   "dependencies": {
     "@raycast/api": "^1.104.20",
     "@raycast/utils": "^2.2.7"

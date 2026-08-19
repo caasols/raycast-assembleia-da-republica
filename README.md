@@ -31,6 +31,17 @@ needs **no account, key, or binary installed** — every endpoint is public.
 - Search in either language: the interface is English, and typing `votações`,
   `deputados` or `petições` still finds the right command
 
+## AI tools
+
+Raycast's AI can query parliament directly, without opening a command:
+
+| Tool | Answers |
+| --- | --- |
+| `Get Today's Votes` | "What did parliament vote on today?" |
+| `Search Initiatives` | "Find bills about labour law in the XVII legislature" |
+| `Get Party Votes` | "What has Chega voted against recently?" |
+| `Search Deputies` | "Who represents Porto for the PS?" |
+
 ## Commands
 
 | Command | Description |

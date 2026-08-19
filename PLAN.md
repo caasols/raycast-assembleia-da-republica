@@ -5,7 +5,7 @@ audit findings live in **`context.md`**, and the working rules in **`CLAUDE.md`*
 Read both before starting a phase.
 
 - **Status:** seven commands plus three pushed detail views, paginated, 343 tests at 100% coverage
-- **Next:** A4 AI tools → A5 ETag caching (A1–A3 done)
+- **Next:** A5 ETag caching (A1–A4 done)
 - **Needs you:** B1 `npm run smoke` — validates everything above it
 - **Outstanding risk:** nothing has ever run against the live API — `context.md` §3 B1
 - **Last updated:** 2026-08-19
@@ -64,7 +64,7 @@ without hardcoding `XVII` — which goes stale at the next election.
 Same session as A2 ideally: the dropdown and the preference are the same
 decision seen twice, and `pageSize` already established the pattern.
 
-#### A4 · AI extension `tools` *(large — the differentiator)*
+#### A4 · AI extension `tools` ✅ *done*
 Raycast's AI can call extension tools directly, so *"how did PS vote on the
 budget?"* is answerable without opening a command. Nothing else on this list
 changes what the extension **is**.
