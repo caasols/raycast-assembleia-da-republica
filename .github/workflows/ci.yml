@@ -1,10 +1,14 @@
 name: CI
 
 on:
+  # Not just `main`: development happens on feature branches that may never open
+  # a PR, and a workflow that only triggers on main is a workflow that never
+  # runs — which is exactly what happened here for twenty-nine commits.
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
+  # So a run can be forced without pushing, e.g. to re-check `ray lint` against
+  # raycast.com after a change there.
+  workflow_dispatch:
 
 jobs:
   check:
