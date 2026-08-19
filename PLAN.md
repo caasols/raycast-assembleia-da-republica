@@ -4,7 +4,7 @@ The forward plan. Completed phases are pruned; project state, decisions and
 audit findings live in **`context.md`**, and the working rules in **`CLAUDE.md`**.
 Read both before starting a phase.
 
-- **Status:** seven commands plus three pushed detail views, paginated, 343 tests at 100% coverage
+- **Status:** seven commands, four pushed detail views, nine AI tools, 447 tests at 100% coverage
 - **Next:** Track B — everything in Track A is done
 - **Needs you:** B1 `npm run smoke` — validates everything above it
 - **Outstanding risk:** nothing has ever run against the live API — `context.md` §3 B1
@@ -24,7 +24,11 @@ Read both before starting a phase.
 | `Browse Committees` | `/comissoes` |
 | `Browse Longest-Serving Deputies` | `/deputados/carreiras` |
 
-`src/lib/`: `openar-client` (8 endpoints), `query`, `errors`, `types`, `dates`,
+**Nine AI tools** in `src/tools/`: today's votes, party votes, search
+initiatives / petitions / committees / deputies, and detail lookups for an
+initiative, a deputy and a deputy's activity.
+
+`src/lib/`: `openar-client` (13 endpoints), `query`, `errors`, `types`, `dates`,
 `votes`, `initiatives`, `petitions`, `deputies`, `careers`.
 `src/components/`: `request-empty-view`, `vote-result-icon`.
 
@@ -64,7 +68,7 @@ without hardcoding `XVII` — which goes stale at the next election.
 Same session as A2 ideally: the dropdown and the preference are the same
 decision seen twice, and `pageSize` already established the pattern.
 
-#### A4 · AI extension `tools` ✅ *done*
+#### A4 · AI extension `tools` ✅ *done — nine tools*
 Raycast's AI can call extension tools directly, so *"how did PS vote on the
 budget?"* is answerable without opening a command. Nothing else on this list
 changes what the extension **is**.
@@ -95,11 +99,21 @@ the 429 path are verified against *our reading of the spec*.
 wrong, all seven commands are wrong in the same way. Worth ten minutes before
 any more building.
 
-#### B2 · Answer the Deputy Voting Record question
-One live request settles whether P10.1 is buildable at all: plenary votes are
-recorded per party, and individual names may exist only inside `detalhe`, the
-unsanitised AR HTML we do not render (D40). Cheap to check while B1 is open;
-expensive to discover after building it.
+#### B2 · Do per-deputy vote positions exist?
+**Narrowed — most of what this blocked is now built.** Deputy Activity ships
+(D89): 17 of the endpoint's 18 arrays needed nothing unverified, and marking the
+whole command blocked because one facet was uncertain was a decomposition
+failure.
+
+What remains is one array. `actp` is described as *"outras actividades em
+plenário (votos, etc.)"* and its element shape is undeclared, so it is the only
+place an individual vote position could live — the alternative being that they
+exist only inside `detalhe`'s unsanitised HTML (D40). One live request against a
+long-serving deputy settles it.
+
+Until then both the view and the tool say plainly that plenary votes are
+recorded per party, so the absence reads as a property of the data rather than a
+missing feature.
 
 #### B3 · `metadata/` screenshots
 Store review requires them. Hard blocker on submission, and it needs a working
