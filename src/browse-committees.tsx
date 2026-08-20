@@ -6,7 +6,7 @@ import { RequestEmptyView } from "./components/request-empty-view";
 import { LegislatureDropdown } from "./components/legislature-dropdown";
 import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { CommitteeDetail } from "./components/committee-detail";
-import { hasMorePages, toApiPage } from "./lib/pagination";
+import { loadListPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
 
 /**
@@ -26,19 +26,20 @@ export default function Command() {
   const [legislature, setLegislature] = useState<string | undefined>(undefined);
   const selectedLegislature = legislature ?? initialId;
 
+  // pageSize is an argument rather than closed over, so a changed preference
+  // takes effect without a relaunch.
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (query: string, legislaturaId: string) => async (options: { page: number }) => {
-      const apiPage = toApiPage(options.page);
-      const result = await listComissoes({
-        legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
-        q: query.trim() === "" ? undefined : query.trim(),
-        sort: "asc",
-        page: apiPage,
-        limit: pageSize,
-      });
-      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
-    },
-    [searchText, selectedLegislature],
+    (query: string, legislaturaId: string, limit: number) => async (options: { page: number }) =>
+      loadListPage(options.page, limit, (page, pageLimit) =>
+        listComissoes({
+          legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
+          q: query.trim() === "" ? undefined : query.trim(),
+          sort: "asc",
+          page,
+          limit: pageLimit,
+        }),
+      ),
+    [searchText, selectedLegislature, pageSize],
   );
 
   const committees = data ?? [];

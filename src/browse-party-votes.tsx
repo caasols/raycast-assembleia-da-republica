@@ -10,7 +10,7 @@ import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures
 import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
 import type { VotePosition } from "./lib/votes";
 import { displayDate } from "./lib/dates";
-import { hasMorePages, toApiPage } from "./lib/pagination";
+import { loadListPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
 
 /**
@@ -45,22 +45,25 @@ export default function Command() {
   const [party, setParty] = useState<string | undefined>(undefined);
   const [position, setPosition] = useState<VotePosition>("for");
 
+  // pageSize is an argument rather than closed over, so a changed preference
+  // takes effect without a relaunch.
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (sigla: string | undefined, how: VotePosition, legislaturaId: string) => async (options: { page: number }) => {
-      if (!sigla) {
-        return { data: [], hasMore: false };
-      }
-      const apiPage = toApiPage(options.page);
-      const result = await listVotacoes({
-        ...positionFilter(how, sigla),
-        legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
-        sort: "desc",
-        page: apiPage,
-        limit: pageSize,
-      });
-      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
-    },
-    [party, position, legislatura],
+    (sigla: string | undefined, how: VotePosition, legislaturaId: string, limit: number) =>
+      async (options: { page: number }) => {
+        if (!sigla) {
+          return { data: [], hasMore: false };
+        }
+        return loadListPage(options.page, limit, (page, pageLimit) =>
+          listVotacoes({
+            ...positionFilter(how, sigla),
+            legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
+            sort: "desc",
+            page,
+            limit: pageLimit,
+          }),
+        );
+      },
+    [party, position, legislatura, pageSize],
   );
 
   const votes = data ?? [];

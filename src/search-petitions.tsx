@@ -7,7 +7,7 @@ import { PetitionDetail } from "./components/petition-detail";
 import { LegislatureDropdown } from "./components/legislature-dropdown";
 import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { petitionDetailMarkdown, signatureLabel } from "./lib/petitions";
-import { hasMorePages, toApiPage } from "./lib/pagination";
+import { loadListPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
 
 /**
@@ -26,19 +26,20 @@ export default function Command() {
   const [legislature, setLegislature] = useState<string | undefined>(undefined);
   const selectedLegislature = legislature ?? initialId;
 
+  // pageSize is an argument rather than closed over, so a changed preference
+  // takes effect without a relaunch.
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (query: string, legislaturaId: string) => async (options: { page: number }) => {
-      const apiPage = toApiPage(options.page);
-      const result = await listPeticoes({
-        legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
-        q: query.trim() === "" ? undefined : query.trim(),
-        sort: "desc",
-        page: apiPage,
-        limit: pageSize,
-      });
-      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
-    },
-    [searchText, selectedLegislature],
+    (query: string, legislaturaId: string, limit: number) => async (options: { page: number }) =>
+      loadListPage(options.page, limit, (page, pageLimit) =>
+        listPeticoes({
+          legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
+          q: query.trim() === "" ? undefined : query.trim(),
+          sort: "desc",
+          page,
+          limit: pageLimit,
+        }),
+      ),
+    [searchText, selectedLegislature, pageSize],
   );
 
   const petitions = data ?? [];

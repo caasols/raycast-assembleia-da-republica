@@ -5,7 +5,7 @@ import { RequestEmptyView } from "./request-empty-view";
 import { InitiativeDetail } from "./initiative-detail";
 import { initiativeDetailMarkdown, initiativeLabel } from "../lib/initiatives";
 import { displayDate } from "../lib/dates";
-import { hasMorePages, toApiPage } from "../lib/pagination";
+import { loadListPage } from "../lib/pagination";
 import { getPageSize } from "../lib/preferences";
 
 /**
@@ -17,13 +17,14 @@ import { getPageSize } from "../lib/preferences";
  */
 export function CommitteeDetail({ id, name }: { id: number; name: string }) {
   const pageSize = getPageSize();
+  // pageSize is an argument rather than closed over, so a changed preference
+  // takes effect without a relaunch.
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (committeeId: number) => async (options: { page: number }) => {
-      const apiPage = toApiPage(options.page);
-      const result = await getComissao(committeeId, { sort: "desc", page: apiPage, limit: pageSize });
-      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
-    },
-    [id],
+    (committeeId: number, limit: number) => async (options: { page: number }) =>
+      loadListPage(options.page, limit, (page, pageLimit) =>
+        getComissao(committeeId, { sort: "desc", page, limit: pageLimit }),
+      ),
+    [id, pageSize],
   );
 
   const initiatives = data ?? [];
