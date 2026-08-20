@@ -83,17 +83,33 @@ describe("Browse Party Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("CH|contra");
+    choose("CH|against");
     await waitFor(() =>
       expect(mocks.listVotacoes).toHaveBeenLastCalledWith(expect.objectContaining({ contra: "CH", sort: "desc" })),
     );
+  });
+
+  it("sends the in-favour filter for the default position — the one that once vanished", async () => {
+    // D101: the dropdown id "a_favor" used to be passed as a computed key that
+    // the client (expecting `aFavor`) silently ignored, so the DEFAULT state of
+    // this command showed the whole archive as the party's in-favour votes.
+    // This asserts the exact parameter, for the exact position that broke.
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("PS|for");
+    await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalled());
+    const params = mocks.listVotacoes.mock.calls[0][0];
+    expect(params.aFavor).toBe("PS");
+    // The wire-cased key must not reappear alongside it.
+    expect(params).not.toHaveProperty("a_favor");
   });
 
   it("uses the API's own filter rather than fetching everything and filtering here", async () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("PS|abstencao");
+    choose("PS|abstained");
     await waitFor(() =>
       expect(mocks.listVotacoes).toHaveBeenLastCalledWith(expect.objectContaining({ abstencao: "PS" })),
     );
@@ -103,7 +119,7 @@ describe("Browse Party Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()], 300));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("PS|a_favor");
+    choose("PS|for");
     fireEvent.click(await waitFor(() => screen.getByTestId("load-more")));
     await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalledTimes(2));
     expect(mocks.listVotacoes.mock.calls[1][0].page).toBe(2);
@@ -122,7 +138,7 @@ describe("Browse Party Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("PS|a_favor");
+    choose("PS|for");
     await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalled());
     expect(mocks.listVotacoes.mock.calls[0][0].legislatura).toBeUndefined();
   });
@@ -131,7 +147,7 @@ describe("Browse Party Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("PS|a_favor");
+    choose("PS|for");
     const item = await waitFor(() => screen.getByTestId("list-item"));
     expect(item).toHaveAttribute("data-title", "Orçamento do Estado");
     expect(item).toHaveAttribute("data-accessories", "18 August 2026");
@@ -141,7 +157,7 @@ describe("Browse Party Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([vote({ data: null, unanime: true })]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("PS|a_favor");
+    choose("PS|for");
     await waitFor(() =>
       expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "Aprovado (unanimous)"),
     );
@@ -151,7 +167,7 @@ describe("Browse Party Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("PS|a_favor");
+    choose("PS|for");
     await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
 
     // The placeholder option carries no "party|position" pair at all.
@@ -163,7 +179,7 @@ describe("Browse Party Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("CH|abstencao");
+    choose("CH|abstained");
     await waitFor(() => expect(screen.getByTestId("empty-view")).toHaveAttribute("data-title", "No votes found"));
     expect(screen.getByTestId("empty-view").getAttribute("data-description")).toContain("CH");
   });
@@ -172,7 +188,7 @@ describe("Browse Party Votes", () => {
     mocks.listVotacoes.mockRejectedValue(new OpenArError("boom", 500));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
-    choose("PS|a_favor");
+    choose("PS|for");
     await waitFor(() =>
       expect(screen.getByTestId("empty-view")).toHaveAttribute("data-title", "Could not reach openAR"),
     );

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary, VOTE_SIDES } from "./votes";
+import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary, VOTE_SIDES } from "./votes";
 import type { VotacaoListItem } from "./types";
 
 function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
@@ -24,6 +24,24 @@ function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
     ...overrides,
   };
 }
+
+describe("positionFilter", () => {
+  // Asserted with toEqual, not toMatchObject: the bug this guards against
+  // (D101) was an extra, ignored key — a subset match would pass right through
+  // it. Every position is pinned because the one that broke was the only one
+  // no test asserted.
+  it("maps 'for' onto the client's aFavor parameter", () => {
+    expect(positionFilter("for", "PS")).toEqual({ aFavor: "PS" });
+  });
+
+  it("maps 'against' onto contra", () => {
+    expect(positionFilter("against", "CH")).toEqual({ contra: "CH" });
+  });
+
+  it("maps 'abstained' onto abstencao", () => {
+    expect(positionFilter("abstained", "IL")).toEqual({ abstencao: "IL" });
+  });
+});
 
 describe("VOTE_SIDES", () => {
   it("keeps absences distinct from the three voting positions", () => {

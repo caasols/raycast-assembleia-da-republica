@@ -4,8 +4,8 @@ The forward plan, and **only** the forward plan: an item is deleted from this
 file the moment it lands. What already exists is inventoried in `context.md` §1;
 decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
-- **Next:** C1 — a P0 bug the 2026-08-20 audit found (`context.md` §6, D101);
-  it needs no network and outranks everything below it
+- **Next:** C2 — harden the assertions mutation testing showed can't fail
+  (`context.md` §6.2)
 - **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-20
 
@@ -16,22 +16,6 @@ decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 Findings and evidence live in `context.md` §6; this is the work, in priority
 order. C-numbers are fresh — the retired A-numbers stay reserved because old
 decisions still cite them.
-
-### C1 · P0 — Fix the "Voted in favour" filter in Browse Party Votes
-`{[how]: sigla}` with `how = "a_favor"` misses the client's camelCase `aFavor`,
-so the command's **default position queries nothing** and shows the unfiltered
-archive as the party's in-favour votes (D101). The fix is two parts, and the
-second is the one that keeps this from recurring:
-
-- Map dropdown ids to client keys explicitly (`a_favor → aFavor`) — or rename
-  the client params to the wire names so no translation exists to get wrong.
-  Decide once; the tool `get-party-votes` must keep passing whichever survives.
-- **Regression tests that assert the client call for all three positions**,
-  including the default. The existing tests check `contra` and `abstencao`
-  only, which is exactly why this shipped.
-
-Done when: all three positions produce the right parameter, a test fails if
-any of them regresses, and the tool and command agree.
 
 ### C2 · P1 — Kill the surviving mutants
 Mutation testing scored the suite **81.2%** (1 118 of 1 377 killed) and

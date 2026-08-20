@@ -175,7 +175,8 @@ stated explicitly — correct these rather than inherit them as fact.
 | D98 | 2026-08-19 | **Nothing in the toolchain can catch a placeholder icon** | `ray lint`, `ray build` and CI all passed the scaffold's generic chip for thirty commits, because it was a valid 512×512 PNG the whole time. The check that finds this class of defect is a person looking at the artefact — the same lesson as the 0-byte command file (§4), in a different costume. | Settled |
 | D99 | 2026-08-19 | **The inventory of finished work moved from `PLAN.md` to here** | `PLAN.md` had grown a "What exists" section, which is exactly the drift `CLAUDE.md`'s three-document table exists to prevent: the plan is *what we do next*, and a list of what shipped is *what we know*. `PLAN.md` is now forward-only — an item is deleted the moment it lands, rather than being marked done and left in place. | Settled |
 | D100 | 2026-08-20 | **Full-repo audit: every source and test file read, plus tooling** — ts-prune (dead exports), depcheck (dependencies), jscpd (duplication), and **Stryker mutation testing** over all of `src/` to answer "which tests never fail" with evidence rather than opinion | The user asked for a deep audit of dead code, duplication, weak tests and tech debt. Reading alone cannot find a test that passes when the code is broken; mutation testing can, and it also *found nothing where the suite is strong*, which is itself a result. Findings in §6; the prioritised work items are `PLAN.md` Track C. Stryker was installed only for the audit and reverted — adopting it permanently is a decision left open (Track C). | Settled |
-| D101 | 2026-08-20 | **BUG FOUND (P0): Browse Party Votes' "Voted in favour" filter never reaches the API** | `browse-party-votes.tsx` builds `listVotacoes({[how]: sigla})` where `how` is the dropdown id `"a_favor"` — but the client's parameter is camelCase `aFavor`, so the computed key silently misses and the request goes out **unfiltered**. "In favour" is the *default* position, so the command's default state shows the whole vote archive labelled as the party's in-favour votes — the confident-wrong-answer failure D80 exists to prevent. Verified empirically against the real client with a stubbed fetch. The `get-party-votes` **tool** uses `"aFavor"` and is correct, so tool and command disagree — the exact divergence the shared-`lib/` rule was meant to make impossible. Root cause: a computed object key bypasses TypeScript's excess-property checking, and the command tests assert only the `contra` and `abstencao` positions. | **Open — PLAN C1** |
+| D101 | 2026-08-20 | **BUG FOUND (P0): Browse Party Votes' "Voted in favour" filter never reaches the API** | `browse-party-votes.tsx` builds `listVotacoes({[how]: sigla})` where `how` is the dropdown id `"a_favor"` — but the client's parameter is camelCase `aFavor`, so the computed key silently misses and the request goes out **unfiltered**. "In favour" is the *default* position, so the command's default state shows the whole vote archive labelled as the party's in-favour votes — the confident-wrong-answer failure D80 exists to prevent. Verified empirically against the real client with a stubbed fetch. The `get-party-votes` **tool** uses `"aFavor"` and is correct, so tool and command disagree — the exact divergence the shared-`lib/` rule was meant to make impossible. Root cause: a computed object key bypasses TypeScript's excess-property checking, and the command tests assert only the `contra` and `abstencao` positions. | **Fixed (D103)** |
+| D103 | 2026-08-20 | **D101 fixed via a shared `positionFilter()` in `lib/votes.ts`** — an explicit branch-by-branch mapping from the question vocabulary (`for` / `against` / `abstained`) to the client's parameters, consumed by *both* the command and the `get-party-votes` tool | Considered renaming the client params to the wire names instead (no translation to get wrong), but that breaks the client's camelCase convention (`dataInicio`, `aFavor`) for every caller to fix one site. A single tested mapping both consumers share is smaller and makes the tool/command divergence structurally impossible, which is what D77/D78 promised all along. The dropdown ids switched from wire names to the question vocabulary so no id can be mistaken for a parameter again. Regression tests pin the exact parameter for **all three** positions — with `toEqual`, since the failing shape was an *extra ignored key* that a subset match would pass. | Settled |
 | D102 | 2026-08-20 | Audit findings recorded here (§6); remediation queued as **`PLAN.md` Track C**, ordered C1 (the bug) → tests → duplication → hygiene | Keeps the lanes: what we *know* lands in this file, what we *do next* in the plan. Track C is deliberately numbered fresh rather than reusing the retired A-numbers, which older decisions (e.g. D95) still cite. | Settled |
 
 ### Open questions
@@ -253,9 +254,9 @@ dead exports; `depcheck` for dependencies; `jscpd` for duplication; **Stryker
 mutation testing** across all of `src/` to find assertions that cannot fail.
 Remediation is `PLAN.md` Track C — this section is the evidence.
 
-### 6.1 The defect (P0)
+### 6.1 The defect (P0) — since fixed (D103)
 
-**The "Voted in favour" filter in Browse Party Votes is silently dropped**
+**The "Voted in favour" filter in Browse Party Votes was silently dropped**
 (D101). `{[how]: sigla}` with `how = "a_favor"` misses `ListVotacoesParams`'
 camelCase `aFavor`, TypeScript's excess-property check does not fire on
 computed keys, and the tests only ever assert the other two positions. The
@@ -267,8 +268,9 @@ a_favor position → /v1/votacoes?sort=desc&page=1&limit=50        ← no filter
 contra  position → /v1/votacoes?contra=PS&sort=desc&page=1&limit=50
 ```
 
-The `get-party-votes` tool maps positions correctly, so the tool and the
-command currently give different answers to the same question.
+The `get-party-votes` tool mapped positions correctly, so the tool and the
+command gave different answers to the same question until D103 made them share
+one tested `positionFilter()`.
 
 ### 6.2 Which tests never fail (mutation results)
 
