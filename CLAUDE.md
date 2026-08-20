@@ -211,6 +211,15 @@ and `tsc` checks against the real one.
 a module-level `Cache` that outlives a test; two tests were once passing on the
 *previous* test's data.
 
+**Mutation testing is the check that grades the tests themselves.** `npm run
+test:mutation` (Stryker, installed on demand so `npm ci` stays lean; config in
+`stryker.config.json`) mutates `src/` and reports which changes no test
+noticed. It is deliberately not part of the per-push CI — a full run costs ~10
+minutes — but a manual `Mutation` workflow exists, and the audit that
+introduced it caught a P0 bug 100% line coverage could not see (`context.md`
+§6.2, D101). Run it after test-heavy changes; the survivor bins in §6.2 say
+which findings to act on and which to ignore.
+
 **CI order is load-bearing: lint → build → typecheck → coverage.** Only
 `ray build` generates `raycast-env.d.ts` (verified — `ray lint` does not), and
 that file is gitignored but holds the `Preferences` type, so typechecking first

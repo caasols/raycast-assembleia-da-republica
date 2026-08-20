@@ -4,7 +4,7 @@ The forward plan, and **only** the forward plan: an item is deleted from this
 file the moment it lands. What already exists is inventoried in `context.md` §1;
 decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
-- **Next:** C10 — adopt mutation testing as an opt-in check
+- **Next:** C11 — toolchain nits, then Track B (needs the author)
 - **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-20
 
@@ -15,14 +15,6 @@ decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 Findings and evidence live in `context.md` §6; this is the work, in priority
 order. C-numbers are fresh — the retired A-numbers stay reserved because old
 decisions still cite them.
-
-### C10 · P4 — Decide: adopt mutation testing permanently?
-The audit ran Stryker as a one-off and reverted it. **For:** it found the only
-class of defect the 100%-coverage ratchet cannot see, in a suite that already
-had 462 green tests. **Against:** ~175 devDependencies and a wall-clock cost
-far beyond the unit suite, so it does not belong in the per-push CI job.
-Recommendation: add as an `npm run test:mutation` script plus a manual/weekly
-`workflow_dispatch` job, not a per-push gate.
 
 ### C11 · P4 — Toolchain nits
 `@types/node` 22.x vs CI's Node 24; `depcheck`'s `@vitest/coverage-v8` flag is

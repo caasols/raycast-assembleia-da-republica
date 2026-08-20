@@ -278,6 +278,7 @@
     "publish": "npx @raycast/api@latest publish",
     "smoke": "tsx scripts/smoke.ts",
     "test": "vitest run",
+    "test:mutation": "npm install --no-save --no-audit --no-fund @stryker-mutator/core@10 @stryker-mutator/vitest-runner@10 && stryker run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
