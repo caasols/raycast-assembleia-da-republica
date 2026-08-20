@@ -3,6 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { useState } from "react";
 import { OpenArError } from "./lib/errors";
 
 const mocks = vi.hoisted(() => ({ useLegislatures: vi.fn(), getPageSize: vi.fn(), listIniciativas: vi.fn() }));
@@ -19,9 +20,16 @@ import { initiative, page } from "../test/fixtures";
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.useLegislatures.mockReturnValue({
-    legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
-    initialId: "XVII",
+  // Stateful like the real hook: the dropdown tests change the selection and
+  // expect a refetch, which a fixed return value cannot produce.
+  mocks.useLegislatures.mockImplementation(() => {
+    const [chosenId, setSelectedId] = useState<string | undefined>(undefined);
+    return {
+      legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
+      initialId: "XVII",
+      selectedId: chosenId ?? "XVII",
+      setSelectedId,
+    };
   });
   mocks.getPageSize.mockReturnValue(50);
 });

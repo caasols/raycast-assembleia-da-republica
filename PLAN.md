@@ -4,7 +4,7 @@ The forward plan, and **only** the forward plan: an item is deleted from this
 file the moment it lands. What already exists is inventoried in `context.md` §1;
 decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
-- **Next:** C9 — fold the legislature-selection dance into the hook
+- **Next:** C10 — adopt mutation testing as an opt-in check
 - **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-20
 
@@ -15,11 +15,6 @@ decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 Findings and evidence live in `context.md` §6; this is the work, in priority
 order. C-numbers are fresh — the retired A-numbers stay reserved because old
 decisions still cite them.
-
-### C9 · P3 — Fold the legislature-selection dance into the hook
-Three commands repeat `useState<string | undefined>` + `?? initialId` + the
-same comment. `useLegislatures` can return `selectedId`/`setSelectedId` and own
-the "preference until the user chooses" rule in one tested place.
 
 ### C10 · P4 — Decide: adopt mutation testing permanently?
 The audit ran Stryker as a one-off and reverted it. **For:** it found the only

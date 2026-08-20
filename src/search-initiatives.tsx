@@ -23,11 +23,8 @@ import { getPageSize } from "./lib/preferences";
 export default function Command() {
   const pageSize = getPageSize();
   const [searchText, setSearchText] = useState("");
-  const { legislatures, initialId } = useLegislatures();
-  // undefined until the list loads, so the preference's "current" can
-  // resolve before the user's own choice takes over.
-  const [legislature, setLegislature] = useState<string | undefined>(undefined);
-  const selectedLegislature = legislature ?? initialId;
+  // The "preference until the user chooses" rule lives in the hook, not here.
+  const { legislatures, selectedId: selectedLegislature, setSelectedId: setLegislature } = useLegislatures();
 
   // pageSize is an argument rather than closed over: useCachedPromise re-runs
   // when its dependencies change, so a changed preference takes effect here

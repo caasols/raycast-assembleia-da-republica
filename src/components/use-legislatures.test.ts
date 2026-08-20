@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor, cleanup } from "@testing-library/react";
+import { act, renderHook, waitFor, cleanup } from "@testing-library/react";
 
 const mocks = vi.hoisted(() => ({
   listLegislaturas: vi.fn(),
@@ -89,5 +89,35 @@ describe("useLegislatures", () => {
     const { result } = renderHook(() => useLegislatures());
     await waitFor(() => expect(result.current.legislatures).toHaveLength(1));
     expect(result.current.initialId).toBe(ALL_LEGISLATURES);
+  });
+});
+
+describe("useLegislatures selection", () => {
+  it("follows the initial legislature until the user chooses", async () => {
+    mocks.listLegislaturas.mockResolvedValue(LIST);
+    const { result } = renderHook(() => useLegislatures());
+    await waitFor(() => expect(result.current.selectedId).toBe("XVII"));
+  });
+
+  it("lets the user's choice win over the preference", async () => {
+    mocks.listLegislaturas.mockResolvedValue(LIST);
+    const { result } = renderHook(() => useLegislatures());
+    await waitFor(() => expect(result.current.selectedId).toBe("XVII"));
+    act(() => result.current.setSelectedId("XVI"));
+    expect(result.current.selectedId).toBe("XVI");
+  });
+
+  it("keeps a choice of all legislatures even when current resolves afterwards", async () => {
+    // "" is a real choice, not the not-yet-chosen state: a user who widened to
+    // all legislatures must not be snapped back to the current one when the
+    // slow /legislaturas response finally lands.
+    let resolve: (value: unknown) => void = () => {};
+    mocks.listLegislaturas.mockReturnValue(new Promise((r) => (resolve = r)));
+    const { result } = renderHook(() => useLegislatures());
+    act(() => result.current.setSelectedId(ALL_LEGISLATURES));
+    await act(async () => {
+      resolve(LIST);
+    });
+    expect(result.current.selectedId).toBe(ALL_LEGISLATURES);
   });
 });
