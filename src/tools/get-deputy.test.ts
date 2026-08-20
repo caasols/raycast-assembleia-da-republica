@@ -60,4 +60,10 @@ describe("get-deputy tool", () => {
     expect(result.initiativesAuthored).toBeNull();
     expect(result.initiativesApproved).toBeNull();
   });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.getDeputado.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ id: 4321 })).rejects.toThrow("openAR unreachable");
+  });
 });

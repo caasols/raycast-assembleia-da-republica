@@ -46,4 +46,10 @@ describe("search-deputies tool", () => {
       legislature: "XVII",
     });
   });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.listDeputados.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ name: "x" })).rejects.toThrow("openAR unreachable");
+  });
 });

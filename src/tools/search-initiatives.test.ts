@@ -47,4 +47,10 @@ describe("search-initiatives tool", () => {
     expect(result.initiatives[0]).toMatchObject({ id: 42, fullTextUrl: "https://example.pt/texto.pdf" });
     expect(result.total).toBe(1);
   });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.listIniciativas.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ query: "x" })).rejects.toThrow("openAR unreachable");
+  });
 });

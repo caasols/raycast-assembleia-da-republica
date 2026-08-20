@@ -339,6 +339,15 @@ label fragments inside markdown builders where the tests already assert the
 semantically load-bearing substrings. Chasing these buys assertion-brittleness,
 not safety.
 
+**Verification (same day, after PLAN C1/C2/C4 landed):** a second full run
+scored **88.0%** — 1 218 of 1 384 killed, survivors down from 258 to 166,
+*zero* uncovered. Tools 97.0%, components 97.6%, the client 94.2%; `errors`,
+`pagination`, `preferences`, `etag-cache`, `request-empty-view` and five of
+nine tools at 100%. Every remaining survivor sits in the explained bins above
+— cosmetic markdown fragments in the presentation helpers, the stub-masked
+empty-view guards, and the four documented equivalents — so C2's done
+condition ("100% explained, not 100% score") is met.
+
 ### 6.3 Dead code
 
 - **`VotacaoKey`** (`types.ts`) — exported, zero importers. The "compound key"

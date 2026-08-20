@@ -8,7 +8,16 @@
  */
 import type { DeputadoAtividade } from "./types";
 
-/** The categories worth surfacing, in the order a reader cares about them. */
+/**
+ * The categories worth surfacing, in the order a reader cares about them.
+ *
+ * Two of the endpoint's 18 arrays are deliberately absent: `deputado` is the
+ * subject rather than an activity, and `dadosLegis` is excluded because not
+ * even its *meaning* is knowable from the spec — every label here is a claim
+ * about what a count counts, and a guessed one would be a confident wrong
+ * answer in the UI and in the AI tool alike. Add it the day live data (PLAN
+ * B1) shows what it holds.
+ */
 export const ACTIVITY_CATEGORIES = [
   { key: "iniciativas", label: "Initiatives authored" },
   { key: "intervencoes", label: "Plenary interventions" },

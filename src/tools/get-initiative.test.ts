@@ -66,4 +66,10 @@ describe("get-initiative tool", () => {
     });
     expect((await tool({ id: 42 })).stages[0].votes).toEqual([]);
   });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.getIniciativa.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ id: 42 })).rejects.toThrow("openAR unreachable");
+  });
 });

@@ -27,4 +27,10 @@ describe("search-committees tool", () => {
     const result = await tool({});
     expect(result.committees[0]).toEqual({ id: 42, name: "Assuntos Constitucionais", acronym: "CACDLG" });
   });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.listComissoes.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ query: "x" })).rejects.toThrow("openAR unreachable");
+  });
 });

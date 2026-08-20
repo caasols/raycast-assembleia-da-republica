@@ -4,7 +4,7 @@ The forward plan, and **only** the forward plan: an item is deleted from this
 file the moment it lands. What already exists is inventoried in `context.md` §1;
 decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
-- **Next:** C8 — small dead-code and dedup sweep
+- **Next:** C9 — fold the legislature-selection dance into the hook
 - **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-20
 
@@ -15,21 +15,6 @@ decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 Findings and evidence live in `context.md` §6; this is the work, in priority
 order. C-numbers are fresh — the retired A-numbers stay reserved because old
 decisions still cite them.
-
-### C2v · P1 — Verify the mutant kill with a re-run
-The C2 assertions landed; a verification mutation run is in flight. Read its
-report, confirm the actionable survivors died, record the new score in
-`context.md` §6.2, and delete this item.
-
-### C8 · P3 — Small dead-code and dedup sweep
-- Delete `VotacaoKey` (`types.ts`) — zero importers.
-- Decide `dadosLegis`: add it to `ACTIVITY_CATEGORIES` or comment why it is
-  excluded; fix the activity test's "18 keys" comment that asserts 16.
-- One `unexpectedShape()` helper for the nine identical `OpenArError` throws.
-- `signatureLabel` builds `"8,421 signatures"` and the markdown strips the
-  suffix back off — split into count formatter + label instead.
-- Pin D80 (failures propagate) with one test in each of the eight tools that
-  lack it, matching `get-todays-votes`.
 
 ### C9 · P3 — Fold the legislature-selection dance into the hook
 Three commands repeat `useState<string | undefined>` + `?? initialId` + the

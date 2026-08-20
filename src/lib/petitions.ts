@@ -5,17 +5,23 @@ import type { Peticao } from "./types";
 import { displayDate } from "./dates";
 
 /**
- * Signature count, formatted for reading.
+ * Signature count, formatted for reading — "8,421", no unit.
  *
  * Petitions cross thresholds at 1 000 (a written response), 4 000 (a committee
  * hearing) and 7 500 (a plenary debate), so the number is the most
  * consequential fact about a petition and is shown rather than buried.
  */
-export function signatureLabel(petition: Peticao): string | null {
+export function signatureCount(petition: Peticao): string | null {
   if (petition.assinaturas === null) {
     return null;
   }
-  return `${petition.assinaturas.toLocaleString("en-GB")} signatures`;
+  return petition.assinaturas.toLocaleString("en-GB");
+}
+
+/** The count with its unit, for a list accessory that stands alone. */
+export function signatureLabel(petition: Peticao): string | null {
+  const count = signatureCount(petition);
+  return count === null ? null : `${count} signatures`;
 }
 
 export function petitionDetailMarkdown(petition: Peticao): string {
@@ -30,9 +36,10 @@ export function petitionDetailMarkdown(petition: Peticao): string {
   if (petition.autor) {
     facts.push(`**Author:** ${petition.autor}`);
   }
-  const signatures = signatureLabel(petition);
+  // The "Signatures:" label already names the unit, so only the count follows.
+  const signatures = signatureCount(petition);
   if (signatures) {
-    facts.push(`**Signatures:** ${signatures.replace(" signatures", "")}`);
+    facts.push(`**Signatures:** ${signatures}`);
   }
   if (petition.situacao) {
     facts.push(`**Status:** ${petition.situacao}`);
