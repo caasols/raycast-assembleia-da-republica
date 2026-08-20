@@ -1,7 +1,7 @@
 import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { getDeputadoAtividade } from "../lib/openar-client";
-import { errorMessage } from "../lib/errors";
+import { detailStateMarkdown } from "../lib/detail-markdown";
 import { activityMarkdown } from "../lib/activity";
 
 /**
@@ -18,11 +18,13 @@ export function DeputyActivity({ id, name, legislature }: { id: number; name: st
     [id, legislature],
   );
 
-  const markdown = error
-    ? `# ${name}\n\n**Could not load this deputy's activity.**\n\n${errorMessage(error)}`
-    : data
-      ? activityMarkdown(name, data, legislature)
-      : `# ${name}\n\nLoading…`;
+  const markdown = detailStateMarkdown({
+    title: name,
+    noun: "this deputy's activity",
+    error,
+    data,
+    render: (activity) => activityMarkdown(name, activity, legislature),
+  });
 
   return (
     <Detail

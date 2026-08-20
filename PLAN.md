@@ -4,8 +4,7 @@ The forward plan, and **only** the forward plan: an item is deleted from this
 file the moment it lands. What already exists is inventoried in `context.md` §1;
 decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
-- **Next:** C6 — extract the detail-view scaffold
-  (`context.md` §6.2)
+- **Next:** C7 — trim the stub's buzz-inherited dead surface
 - **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-20
 
@@ -21,12 +20,6 @@ decisions still cite them.
 The C2 assertions landed; a verification mutation run is in flight. Read its
 report, confirm the actionable survivors died, record the new score in
 `context.md` §6.2, and delete this item.
-
-### C6 · P2 — Extract the detail-view scaffold (4 copies)
-Initiative/deputy/petition/activity detail components repeat the
-`error → "Could not load…" / no data → "Loading…" / data → render` markdown and
-the conditional Retry action. One component (`RemoteDetail`?) taking `title`,
-the fetch state, and a render function.
 
 ### C7 · P3 — Trim the stub's buzz-inherited dead surface
 ~250 lines with zero users here (`context.md` §6.3): the Form layer,
