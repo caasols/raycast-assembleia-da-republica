@@ -4,7 +4,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
-import type { Peticao } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({ useLegislatures: vi.fn(), getPageSize: vi.fn(), listPeticoes: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listPeticoes: mocks.listPeticoes }));
@@ -15,6 +14,7 @@ vi.mock("./components/use-legislatures", () => ({
 }));
 
 import Command from "./search-petitions";
+import { page, petition } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -26,24 +26,6 @@ beforeEach(() => {
   mocks.getPageSize.mockReturnValue(50);
 });
 
-function petition(overrides: Partial<Peticao> = {}): Peticao {
-  return {
-    id: 1,
-    legislaturaId: "XVII",
-    numero: "12/XVII",
-    assunto: "Pela reabilitação da linha do Tua",
-    autor: "Associação de Moradores",
-    dataEntrada: "2026-02-10",
-    assinaturas: 8421,
-    assinaturasInicial: 4,
-    situacao: "Admitida",
-    urlTexto: "https://example.pt/peticao.pdf",
-    dataDebate: null,
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
-const page = (data: Peticao[], total = data.length) => ({ data, total, page: 1, limit: 50 });
 const actionTitles = () => screen.getAllByTestId("action").map((a) => a.getAttribute("data-title"));
 
 describe("Search Petitions", () => {

@@ -15,6 +15,7 @@ vi.mock("./components/use-legislatures", () => ({
 }));
 
 import Command from "./browse-committees";
+import { page } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -26,7 +27,6 @@ beforeEach(() => {
   mocks.getPageSize.mockReturnValue(200);
 });
 
-const page = (data: Comissao[], total = data.length) => ({ data, total, page: 1, limit: 200 });
 const COMMITTEE: Comissao = { id: 42, sigla: "CACDLG", nome: "Comissão de Assuntos Constitucionais" };
 const actionTitles = () => screen.getAllByTestId("action").map((a) => a.getAttribute("data-title"));
 

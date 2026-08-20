@@ -4,7 +4,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
-import type { VotacaoListItem } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({
   useLegislatures: vi.fn(),
@@ -21,6 +20,7 @@ vi.mock("./components/use-legislatures", () => ({
 }));
 
 import Command from "./browse-party-votes";
+import { page, vote } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -30,29 +30,6 @@ beforeEach(() => {
   mocks.useParties.mockReturnValue(["Governo", "PS", "CH"]);
 });
 
-function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
-  return {
-    id: "v1",
-    data: "2026-08-18",
-    resultado: "Aprovado",
-    unanime: false,
-    reuniao: null,
-    tipoReuniao: "RP",
-    descricao: null,
-    aFavor: ["PS"],
-    contra: ["CH"],
-    abstencao: [],
-    ausencias: [],
-    detalhe: null,
-    iniciativaId: 42,
-    iniciativaTitulo: "Orçamento do Estado",
-    iniciativaNumero: "1/XVII",
-    iniciativaTipo: "P",
-    legislaturaId: "XVII",
-    ...overrides,
-  };
-}
-const page = (data: VotacaoListItem[], total = data.length) => ({ data, total, page: 1, limit: 100 });
 const choose = (value: string) => fireEvent.change(screen.getByTestId("dropdown"), { target: { value } });
 
 describe("Browse Party Votes", () => {
@@ -156,7 +133,7 @@ describe("Browse Party Votes", () => {
     choose("PS|for");
     await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
     const copy = screen.getAllByTestId("action").find((a) => a.getAttribute("data-title") === "Copy Vote Summary");
-    expect(copy?.getAttribute("data-content")).toContain("Orçamento do Estado — Aprovado.");
+    expect(copy?.getAttribute("data-content")).toContain("Orçamento do Estado para 2027 — Aprovado.");
     expect(copy?.getAttribute("data-content")).toContain("In favour: PS");
   });
 
@@ -184,7 +161,7 @@ describe("Browse Party Votes", () => {
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
     choose("PS|for");
     const item = await waitFor(() => screen.getByTestId("list-item"));
-    expect(item).toHaveAttribute("data-title", "Orçamento do Estado");
+    expect(item).toHaveAttribute("data-title", "Orçamento do Estado para 2027");
     expect(item).toHaveAttribute("data-accessories", "18 August 2026");
   });
 

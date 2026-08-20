@@ -4,7 +4,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
-import type { Deputado } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({
   useLegislatures: vi.fn(),
@@ -25,6 +24,7 @@ vi.mock("./components/use-legislatures", () => ({
 }));
 
 import Command from "./browse-deputies";
+import { deputy, page } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -35,21 +35,6 @@ beforeEach(() => {
   // The hook owns the filtering now; the command only chooses the scope.
   mocks.useParties.mockReturnValue(["PS", "CH"]);
 });
-
-function deputy(overrides: Partial<Deputado> = {}): Deputado {
-  return {
-    id: 4321,
-    nomeParlamentar: "Pedro Nuno Santos",
-    nomeCompleto: "Pedro Nuno de Oliveira Santos",
-    grupoParlamentar: "PS",
-    circuloEleitoral: "Lisboa",
-    legislaturaId: "XVII",
-    situacao: "Efetivo",
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
-const page = (data: Deputado[], total = data.length) => ({ data, total, page: 1, limit: 100 });
 
 describe("Browse Deputies", () => {
   it("has a default export that renders a List", () => {

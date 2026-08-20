@@ -1,24 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { petitionDetailMarkdown, signatureLabel } from "./petitions";
-import type { Peticao } from "./types";
-
-function petition(overrides: Partial<Peticao> = {}): Peticao {
-  return {
-    id: 1,
-    legislaturaId: "XVII",
-    numero: "12/XVII",
-    assunto: "Pela reabilitação da linha do Tua",
-    autor: "Associação de Moradores",
-    dataEntrada: "2026-02-10",
-    assinaturas: 8421,
-    assinaturasInicial: 4,
-    situacao: "Admitida",
-    urlTexto: "https://example.pt/peticao.pdf",
-    dataDebate: null,
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
+import { petition } from "../../test/fixtures";
 
 describe("signatureLabel", () => {
   it("groups thousands for readability", () => {

@@ -1,29 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary, VOTE_SIDES } from "./votes";
-import type { VotacaoListItem } from "./types";
-
-function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
-  return {
-    id: "v1",
-    data: "2026-08-18",
-    resultado: "Aprovado",
-    unanime: false,
-    reuniao: null,
-    tipoReuniao: "RP",
-    descricao: null,
-    aFavor: ["PS", "PSD"],
-    contra: ["CH"],
-    abstencao: ["IL"],
-    ausencias: [],
-    detalhe: null,
-    iniciativaId: 42,
-    iniciativaTitulo: "Orçamento do Estado para 2027",
-    iniciativaNumero: "1/XVII",
-    iniciativaTipo: "P",
-    legislaturaId: "XVII",
-    ...overrides,
-  };
-}
+import { vote } from "../../test/fixtures";
 
 describe("positionFilter", () => {
   // Asserted with toEqual, not toMatchObject: the bug this guards against

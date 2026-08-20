@@ -120,6 +120,7 @@ src/
     <tool-name>.ts          default-exported async fn + Input type
 test/
   raycast-api-stub.tsx      stand-in for @raycast/api under vitest
+  fixtures.ts               shared entity builders (vote, initiative, …)
   setup.ts                  jest-dom matchers + per-test cache reset
 scripts/smoke.ts            hits the real API, run manually
 docs/openar-openapi.json    vendored spec, the contract's source of truth

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mocks = vi.hoisted(() => ({ getDeputado: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ getDeputado: mocks.getDeputado }));
 import tool from "./get-deputy";
+import { initiative } from "../../test/fixtures";
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -34,22 +35,7 @@ const DEPUTY = {
   stats: { total: 40, aprovadas: 12, por_tipo: null },
   // Non-empty on purpose: with an empty list the recentInitiatives mapping was
   // the one line in the suite mutation testing found completely uncovered.
-  iniciativas: [
-    {
-      id: 9,
-      legislaturaId: "XVII",
-      numero: "9/XVII",
-      tipo: "J",
-      tipoDesc: "Projeto de Lei",
-      titulo: "Uma lei",
-      epigrafe: null,
-      dataEntrada: "2026-03-04",
-      dataFim: null,
-      estado: null,
-      linkTexto: null,
-      updatedAt: "2026-08-01T00:00:00Z",
-    },
-  ],
+  iniciativas: [initiative({ id: 9, titulo: "Uma lei", numero: "9/XVII" })],
 };
 
 describe("get-deputy tool", () => {

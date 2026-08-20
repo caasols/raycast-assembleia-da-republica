@@ -4,7 +4,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
-import type { Iniciativa } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({ useLegislatures: vi.fn(), getPageSize: vi.fn(), listIniciativas: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listIniciativas: mocks.listIniciativas }));
@@ -15,6 +14,7 @@ vi.mock("./components/use-legislatures", () => ({
 }));
 
 import Command from "./search-initiatives";
+import { initiative, page } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -25,26 +25,6 @@ beforeEach(() => {
   });
   mocks.getPageSize.mockReturnValue(50);
 });
-
-function initiative(overrides: Partial<Iniciativa> = {}): Iniciativa {
-  return {
-    id: 42,
-    legislaturaId: "XVII",
-    numero: "1/XVII",
-    tipo: "J",
-    tipoDesc: "Projeto de Lei",
-    titulo: "Altera o Código do Trabalho",
-    epigrafe: null,
-    dataEntrada: "2026-03-04",
-    dataFim: null,
-    estado: "Lei (Publicação DR)",
-    linkTexto: "https://example.pt/texto.pdf",
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
-
-const page = (data: Iniciativa[], total = data.length) => ({ data, total, page: 1, limit: 50 });
 
 function search(text: string) {
   fireEvent.change(screen.getByTestId("search-bar"), { target: { value: text } });

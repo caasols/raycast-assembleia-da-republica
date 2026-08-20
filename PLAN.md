@@ -4,7 +4,7 @@ The forward plan, and **only** the forward plan: an item is deleted from this
 file the moment it lands. What already exists is inventoried in `context.md` §1;
 decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
-- **Next:** C2 — harden the assertions mutation testing showed can't fail
+- **Next:** C6 — extract the detail-view scaffold
   (`context.md` §6.2)
 - **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-20
@@ -17,37 +17,10 @@ Findings and evidence live in `context.md` §6; this is the work, in priority
 order. C-numbers are fresh — the retired A-numbers stay reserved because old
 decisions still cite them.
 
-### C2 · P1 — Kill the surviving mutants
-Mutation testing scored the suite **81.2%** (1 118 of 1 377 killed) and
-`context.md` §6.2 sorts the 258 survivors into bins. The work, in its order:
-
-- The **"real gaps"** list: pin `sort` in the five tools, `isShowingDetail` in
-  five commands, the whitespace-only search rule, client pathnames, the
-  `Retry-After` whitespace case, the `ALL_LEGISLATURES` coupling, Retry-absent
-  in the two detail views, `get-deputy`'s uncovered mapping, and `asPaginated`
-  fixtures whose fallbacks differ from their real values.
-- The **stub gap**: serialise `data-keywords` in the stub (the D57 pattern),
-  then assert keywords in the commands — ~15 survivors die at once.
-- Note the equivalent mutants in a comment or here; do not chase the ~90
-  cosmetic string survivors.
-
-Done when every survivor is either killed or explained — 100% *explained*, not
-100% score.
-
-### C4 · P2 — Extract the paginated-fetch closure (6 copies)
-Five commands and `CommitteeDetail` repeat the same plumbing: `toApiPage` →
-`""→undefined` filters → `{data, hasMore}`. One helper in `lib/` (the pure
-mapping) or one hook in `components/` (the `useCachedPromise` wiring) removes
-the copy that matters. Not look-alike UI — mechanical translation, so the D54
-"only look alike" caution does not apply. While there, settle the `pageSize`
-inconsistency: six closures close over it while `longest-serving-deputies.tsx`
-passes it as an argument with a comment explaining why the other way is wrong.
-
-### C5 · P2 — Shared test fixtures (`test/fixtures.ts`)
-The `VotacaoListItem` literal is pasted in ≥4 test files, `Iniciativa` in ≥3,
-a `page()` helper in ~5 — most of jscpd's 85 clones. One fixtures module with
-`vote()`, `initiative()`, `petition()`, `deputy()`, `page()` builders. Update
-`CLAUDE.md`'s layout table when it lands.
+### C2v · P1 — Verify the mutant kill with a re-run
+The C2 assertions landed; a verification mutation run is in flight. Read its
+report, confirm the actionable survivors died, record the new score in
+`context.md` §6.2, and delete this item.
 
 ### C6 · P2 — Extract the detail-view scaffold (4 copies)
 Initiative/deputy/petition/activity detail components repeat the

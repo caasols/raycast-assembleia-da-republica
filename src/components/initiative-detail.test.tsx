@@ -9,23 +9,13 @@ const mocks = vi.hoisted(() => ({ getIniciativa: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ getIniciativa: mocks.getIniciativa }));
 
 import { InitiativeDetail } from "./initiative-detail";
+import { initiative } from "../../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => vi.clearAllMocks());
 
 const INITIATIVE = {
-  id: 42,
-  legislaturaId: "XVII",
-  numero: "1/XVII",
-  tipo: "J",
-  tipoDesc: "Projeto de Lei",
-  titulo: "Altera o Código do Trabalho",
-  epigrafe: null,
-  dataEntrada: "2026-03-04",
-  dataFim: null,
-  estado: "Lei (Publicação DR)",
-  linkTexto: "https://example.pt/texto.pdf",
-  updatedAt: "2026-08-01T00:00:00Z",
+  ...initiative(),
   autores: [{ tipo: "grupo" as const, deputadoId: null, grupoParlamentar: "PS", nome: null }],
   eventos: [],
 };

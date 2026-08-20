@@ -4,45 +4,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
-import type { VotacaoListItem } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
 
 import Command from "./what-was-the-vote-today";
+import { page, vote } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
 });
-
-function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
-  return {
-    id: "v1",
-    data: "2026-08-18",
-    resultado: "Aprovado",
-    unanime: false,
-    reuniao: null,
-    tipoReuniao: "RP",
-    descricao: null,
-    aFavor: ["PS", "PSD"],
-    contra: ["CH"],
-    abstencao: ["IL"],
-    ausencias: [],
-    detalhe: null,
-    iniciativaId: 42,
-    iniciativaTitulo: "Orçamento do Estado para 2027",
-    iniciativaNumero: "1/XVII",
-    iniciativaTipo: "P",
-    legislaturaId: "XVII",
-    ...overrides,
-  };
-}
-
-function page(data: VotacaoListItem[]) {
-  return { data, total: data.length, page: 1, limit: 200 };
-}
 
 describe("Browse Today's Votes", () => {
   // Guards the failure this repo shipped once: the command file was 0 bytes,

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
 
 import tool from "./get-party-votes";
+import { page, vote } from "../../test/fixtures";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -40,33 +41,8 @@ describe("get-party-votes tool", () => {
   });
 
   it("returns the full breakdown, not just the party asked about", async () => {
-    mocks.listVotacoes.mockResolvedValue({
-      data: [
-        {
-          id: "v1",
-          data: "2026-08-19",
-          resultado: "Aprovado",
-          unanime: false,
-          reuniao: null,
-          tipoReuniao: null,
-          descricao: null,
-          aFavor: ["PS"],
-          contra: ["CH"],
-          abstencao: ["IL"],
-          ausencias: [],
-          detalhe: null,
-          iniciativaId: 1,
-          iniciativaTitulo: "Uma lei",
-          iniciativaNumero: "1/XVII",
-          iniciativaTipo: "J",
-          legislaturaId: "XVII",
-        },
-      ],
-      total: 1,
-      page: 1,
-      limit: 25,
-    });
+    mocks.listVotacoes.mockResolvedValue(page([vote({ data: "2026-08-19" })], 1, 25));
     const result = await tool({ party: "PS" });
-    expect(result.votes[0]).toMatchObject({ inFavour: ["PS"], against: ["CH"], abstained: ["IL"] });
+    expect(result.votes[0]).toMatchObject({ inFavour: ["PS", "PSD"], against: ["CH"], abstained: ["IL"] });
   });
 });

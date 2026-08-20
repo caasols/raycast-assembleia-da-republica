@@ -3,23 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mocks = vi.hoisted(() => ({ getIniciativa: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ getIniciativa: mocks.getIniciativa }));
 import tool from "./get-initiative";
+import { initiative } from "../../test/fixtures";
 
 beforeEach(() => vi.clearAllMocks());
 
-const BASE = {
-  id: 42,
-  legislaturaId: "XVII",
-  numero: "1/XVII",
-  tipo: "J",
-  tipoDesc: "Projeto de Lei",
-  titulo: "Altera o Código do Trabalho",
-  epigrafe: null,
-  dataEntrada: "2026-03-04",
-  dataFim: null,
-  estado: "Lei (Publicação DR)",
-  linkTexto: null,
-  updatedAt: "2026-08-01T00:00:00Z",
-};
+const BASE = initiative();
 
 describe("get-initiative tool", () => {
   it("fetches the initiative by id", async () => {

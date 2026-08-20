@@ -23,7 +23,7 @@ import {
 } from "./openar-client";
 import { OpenArError } from "./errors";
 import { __clearEtagCache } from "./etag-cache";
-import type { VotacaoListItem } from "./types";
+import { vote } from "../../test/fixtures";
 
 const fetchMock = vi.fn();
 
@@ -46,25 +46,7 @@ function jsonResponse(body: unknown, init: { status?: number; headers?: Record<s
   };
 }
 
-const VOTE: VotacaoListItem = {
-  id: "v1",
-  data: "2026-08-18",
-  resultado: "Aprovado",
-  unanime: false,
-  reuniao: null,
-  tipoReuniao: "RP",
-  descricao: null,
-  aFavor: ["PS", "PSD"],
-  contra: ["CH"],
-  abstencao: ["IL"],
-  ausencias: [],
-  detalhe: null,
-  iniciativaId: 42,
-  iniciativaTitulo: "Orçamento do Estado",
-  iniciativaNumero: "1/XVII",
-  iniciativaTipo: "P",
-  legislaturaId: "XVII",
-};
+const VOTE = vote();
 
 function requestedUrl(): URL {
   return new URL(fetchMock.mock.calls[0][0] as string);
