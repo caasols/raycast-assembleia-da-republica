@@ -4,7 +4,7 @@ The forward plan, and **only** the forward plan: an item is deleted from this
 file the moment it lands. What already exists is inventoried in `context.md` §1;
 decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
-- **Next:** C7 — trim the stub's buzz-inherited dead surface
+- **Next:** C8 — small dead-code and dedup sweep
 - **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-20
 
@@ -20,14 +20,6 @@ decisions still cite them.
 The C2 assertions landed; a verification mutation run is in flight. Read its
 report, confirm the actionable survivors died, record the new score in
 `context.md` §6.2, and delete this item.
-
-### C7 · P3 — Trim the stub's buzz-inherited dead surface
-~250 lines with zero users here (`context.md` §6.3): the Form layer,
-LocalStorage, Keyboard, toasts/alerts, `useNavigation`, `Action.SubmitForm`,
-`Action.Open`, `LaunchType`. Keep only what this extension's tests drive; CLAUDE.md
-already says the stub grows *when a command needs it*, and re-adding from buzz's
-copy is one paste away. Whatever stays: fix `extensionName: "buzz"` and the
-comment citing buzz's `set-status.test.tsx`.
 
 ### C8 · P3 — Small dead-code and dedup sweep
 - Delete `VotacaoKey` (`types.ts`) — zero importers.
