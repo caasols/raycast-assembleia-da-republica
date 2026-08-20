@@ -263,5 +263,12 @@ Each of these has already cost time once.
 - **Not every `ray lint` complaint fails the build.** The Title-Case grumble
   about the extension title is a `warning`; the keyword cap was the error. Read
   the severity before rewriting copy to satisfy it.
+- **A computed object key silently defeats TypeScript's excess-property
+  check.** `listVotacoes({[how]: sigla})` with `how = "a_favor"` compiled
+  cleanly against a params type whose field is `aFavor` — the filter vanished
+  and the default state of Browse Party Votes showed the whole archive as one
+  party's votes (`context.md` D101). When a UI id maps onto a client parameter,
+  write the mapping out explicitly, and test *every* branch of it — the two
+  branches that were tested worked; the untested one was the default.
 - **All four docs are tracked** (`context.md` D14/D18). The repo is private.
   Keep credentials out regardless.

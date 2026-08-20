@@ -18,9 +18,11 @@ git (D14/D18) — the repo is **private**, so internal working notes are fine he
 Keep credentials out regardless.
 
 - **Repo:** `caasols/raycast-assembleia-da-republica` (private)
-- **State:** feature-complete for v1; everything outstanding needs the author's machine (§3)
+- **State:** feature-complete for v1 — but the 2026-08-20 audit (§6) found one
+  **P0 defect** (D101) fixable in-container; the rest outstanding needs the
+  author's machine (§3)
 - **Reference implementation:** [`caasols/raycast-buzz`](https://github.com/caasols/raycast-buzz)
-- **Last updated:** 2026-08-19
+- **Last updated:** 2026-08-20
 
 ---
 
@@ -172,6 +174,9 @@ stated explicitly — correct these rather than inherit them as fact.
 | D97 | 2026-08-19 | The 360×360 source is **upscaled to 512×512 with Lanczos**, not redrawn | The store wants 512. A 1.42× upscale on art that is already smooth-edged loses nothing visible, checked on a contact sheet at 512/128/64/32. Redrawing it would have risked drifting from a mark we do not own — a worse failure than slight softness. If a larger original ever surfaces, dropping it in is a one-file change. | Settled |
 | D98 | 2026-08-19 | **Nothing in the toolchain can catch a placeholder icon** | `ray lint`, `ray build` and CI all passed the scaffold's generic chip for thirty commits, because it was a valid 512×512 PNG the whole time. The check that finds this class of defect is a person looking at the artefact — the same lesson as the 0-byte command file (§4), in a different costume. | Settled |
 | D99 | 2026-08-19 | **The inventory of finished work moved from `PLAN.md` to here** | `PLAN.md` had grown a "What exists" section, which is exactly the drift `CLAUDE.md`'s three-document table exists to prevent: the plan is *what we do next*, and a list of what shipped is *what we know*. `PLAN.md` is now forward-only — an item is deleted the moment it lands, rather than being marked done and left in place. | Settled |
+| D100 | 2026-08-20 | **Full-repo audit: every source and test file read, plus tooling** — ts-prune (dead exports), depcheck (dependencies), jscpd (duplication), and **Stryker mutation testing** over all of `src/` to answer "which tests never fail" with evidence rather than opinion | The user asked for a deep audit of dead code, duplication, weak tests and tech debt. Reading alone cannot find a test that passes when the code is broken; mutation testing can, and it also *found nothing where the suite is strong*, which is itself a result. Findings in §6; the prioritised work items are `PLAN.md` Track C. Stryker was installed only for the audit and reverted — adopting it permanently is a decision left open (Track C). | Settled |
+| D101 | 2026-08-20 | **BUG FOUND (P0): Browse Party Votes' "Voted in favour" filter never reaches the API** | `browse-party-votes.tsx` builds `listVotacoes({[how]: sigla})` where `how` is the dropdown id `"a_favor"` — but the client's parameter is camelCase `aFavor`, so the computed key silently misses and the request goes out **unfiltered**. "In favour" is the *default* position, so the command's default state shows the whole vote archive labelled as the party's in-favour votes — the confident-wrong-answer failure D80 exists to prevent. Verified empirically against the real client with a stubbed fetch. The `get-party-votes` **tool** uses `"aFavor"` and is correct, so tool and command disagree — the exact divergence the shared-`lib/` rule was meant to make impossible. Root cause: a computed object key bypasses TypeScript's excess-property checking, and the command tests assert only the `contra` and `abstencao` positions. | **Open — PLAN C1** |
+| D102 | 2026-08-20 | Audit findings recorded here (§6); remediation queued as **`PLAN.md` Track C**, ordered C1 (the bug) → tests → duplication → hygiene | Keeps the lanes: what we *know* lands in this file, what we *do next* in the plan. Track C is deliberately numbered fresh rather than reusing the retired A-numbers, which older decisions (e.g. D95) still cite. | Settled |
 
 ### Open questions
 
@@ -238,3 +243,162 @@ that renders its real default export.
 
 Where the two Raycast repos disagree — buzz colocates tests, publico uses
 `src/__tests__/` — buzz wins (D32).
+
+---
+
+## 6. The 2026-08-20 deep audit
+
+Method (D100): every file in `src/` and `test/` read end to end; `ts-prune` for
+dead exports; `depcheck` for dependencies; `jscpd` for duplication; **Stryker
+mutation testing** across all of `src/` to find assertions that cannot fail.
+Remediation is `PLAN.md` Track C — this section is the evidence.
+
+### 6.1 The defect (P0)
+
+**The "Voted in favour" filter in Browse Party Votes is silently dropped**
+(D101). `{[how]: sigla}` with `how = "a_favor"` misses `ListVotacoesParams`'
+camelCase `aFavor`, TypeScript's excess-property check does not fire on
+computed keys, and the tests only ever assert the other two positions. The
+default state of the command shows unfiltered votes labelled as the party's
+in-favour votes. Reproduced against the real client:
+
+```
+a_favor position → /v1/votacoes?sort=desc&page=1&limit=50        ← no filter!
+contra  position → /v1/votacoes?contra=PS&sort=desc&page=1&limit=50
+```
+
+The `get-party-votes` tool maps positions correctly, so the tool and the
+command currently give different answers to the same question.
+
+### 6.2 Which tests never fail (mutation results)
+
+Stryker ran **1 377 mutants** against the full suite: **1 118 killed, 258
+survived, 1 uncovered — an 81.2% mutation score** in 9½ minutes. The shape
+matters more than the number: `lib/` infrastructure is near-bulletproof
+(`etag-cache`, `pagination`, `preferences` at 100%; `errors` 96%; `query` 95%;
+the client 85%), while the **command files are the weak layer** —
+`browse-committees.tsx` 57%, `search-petitions.tsx` 60%, `longest-serving`
+69%, `browse-party-votes.tsx` 74%. The survivors sort into four bins:
+
+**Real, assertable gaps** (the C2 work):
+
+- **No tool test pins `sort`** — mutating `sort: "desc"`/`"asc"` to `""`
+  survives in five of nine tools. `objectContaining` checks the filters and
+  ignores the ordering, so a tool could silently return oldest-first.
+- **`isShowingDetail={rows.length > 0}` is asserted only in Today's Votes** —
+  the other five list commands' mutants (`>= 0`, `true`, `false`) all survive,
+  though the stub exposes `data-showing-detail` precisely for this.
+- **The whitespace-only search rule (D47) is untested in most commands** —
+  mutants that delete `.trim()` or hardcode the `=== ""` branch survive in
+  Browse Committees, Browse Deputies and Search Petitions. Only the
+  happy-path trim ("` tua `" → `tua`) is pinned.
+- **Client tests assert `searchParams`, rarely the pathname** — mutating the
+  path literal (`"/peticoes"` → `""`) survives for `listPeticoes`,
+  `listDeputados`, `listComissoes`, `listCarreiras`. One `toBe(BASE_URL+path)`
+  per function closes this.
+- **`parseRetryAfterSeconds` loses `.trim()` unnoticed** — `Number("  30 ")`
+  parses anyway, but a *whitespace-only* header would then return `0` ("retry
+  now") instead of `undefined`; no test covers that input.
+- **Commands hardcode `""` instead of importing `ALL_LEGISLATURES`** — the
+  constant can be mutated freely because the hook's tests compare it to
+  itself and the commands never reference it. Either import it at the call
+  sites or pin its value.
+- **Detail views never assert Retry is *absent* on success** — `{error && …}`
+  mutated to `true` survives in `deputy-detail.tsx` and
+  `committee-detail.tsx`; `RequestEmptyView` has exactly this test, the
+  detail views don't.
+- **`get-deputy`'s `recentInitiatives` mapping has literally no coverage** —
+  the fixture's `iniciativas` is `[]`, so the map callback never runs (the
+  suite's only uncovered mutant).
+- The `asPaginated` fallbacks are tested with fixtures where fallback and
+  real value coincide (`page: 1` falling back to `1`) — indistinguishable by
+  construction; fixtures with `page: 7` would actually pin them.
+
+**Stub-masked** (fix the stub, not the assertion — CLAUDE.md §3's rule):
+
+- Every command's `keywords={…}` can be emptied — ~15 survivors — because the
+  stub accepts `keywords` and **renders nothing**. Serialise `data-keywords`
+  the way `fallback` was added (D57), then assert it.
+- `{rows.length === 0 && <RequestEmptyView/>}` mutated to `true` survives
+  everywhere because the stub's `List` hides empty views whenever items
+  exist — faithful to Raycast, so these are equivalent *under the stub* and
+  cost nothing.
+
+**Equivalent mutants** (explain, don't chase): `truncateQ`'s `>` → `>=` (at
+exactly 100 chars, `slice` is identity); `formatVoteDate`'s `!isoDate` guard
+(an empty string parses to `NaN` and returns `null` through the second exit
+anyway); `request`'s `revalidate` default flipped to `true` (harmless while
+list responses carry no `ETag` — worth one pinning test, since a server that
+started sending ETags would silently begin caching).
+
+**Cosmetic string survivors** (~90, accept): bold markers, `·` separators and
+label fragments inside markdown builders where the tests already assert the
+semantically load-bearing substrings. Chasing these buys assertion-brittleness,
+not safety.
+
+### 6.3 Dead code
+
+- **`VotacaoKey`** (`types.ts`) — exported, zero importers. The "compound key"
+  lesson it encodes lives on in comments and the `${iniciativaId}:${id}` row
+  keys; the interface itself is dead.
+- **The test stub carries ~250 lines of buzz-inherited surface nothing here
+  uses**: the whole `Form` layer with its context plumbing, `Action.SubmitForm`,
+  `Action.Open`, `LocalStorage` + `__resetLocalStorage`, `Keyboard` +
+  `shortcutAttr`, `confirmAlert`/`Alert`/`Toast`/`showToast`/`popToRoot`/
+  `showHUD`, `useNavigation`/`push`/`pop`, `LaunchType`, `List.Section` and
+  `ActionPanel.Section`. Coverage cannot see any of it — `test/` is outside the
+  coverage include. Two stale buzz artefacts survive verbatim:
+  `environment.extensionName === "buzz"`, and the `Keyboard` comment citing
+  `src/set-status.test.tsx`, a buzz file that has never existed here.
+- **`ACTIVITY_CATEGORIES` covers 16 of the endpoint's 17 activity arrays** —
+  `dadosLegis` is absent with no comment saying whether that is a choice, and
+  the test's own comment ("18 keys come back; `deputado` is the subject") does
+  not arithmetic its way to the 16 it asserts.
+
+### 6.4 Duplication (jscpd: 85 clones, 9.0% of lines)
+
+Ranked by how much a single extraction removes:
+
+1. **The paginated-fetch closure, six times** (five commands +
+   `CommitteeDetail`): `toApiPage` → `list*({legislatura: ""→undefined, q:
+   trim→undefined, sort, page, limit})` → `{data, hasMore: hasMorePages(…)}`.
+   This is mechanical plumbing, not look-alike UI — the D54 caution does not
+   apply.
+2. **Test fixtures**: the full `VotacaoListItem` literal appears in ≥4 files,
+   the `Iniciativa` literal in ≥3, a local `page()` helper in ~5. Most of
+   jscpd's 85 clones are these.
+3. **The detail-view scaffold, four times** (initiative / deputy / petition /
+   activity): `error ? "# title\n\n**Could not load…**" : data ? render :
+   "Loading…"` plus the conditional Retry action.
+4. **The legislature-selection dance, three times** (Search Initiatives,
+   Search Petitions, Browse Committees): `useState<string | undefined>` +
+   `?? initialId` + the same three-line comment.
+5. Client micro-repeats: `new OpenArError("openAR returned an unexpected
+   response shape", 500)` nine times; `x === undefined ? undefined :
+   clamp/truncate` in every list function.
+
+### 6.5 Drift and hygiene
+
+- **README's AI-tools table lists 4 of the 9 tools** — stale since D88 added
+  five.
+- `petitions.ts` builds `"8,421 signatures"` then `petitionDetailMarkdown`
+  strips `" signatures"` back off — a formatter split the wrong way.
+- `pageSize` is closed over (not a dependency) in six `useCachedPromise`
+  closures, while `longest-serving-deputies.tsx` deliberately passes it as an
+  argument *with a comment explaining why*. One of the two patterns is wrong;
+  mid-session preference changes only affect the closed-over six.
+- Only `get-todays-votes` pins D80 (failures propagate) with a test; the other
+  eight tools rely on it implicitly.
+- `depcheck` flags `@vitest/coverage-v8` — false positive, it is loaded by
+  `vitest --coverage`. `@types/node` is 22.x while CI runs Node 24.
+
+### 6.6 What is *not* wrong (looked for, absent)
+
+- No dead exports beyond `VotacaoKey`; no unused dependencies.
+- The `lib/` test suites (client, query, errors, dates, etag, pagination,
+  preferences) are exemplary — edge cases chosen for documented API traps, not
+  coverage padding. The client suite alone pins URL shape, clamping, ETag/304
+  ordering and the error taxonomy in 94 cases.
+- The empty/failed/rate-limited trichotomy (D41) is enforced in every list.
+- No `fetch` outside the client, no `Preferences` redeclaration, `include`
+  always explicit, no `detalhe` rendering — the standing rules held.
