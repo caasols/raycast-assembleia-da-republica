@@ -41,6 +41,11 @@ Raycast's AI can query parliament directly, without opening a command:
 | `Search Initiatives` | "Find bills about labour law in the XVII legislature" |
 | `Get Party Votes` | "What has Chega voted against recently?" |
 | `Search Deputies` | "Who represents Porto for the PS?" |
+| `Search Petitions` | "Are there petitions about the Tua railway line?" |
+| `Search Committees` | "Which committee handles constitutional affairs?" |
+| `Get Initiative` | "Did that housing bill actually pass, and who voted how?" |
+| `Get Deputy` | "What has this deputy authored, and what got approved?" |
+| `Get Deputy Activity` | "How much committee work does this deputy actually do?" |
 
 ## Commands
 

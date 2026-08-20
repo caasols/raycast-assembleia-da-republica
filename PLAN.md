@@ -34,10 +34,6 @@ Mutation testing scored the suite **81.2%** (1 118 of 1 377 killed) and
 Done when every survivor is either killed or explained — 100% *explained*, not
 100% score.
 
-### C3 · P1 — README's AI-tools table lists 4 of 9 tools
-Stale since D88. Add the five missing rows (petitions, committees, initiative,
-deputy, deputy activity) in the same "Answers" voice.
-
 ### C4 · P2 — Extract the paginated-fetch closure (6 copies)
 Five commands and `CommitteeDetail` repeat the same plumbing: `toApiPage` →
 `""→undefined` filters → `{data, hasMore}`. One helper in `lib/` (the pure
