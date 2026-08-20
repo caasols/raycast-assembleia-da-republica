@@ -18,9 +18,9 @@ git (D14/D18) — the repo is **private**, so internal working notes are fine he
 Keep credentials out regardless.
 
 - **Repo:** `caasols/raycast-assembleia-da-republica` (private)
-- **State:** feature-complete for v1 — but the 2026-08-20 audit (§6) found one
-  **P0 defect** (D101) fixable in-container; the rest outstanding needs the
-  author's machine (§3)
+- **State:** feature-complete for v1. The 2026-08-20 audit's P0 defect is
+  fixed and its whole remediation track (PLAN C1–C11) has landed; everything
+  still outstanding needs the author's machine (§3)
 - **Reference implementation:** [`caasols/raycast-buzz`](https://github.com/caasols/raycast-buzz)
 - **Last updated:** 2026-08-20
 
@@ -62,9 +62,10 @@ endpoints), query building, pagination, preferences, errors, the ETag store and
 the per-entity presentation helpers. Every command filters by legislature, back
 to 1976, with page size and default legislature as preferences.
 
-**462 tests across 42 files at 100% coverage**, green in CI on GitHub's runners
-— verified, not assumed (D92, D94). The extension icon is the AR's own mark
-(D96). Both `main` and the working branch are at the same commit.
+**525 tests across 43 files at 100% coverage** and an **88.0% mutation score
+with every survivor explained** (§6.2), green in CI on GitHub's runners —
+verified, not assumed (D92, D94). The extension icon is the AR's own mark
+(D96). The audit remediation lives on the working branch, ahead of `main`.
 
 ---
 
@@ -176,6 +177,7 @@ stated explicitly — correct these rather than inherit them as fact.
 | D99 | 2026-08-19 | **The inventory of finished work moved from `PLAN.md` to here** | `PLAN.md` had grown a "What exists" section, which is exactly the drift `CLAUDE.md`'s three-document table exists to prevent: the plan is *what we do next*, and a list of what shipped is *what we know*. `PLAN.md` is now forward-only — an item is deleted the moment it lands, rather than being marked done and left in place. | Settled |
 | D100 | 2026-08-20 | **Full-repo audit: every source and test file read, plus tooling** — ts-prune (dead exports), depcheck (dependencies), jscpd (duplication), and **Stryker mutation testing** over all of `src/` to answer "which tests never fail" with evidence rather than opinion | The user asked for a deep audit of dead code, duplication, weak tests and tech debt. Reading alone cannot find a test that passes when the code is broken; mutation testing can, and it also *found nothing where the suite is strong*, which is itself a result. Findings in §6; the prioritised work items are `PLAN.md` Track C. Stryker was installed only for the audit and reverted — adopting it permanently is a decision left open (Track C). | Settled |
 | D101 | 2026-08-20 | **BUG FOUND (P0): Browse Party Votes' "Voted in favour" filter never reaches the API** | `browse-party-votes.tsx` builds `listVotacoes({[how]: sigla})` where `how` is the dropdown id `"a_favor"` — but the client's parameter is camelCase `aFavor`, so the computed key silently misses and the request goes out **unfiltered**. "In favour" is the *default* position, so the command's default state shows the whole vote archive labelled as the party's in-favour votes — the confident-wrong-answer failure D80 exists to prevent. Verified empirically against the real client with a stubbed fetch. The `get-party-votes` **tool** uses `"aFavor"` and is correct, so tool and command disagree — the exact divergence the shared-`lib/` rule was meant to make impossible. Root cause: a computed object key bypasses TypeScript's excess-property checking, and the command tests assert only the `contra` and `abstencao` positions. | **Fixed (D103)** |
+| D106 | 2026-08-20 | **Track C closed.** C11's nits resolved by decision rather than change: `@types/node` stays at 22 — it matches `@raycast/api`'s own engine floor (`>=22.22.2`), and typing against a newer Node than the runtime guarantees invites using APIs the extension host may not have. `depcheck`'s flag on `@vitest/coverage-v8` is a false positive (loaded by `vitest --coverage`), recorded in §6.5 for the next dependency sweep. | Settled |
 | D105 | 2026-08-20 | **Mutation testing adopted as an opt-in check**: `npm run test:mutation` + a manual `workflow_dispatch` job, with Stryker installed on demand (pinned major) rather than added to devDependencies | It earned its place by finding the one defect class the coverage ratchet cannot see (D101), and by grading the C2 hardening (81.2% → 88.0%, §6.2). Not per-push: a full run costs ~10 minutes against a 12-second suite. Not in devDependencies: ~175 packages would slow every push's `npm ci` for a tool that runs occasionally — the on-demand install keeps the lockfile and the fast path untouched, at the accepted cost of resolving versions at run time. | Settled |
 | D104 | 2026-08-20 | **The stub's keep-list is "whatever our code *or @raycast/utils* executes", not "whatever our tests mention"** | The C7 trim removed `showToast`, `Toast` and `LaunchType` because no command uses them — and 19 failure-state tests broke at once: `usePromise`'s own error path calls them. The stub serves two clients, and the second one's imports are invisible to a grep over our sources. They are restored with a comment saying whose dependencies they are. The rest of the buzz inheritance (Form layer, LocalStorage, Keyboard, `useNavigation`, `Action.SubmitForm`, `Action.Open`, list sections — ~300 lines) is gone, and `environment.extensionName` no longer claims to be "buzz". | Settled |
 | D103 | 2026-08-20 | **D101 fixed via a shared `positionFilter()` in `lib/votes.ts`** — an explicit branch-by-branch mapping from the question vocabulary (`for` / `against` / `abstained`) to the client's parameters, consumed by *both* the command and the `get-party-votes` tool | Considered renaming the client params to the wire names instead (no translation to get wrong), but that breaks the client's camelCase convention (`dataInicio`, `aFavor`) for every caller to fix one site. A single tested mapping both consumers share is smaller and makes the tool/command divergence structurally impossible, which is what D77/D78 promised all along. The dropdown ids switched from wire names to the question vocabulary so no id can be mistaken for a parameter again. Regression tests pin the exact parameter for **all three** positions — with `toEqual`, since the failing shape was an *extra ignored key* that a subset match would pass. | Settled |

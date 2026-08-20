@@ -4,22 +4,10 @@ The forward plan, and **only** the forward plan: an item is deleted from this
 file the moment it lands. What already exists is inventoried in `context.md` §1;
 decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
-- **Next:** C11 — toolchain nits, then Track B (needs the author)
+- **Next:** B1 — the audit's Track C is fully landed (context.md §6, D100–D106);
+  everything that could be done without the author is done again
 - **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
 - **Last updated:** 2026-08-20
-
----
-
-## Track C — audit remediation (2026-08-20, no author needed)
-
-Findings and evidence live in `context.md` §6; this is the work, in priority
-order. C-numbers are fresh — the retired A-numbers stay reserved because old
-decisions still cite them.
-
-### C11 · P4 — Toolchain nits
-`@types/node` 22.x vs CI's Node 24; `depcheck`'s `@vitest/coverage-v8` flag is
-a false positive (loaded by `vitest --coverage`) — note it wherever a future
-dependency sweep would trip over it.
 
 ---
 
@@ -29,7 +17,7 @@ Ordered by dependency, not by size. B1 first because everything else is worth
 less until it passes.
 
 ### B1 · Run `npm run smoke` ⚠️ *first of all*
-Nothing in this repo has ever touched the live API. All 462 tests run against a
+Nothing in this repo has ever touched the live API. All 525 tests run against a
 stubbed `fetch`, so the base URL, envelope handling, pagination arithmetic and
 the 429 path are verified against *our reading of the spec* — a reading that has
 been wrong before (the missing `/v1`, D19).

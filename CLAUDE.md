@@ -179,7 +179,7 @@ code. Extend that stub when a command needs an API surface it doesn't yet cover.
 
 **Coverage thresholds are 100%** on statements, branches, functions and lines,
 so new uncovered code fails `npm run test:coverage` rather than quietly
-drifting. The project currently sits at that bar — **462 tests across 42 files**
+drifting. The project currently sits at that bar — **525 tests across 43 files**
 — so a drop is a regression, not a starting point to work up from. Exclude only
 files that emit no runtime code (e.g. a types-only `types.ts`), and say so in a
 comment where excluded.
