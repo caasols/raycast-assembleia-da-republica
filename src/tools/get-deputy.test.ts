@@ -32,7 +32,24 @@ const DEPUTY = {
   ],
   bio: null,
   stats: { total: 40, aprovadas: 12, por_tipo: null },
-  iniciativas: [],
+  // Non-empty on purpose: with an empty list the recentInitiatives mapping was
+  // the one line in the suite mutation testing found completely uncovered.
+  iniciativas: [
+    {
+      id: 9,
+      legislaturaId: "XVII",
+      numero: "9/XVII",
+      tipo: "J",
+      tipoDesc: "Projeto de Lei",
+      titulo: "Uma lei",
+      epigrafe: null,
+      dataEntrada: "2026-03-04",
+      dataFim: null,
+      estado: null,
+      linkTexto: null,
+      updatedAt: "2026-08-01T00:00:00Z",
+    },
+  ],
 };
 
 describe("get-deputy tool", () => {
@@ -47,6 +64,7 @@ describe("get-deputy tool", () => {
     const result = await tool({ id: 4321 });
     expect(result).toMatchObject({ initiativesAuthored: 40, initiativesApproved: 12 });
     expect(result.mandates).toEqual(["XVII · PS · Lisboa (Efetivo)"]);
+    expect(result.recentInitiatives).toEqual([{ id: 9, title: "Uma lei", entered: "2026-03-04" }]);
   });
 
   it("returns nulls rather than zeroes when the API sent no stats", async () => {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { listComissoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { LegislatureDropdown } from "./components/legislature-dropdown";
-import { useLegislatures } from "./components/use-legislatures";
+import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { CommitteeDetail } from "./components/committee-detail";
 import { hasMorePages, toApiPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
@@ -30,7 +30,7 @@ export default function Command() {
     (query: string, legislaturaId: string) => async (options: { page: number }) => {
       const apiPage = toApiPage(options.page);
       const result = await listComissoes({
-        legislatura: legislaturaId === "" ? undefined : legislaturaId,
+        legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
         q: query.trim() === "" ? undefined : query.trim(),
         sort: "asc",
         page: apiPage,

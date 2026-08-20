@@ -67,6 +67,49 @@ describe("Search Petitions", () => {
     await waitFor(() => expect(mocks.listPeticoes).toHaveBeenLastCalledWith(expect.objectContaining({ q: "tua" })));
   });
 
+  it("treats a whitespace-only query as no query, not a search for spaces", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([]));
+    render(<Command />);
+    fireEvent.change(screen.getByTestId("search-bar"), { target: { value: "   " } });
+    await waitFor(() => expect(mocks.listPeticoes).toHaveBeenCalledTimes(2));
+    expect(mocks.listPeticoes.mock.calls[1][0].q).toBeUndefined();
+  });
+
+  it("starts on the preference's legislature, newest petitions first", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listPeticoes).toHaveBeenCalled());
+    expect(mocks.listPeticoes.mock.calls[0][0]).toMatchObject({ legislatura: "XVII", sort: "desc" });
+  });
+
+  it("makes each row findable by number and status", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([petition()]));
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("12/XVII");
+    expect(keywords).toContain("Admitida");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([]));
+    const { unmount } = render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.listPeticoes.mockResolvedValue(page([petition()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
+  });
+
+  it("copies the subject, which is the petition's identity", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([petition()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+    const copy = screen.getAllByTestId("action").find((a) => a.getAttribute("data-title") === "Copy Subject");
+    expect(copy?.getAttribute("data-content")).toBe("Pela reabilitação da linha do Tua");
+  });
+
   it("sends no legislature filter when widened to all", async () => {
     mocks.listPeticoes.mockResolvedValue(page([]));
     render(<Command />);

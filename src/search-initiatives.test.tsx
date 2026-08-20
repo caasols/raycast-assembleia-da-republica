@@ -75,6 +75,34 @@ describe("Search Initiatives", () => {
     );
   });
 
+  it("makes each row findable by number, type and legislature", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([initiative()]));
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("1/XVII");
+    expect(keywords).toContain("Projeto de Lei");
+    expect(keywords).toContain("XVII");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([]));
+    const { unmount } = render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.listIniciativas.mockResolvedValue(page([initiative()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
+  });
+
+  it("names the failed search in the unmatched empty state", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([]));
+    render(<Command />);
+    search("zzz");
+    await waitFor(() => expect(screen.getByTestId("empty-view").getAttribute("data-description")).toContain("zzz"));
+  });
+
   it("trims the query, so trailing spaces do not become a different search", async () => {
     mocks.listIniciativas.mockResolvedValue(page([]));
     render(<Command />);

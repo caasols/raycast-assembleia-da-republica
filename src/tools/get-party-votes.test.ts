@@ -15,7 +15,9 @@ describe("get-party-votes tool", () => {
     // One request rather than fetching everything and filtering here, which the
     // 100 req/min budget would punish.
     await tool({ party: "PS" });
-    expect(mocks.listVotacoes.mock.calls[0][0]).toMatchObject({ aFavor: "PS" });
+    // Newest votes first, and a bounded page — the answer is "recent votes",
+    // not the archive.
+    expect(mocks.listVotacoes.mock.calls[0][0]).toMatchObject({ aFavor: "PS", sort: "desc", limit: 25 });
 
     await tool({ party: "CH", position: "against" });
     expect(mocks.listVotacoes.mock.calls[1][0]).toMatchObject({ contra: "CH" });

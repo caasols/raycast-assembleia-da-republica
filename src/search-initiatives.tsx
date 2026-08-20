@@ -4,7 +4,7 @@ import { useState } from "react";
 import { listIniciativas } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { LegislatureDropdown } from "./components/legislature-dropdown";
-import { useLegislatures } from "./components/use-legislatures";
+import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { InitiativeDetail } from "./components/initiative-detail";
 import { initiativeDetailMarkdown, initiativeLabel } from "./lib/initiatives";
 import { displayDate } from "./lib/dates";
@@ -33,7 +33,7 @@ export default function Command() {
     (query: string, legislaturaId: string) => async (options: { page: number }) => {
       const apiPage = toApiPage(options.page);
       const result = await listIniciativas({
-        legislatura: legislaturaId === "" ? undefined : legislaturaId,
+        legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
         // Empty search is a valid request: it returns the most recent
         // initiatives, which is a better landing state than a blank screen.
         q: query.trim() === "" ? undefined : query.trim(),

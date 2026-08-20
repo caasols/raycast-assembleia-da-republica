@@ -76,6 +76,28 @@ describe("Browse Today's Votes", () => {
     await waitFor(() => expect(screen.getByTestId("list-item")).toHaveAttribute("data-subtitle", "P 1/XVII"));
   });
 
+  it("makes each row findable by number, result and party", async () => {
+    // Raycast filters on keywords; without these a user typing "PS" or the
+    // initiative number would not narrow the list to this vote.
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("1/XVII");
+    expect(keywords).toContain("Aprovado");
+    expect(keywords).toContain("PS");
+    expect(keywords).toContain("CH");
+  });
+
+  it("copies a summary that names the vote, its result and the breakdown", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+    const copy = screen.getAllByTestId("action").find((a) => a.getAttribute("data-title") === "Copy Vote Summary");
+    expect(copy?.getAttribute("data-content")).toContain("Orçamento do Estado para 2027 — Aprovado.");
+    expect(copy?.getAttribute("data-content")).toContain("In favour: PS, PSD");
+  });
+
   it("marks unanimity in the accessory, not just the result", async () => {
     mocks.listVotacoes.mockResolvedValue(page([vote({ unanime: true })]));
     render(<Command />);

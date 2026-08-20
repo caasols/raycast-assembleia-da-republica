@@ -28,7 +28,14 @@ describe("search-initiatives tool", () => {
     mocks.listIniciativas.mockResolvedValue({ data: [], total: 0, page: 1, limit: 25 });
     await tool({ query: "trabalho", legislature: "XVII", group: "PS", outcome: "aprovado" });
     expect(mocks.listIniciativas).toHaveBeenCalledWith(
-      expect.objectContaining({ q: "trabalho", legislatura: "XVII", grupo: "PS", resultado: "aprovado" }),
+      expect.objectContaining({
+        q: "trabalho",
+        legislatura: "XVII",
+        grupo: "PS",
+        resultado: "aprovado",
+        sort: "desc",
+        limit: 25,
+      }),
     );
   });
 

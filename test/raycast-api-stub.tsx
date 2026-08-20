@@ -250,8 +250,10 @@ function ListItem(props: {
   accessories?: { text?: string; date?: Date; tag?: unknown; icon?: unknown }[];
   icon?: unknown;
   section?: string;
-  // Accepted so extensions can pass real Raycast keywords through unchanged;
-  // the stub does no native filtering, so there is nothing to match against here.
+  // The stub does no native filtering, so keywords are serialised rather than
+  // matched against: mutation testing showed every command's keywords could be
+  // emptied without a test noticing, because the stub accepted the prop and
+  // rendered nothing — the same invisibility `fallback` had before D57.
   keywords?: string[];
 }) {
   return (
@@ -261,6 +263,7 @@ function ListItem(props: {
       data-subtitle={props.subtitle}
       data-icon={iconAttr(props.icon)}
       data-section={props.section}
+      data-keywords={props.keywords?.join(" ")}
       data-accessories={props.accessories?.map((a) => a.text ?? (a.date ? a.date.toISOString() : "")).join(" ")}
     >
       {props.actions}

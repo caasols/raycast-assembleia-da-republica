@@ -12,7 +12,9 @@ beforeEach(() => {
 describe("search-committees tool", () => {
   it("passes the query and legislature through", async () => {
     await tool({ query: "saúde", legislature: "XVII" });
-    expect(mocks.listComissoes).toHaveBeenCalledWith(expect.objectContaining({ q: "saúde", legislatura: "XVII" }));
+    expect(mocks.listComissoes).toHaveBeenCalledWith(
+      expect.objectContaining({ q: "saúde", legislatura: "XVII", sort: "asc", limit: 50 }),
+    );
   });
 
   it("returns the id, so a follow-up need not resolve the name again", async () => {

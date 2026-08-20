@@ -13,7 +13,7 @@ describe("search-petitions tool", () => {
   it("passes query, legislature and status through", async () => {
     await tool({ query: "tua", legislature: "XVII", status: "Admitida" });
     expect(mocks.listPeticoes).toHaveBeenCalledWith(
-      expect.objectContaining({ q: "tua", legislatura: "XVII", situacao: "Admitida" }),
+      expect.objectContaining({ q: "tua", legislatura: "XVII", situacao: "Admitida", sort: "desc", limit: 25 }),
     );
   });
 

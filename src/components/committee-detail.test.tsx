@@ -82,6 +82,17 @@ describe("CommitteeDetail", () => {
     expect(screen.queryAllByTestId("action").map((a) => a.getAttribute("data-title"))).toContain("Show Details");
   });
 
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.getComissao.mockResolvedValue(committee([]));
+    const { unmount } = render(<CommitteeDetail id={42} name="CACDLG" />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.getComissao.mockResolvedValue(committee());
+    render(<CommitteeDetail id={42} name="CACDLG" />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
+  });
+
   it("names the committee in the empty state", async () => {
     mocks.getComissao.mockResolvedValue(committee([]));
     render(<CommitteeDetail id={42} name="CACDLG" />);

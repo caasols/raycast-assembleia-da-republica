@@ -15,7 +15,12 @@ describe("search-deputies tool", () => {
     await tool({ name: "Pedro" });
     // Without a legislature the question is almost always about who is in
     // parliament now — the 230 seats this shortcut selects.
-    expect(mocks.listDeputados.mock.calls[0][0]).toMatchObject({ q: "Pedro", situacao: "ativo" });
+    expect(mocks.listDeputados.mock.calls[0][0]).toMatchObject({
+      q: "Pedro",
+      situacao: "ativo",
+      sort: "asc",
+      limit: 50,
+    });
   });
 
   it("drops the sitting filter when asked about a past legislature", async () => {

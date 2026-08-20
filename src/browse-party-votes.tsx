@@ -6,7 +6,7 @@ import { RequestEmptyView } from "./components/request-empty-view";
 import { voteResultIcon } from "./components/vote-result-icon";
 import { InitiativeDetail } from "./components/initiative-detail";
 import { useParties } from "./components/use-parties";
-import { useLegislatures } from "./components/use-legislatures";
+import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
 import type { VotePosition } from "./lib/votes";
 import { displayDate } from "./lib/dates";
@@ -53,7 +53,7 @@ export default function Command() {
       const apiPage = toApiPage(options.page);
       const result = await listVotacoes({
         ...positionFilter(how, sigla),
-        legislatura: legislaturaId === "" ? undefined : legislaturaId,
+        legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
         sort: "desc",
         page: apiPage,
         limit: pageSize,

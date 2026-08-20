@@ -70,6 +70,26 @@ describe("Longest-Serving Deputies", () => {
     await waitFor(() => expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "11 legislatures"));
   });
 
+  it("makes each row findable by party and legislature", async () => {
+    mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("PCP");
+    expect(keywords).toContain("VI");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.listCarreiras.mockResolvedValue({ data: [], stats: null });
+    const { unmount } = render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
+  });
+
   it("puts the population comparison in the detail pane", async () => {
     mocks.listCarreiras.mockResolvedValue({
       data: [career()],

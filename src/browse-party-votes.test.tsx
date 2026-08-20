@@ -133,6 +133,41 @@ describe("Browse Party Votes", () => {
     expect(screen.queryByTestId("load-more")).toBeNull();
   });
 
+  it("scopes to the preference's legislature by default", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("PS|for");
+    await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalled());
+    expect(mocks.listVotacoes.mock.calls[0][0].legislatura).toBe("XVII");
+  });
+
+  it("tells the user what the prompt state wants from them", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([]));
+    render(<Command />);
+    const empty = await waitFor(() => screen.getByTestId("empty-view"));
+    expect(empty.getAttribute("data-description")).toContain("Pick a party and a position");
+  });
+
+  it("copies a summary carrying the result and breakdown", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("PS|for");
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+    const copy = screen.getAllByTestId("action").find((a) => a.getAttribute("data-title") === "Copy Vote Summary");
+    expect(copy?.getAttribute("data-content")).toContain("Orçamento do Estado — Aprovado.");
+    expect(copy?.getAttribute("data-content")).toContain("In favour: PS");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    choose("PS|for");
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
+  });
+
   it("sends no legislature filter when the preference is set to all legislatures", async () => {
     mocks.useLegislatures.mockReturnValue({ legislatures: [], initialId: "" });
     mocks.listVotacoes.mockResolvedValue(page([]));

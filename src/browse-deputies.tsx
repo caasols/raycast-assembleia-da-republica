@@ -4,7 +4,7 @@ import { useState } from "react";
 import { deputadoPhotoUrl, listDeputados } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { useParties } from "./components/use-parties";
-import { useLegislatures } from "./components/use-legislatures";
+import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { DeputyDetail } from "./components/deputy-detail";
 import { hasMorePages, toApiPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
@@ -25,7 +25,7 @@ export default function Command() {
     (query: string, sigla: string, legislaturaId: string) => async (options: { page: number }) => {
       const apiPage = toApiPage(options.page);
       const result = await listDeputados({
-        legislatura: legislaturaId === "" ? undefined : legislaturaId,
+        legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
         q: query.trim() === "" ? undefined : query.trim(),
         grupo: sigla === "" ? undefined : sigla,
         situacao: SITTING,

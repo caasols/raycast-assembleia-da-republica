@@ -60,4 +60,19 @@ describe("DeputyDetail", () => {
     await waitFor(() => expect(detail().getAttribute("data-markdown")).toContain("Could not load this deputy"));
     expect(detail().getAttribute("data-markdown")).toContain("Pedro Nuno Santos");
   });
+
+  it("offers Retry only when the load failed", async () => {
+    // Retrying a load that succeeded would refetch the same record for no
+    // reason — the same rule RequestEmptyView already pins for lists.
+    const titles = () => screen.getAllByTestId("action").map((a) => a.getAttribute("data-title"));
+    mocks.getDeputado.mockRejectedValue(new OpenArError("boom", 502));
+    const { unmount } = render(<DeputyDetail id={4321} name="x" />);
+    await waitFor(() => expect(titles()).toContain("Retry"));
+    unmount();
+
+    mocks.getDeputado.mockResolvedValue(DEPUTY);
+    render(<DeputyDetail id={4321} name="x" />);
+    await waitFor(() => expect(titles()).toContain("Copy Name"));
+    expect(titles()).not.toContain("Retry");
+  });
 });

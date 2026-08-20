@@ -244,6 +244,14 @@ describe("listVotacoes", () => {
     const result = await listVotacoes();
     expect(result).toMatchObject({ total: 1, page: 1, limit: 1 });
   });
+
+  it("passes the API's own counters through when they differ from the fallbacks", async () => {
+    // Values chosen to differ from every fallback (data.length, 1): a fixture
+    // where the fallback happens to equal the real value cannot tell the
+    // passthrough from the fallback — mutation testing caught exactly that.
+    fetchMock.mockResolvedValue(jsonResponse({ data: [VOTE], total: 37, page: 3, limit: 10 }));
+    expect(await listVotacoes()).toMatchObject({ total: 37, page: 3, limit: 10 });
+  });
 });
 
 describe("listIniciativas", () => {
@@ -403,6 +411,12 @@ describe("listPeticoes", () => {
     expect(requestedUrl().searchParams.get("q")).toHaveLength(100);
   });
 
+  it("requests the petitions endpoint", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listPeticoes();
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/peticoes`);
+  });
+
   it("throws on a malformed envelope", async () => {
     fetchMock.mockResolvedValue(jsonResponse({}));
     await expect(listPeticoes()).rejects.toThrow(OpenArError);
@@ -435,6 +449,12 @@ describe("listDeputados", () => {
       page: "2",
       limit: "30",
     });
+  });
+
+  it("requests the deputies endpoint", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listDeputados();
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/deputados`);
   });
 
   it("truncates an over-long name search", async () => {
@@ -510,6 +530,12 @@ describe("listComissoes", () => {
       page: "3",
       limit: "10",
     });
+  });
+
+  it("requests the committees endpoint", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: [], total: 0, page: 1, limit: 50 }));
+    await listComissoes();
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE_URL}/comissoes`);
   });
 
   it("truncates an over-long query", async () => {
@@ -633,6 +659,13 @@ describe("getComissao", () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: 42, data: [{ id: 1 }] }));
     const committee = await getComissao(42);
     expect(committee).toMatchObject({ total: 1, page: 1, limit: 1, legislaturas: [] });
+  });
+
+  it("passes the committee's own counters through when they differ from the fallbacks", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ id: 42, data: [{ id: 1 }], total: 412, page: 5, limit: 25, legislaturas: ["XVII", "XVI"] }),
+    );
+    expect(await getComissao(42)).toMatchObject({ total: 412, page: 5, limit: 25, legislaturas: ["XVII", "XVI"] });
   });
 
   it("throws when the initiatives list is missing", async () => {
@@ -764,6 +797,19 @@ describe("conditional requests", () => {
     expect(fetchMock.mock.calls[1][1].headers["If-None-Match"]).toBeUndefined();
   });
 
+  it("stays opted out even when a list response unexpectedly carries an ETag", async () => {
+    // Revalidation is opt-in per call (D81), not triggered by the server's
+    // headers: a list body that arrived with an ETag must still not be stored
+    // or revalidated, or the client would quietly start caching endpoints it
+    // never chose to.
+    fetchMock.mockResolvedValue(
+      jsonResponse({ data: [], total: 0, page: 1, limit: 50 }, { headers: { ETag: 'W/"l1"' } }),
+    );
+    await listVotacoes();
+    await listVotacoes();
+    expect(fetchMock.mock.calls[1][1].headers["If-None-Match"]).toBeUndefined();
+  });
+
   it("revalidates petition details too, the other etag endpoint", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: 7 }, { headers: { ETag: 'W/"p1"' } }));
     await getPeticao(7);
@@ -773,6 +819,12 @@ describe("conditional requests", () => {
 });
 
 describe("getPeticao", () => {
+  it("requests the petition by id", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7 }));
+    await getPeticao(7);
+    expect(requestedUrl().pathname).toBe("/v1/peticoes/7");
+  });
+
   it("always sends an explicit include", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: 7 }));
     await getPeticao(7);

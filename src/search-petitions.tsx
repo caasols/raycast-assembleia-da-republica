@@ -5,7 +5,7 @@ import { listPeticoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { PetitionDetail } from "./components/petition-detail";
 import { LegislatureDropdown } from "./components/legislature-dropdown";
-import { useLegislatures } from "./components/use-legislatures";
+import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { petitionDetailMarkdown, signatureLabel } from "./lib/petitions";
 import { hasMorePages, toApiPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
@@ -30,7 +30,7 @@ export default function Command() {
     (query: string, legislaturaId: string) => async (options: { page: number }) => {
       const apiPage = toApiPage(options.page);
       const result = await listPeticoes({
-        legislatura: legislaturaId === "" ? undefined : legislaturaId,
+        legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
         q: query.trim() === "" ? undefined : query.trim(),
         sort: "desc",
         page: apiPage,

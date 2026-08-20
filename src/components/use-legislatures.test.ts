@@ -31,6 +31,18 @@ const LIST = [
   { id: "XVII", nome: "XVII Legislatura", dataFim: null },
 ];
 
+describe("ALL_LEGISLATURES", () => {
+  it("is the empty string, which buildQueryString drops from the request", () => {
+    // The sentinel's value is load-bearing: commands turn it into an *absent*
+    // `legislatura` parameter precisely because the query builder omits empty
+    // strings. Anything else would be sent to the API as a legislature
+    // literally named that. Pinned here because the commands now import the
+    // constant rather than repeating "" — this is the one place its meaning
+    // is enforced.
+    expect(ALL_LEGISLATURES).toBe("");
+  });
+});
+
 describe("useLegislatures", () => {
   it("starts on the sitting legislature when the preference says current", async () => {
     mocks.listLegislaturas.mockResolvedValue(LIST);

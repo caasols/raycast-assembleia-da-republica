@@ -123,6 +123,16 @@ describe("voteDetailMarkdown", () => {
     expect(markdown).toContain("_No party breakdown was recorded for this vote._");
   });
 
+  it("does not claim a missing breakdown when only some sides are empty", () => {
+    const markdown = voteDetailMarkdown(vote({ contra: [], abstencao: [], ausencias: [] }));
+    expect(markdown).toContain("### In favour");
+    expect(markdown).not.toContain("No party breakdown");
+  });
+
+  it("renders nothing — not the string 'null' — for a vote with no description", () => {
+    expect(voteDetailMarkdown(vote({ descricao: null }))).not.toContain("null");
+  });
+
   it("never renders openAR's raw HTML detail, which is unsanitised third-party markup", () => {
     const markdown = voteDetailMarkdown(vote({ detalhe: "<script>alert(1)</script><b>PS</b>" }));
     expect(markdown).not.toContain("<script>");
