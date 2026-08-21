@@ -73,10 +73,7 @@ Raycast's AI can query parliament directly, without opening a command:
 The tools share their logic with the commands, so a tool and a view cannot
 disagree about what a vote means.
 
-## Setup
-
-None. openAR requires no account or key, so the extension works on first
-launch. Two preferences tune it:
+## Preferences
 
 | Preference            | Default | What it does                                                                                                                                                                                            |
 | --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -97,17 +94,6 @@ launch. Two preferences tune it:
 - Data is published by the AR open-data programme and refreshed daily. openAR
   allows 100 requests a minute; when that limit bites, the extension says so
   and tells you how long to wait.
-
-## Not using Raycast?
-
-openAR also publishes an MCP server, so any MCP client can query the same data:
-
-```bash
-claude mcp add --scope user openar -- npx -y @openar/mcp
-```
-
-That covers the AI half. What it cannot do is put parliament in your launcher —
-which is what this extension is for.
 
 ## Getting Started
 
