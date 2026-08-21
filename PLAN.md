@@ -25,19 +25,19 @@ been wrong before (the missing `/v1`, D19).
 **If the client is wrong, all seven commands are wrong in the same way.** Ten
 minutes, and it validates every line written so far.
 
-Two things to check in the same session, since the connection is already open:
+The script covers all 13 endpoints and prints every response status (D108), so
+one run also answers the two questions that used to be separate checklist
+items: the second fetch of an initiative and of a petition should log a literal
+`304` (the ETag path has only ever seen a stubbed one), and the `actp:` line is
+B2's evidence. Read the whole output, not just the exit code.
 
-- **A real `304`.** The ETag path is verified against a *stubbed* 304 only. The
-  client provably sends `If-None-Match` and reuses the held body, but openAR has
-  never actually returned one to us.
-- **B2**, which is one extra request.
-
-### B2 · Do per-deputy vote positions exist? *(fold into the B1 session)*
-One array, one request. `actp` is described as *"outras actividades em plenário
-(votos, etc.)"* and its element shape is undeclared, so it is the only place an
-individual vote position could live — the alternative being that they exist only
-inside `detalhe`'s unsanitised HTML (D40). One request against a long-serving
-deputy settles it.
+### B2 · Do per-deputy vote positions exist? *(read it off the B1 output)*
+`actp` is described as *"outras actividades em plenário (votos, etc.)"* and its
+element shape is undeclared, so it is the only place an individual vote
+position could live — the alternative being that they exist only inside
+`detalhe`'s unsanitised HTML (D40). The B1 smoke run prints the longest-serving
+deputy's `actp` length and first element; interpreting that line settles this
+(O10). The script deliberately does not interpret it.
 
 Until then both the view and the tool say plainly that plenary votes are
 recorded per party, so the absence reads as a property of the data rather than a

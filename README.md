@@ -143,10 +143,11 @@ by the Raycast runtime and has no resolvable Node entry point — so
 plain DOM. Tests therefore drive real command code rather than mocks of it.
 
 There is also a smoke test that runs against the live API. It is read-only and
-needs no credentials: it drives the real client through `/meta`,
-`/legislaturas` and `/votacoes` — the base URL, both envelope shapes and the
-current-legislature resolution — so it catches the vendored OpenAPI contract
-drifting from what the server actually returns:
+needs no credentials: it drives the real client through every endpoint the
+extension uses, logging each response status — including whether the two ETag
+endpoints really answer `304` on revalidation — so it catches the vendored
+OpenAPI contract drifting from what the server actually returns. Steps collect
+failures rather than stopping at the first one:
 
 ```bash
 npm run smoke
