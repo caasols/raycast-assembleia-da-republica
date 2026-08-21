@@ -9,7 +9,7 @@ Companion documents:
 |---|---|---|
 | **`CLAUDE.md`** | *How we work* — the standing rules (R1–R6), architecture conventions, test mechanics | Start of every session |
 | **`context.md`** (this file) | *What we know* — project context, decision log, open questions, blockers, audit findings | Before proposing anything |
-| **`PLAN.md`** | *What we do next* — candidate commands and the phased roadmap | When picking up work |
+| **`PLAN.md`** | *What we do next* — forward-only, undone work exclusively | When picking up work |
 | **`OPENAR-API.md`** | *What the API does* — the openAR contract and its traps | Before writing any client code |
 | **`docs/openar-openapi.json`** | The full OpenAPI 3.1 spec — source of truth | When the prose is ambiguous |
 
@@ -22,7 +22,7 @@ Keep credentials out regardless.
   fixed and its whole remediation track (PLAN C1–C11) has landed; everything
   still outstanding needs the author's machine (§3)
 - **Reference implementation:** [`caasols/raycast-buzz`](https://github.com/caasols/raycast-buzz)
-- **Last updated:** 2026-08-20
+- **Last updated:** 2026-08-21
 
 ---
 
@@ -50,7 +50,7 @@ opening a detail view rather than dead-ending (D66):
 |---|---|
 | `Browse Today's Votes` | `/votacoes`, filtered to the current Lisbon date |
 | `Search Initiatives` | `/iniciativas` |
-| `Browse Party Votes` | `/votacoes`, by `a_favor`/`contra`/`abstencao` |
+| `Browse Party Votes` | `/votacoes`, one position filter per query (`positionFilter`, D103) |
 | `Search Petitions` | `/peticoes` |
 | `Browse Deputies` | `/deputados?situacao=ativo` |
 | `Browse Committees` | `/comissoes` |
@@ -58,9 +58,11 @@ opening a detail view rather than dead-ending (D66):
 
 Five detail views — initiative, deputy, deputy activity, committee, petition.
 **Nine AI tools** in `src/tools/` (D88). `src/lib/` carries the client (13
-endpoints), query building, pagination, preferences, errors, the ETag store and
-the per-entity presentation helpers. Every command filters by legislature, back
-to 1976, with page size and default legislature as preferences.
+endpoints), query building, pagination — including `loadListPage`, the one
+paginated-fetch wrapper every scrolling list uses — preferences, errors, the
+ETag store, the shared detail-state markdown and the per-entity presentation
+helpers. Every command filters by legislature, back to 1976, with page size
+and default legislature as preferences.
 
 **525 tests across 43 files at 100% coverage** and an **88.0% mutation score
 with every survivor explained** (§6.2), green in CI on GitHub's runners —
@@ -177,11 +179,12 @@ stated explicitly — correct these rather than inherit them as fact.
 | D99 | 2026-08-19 | **The inventory of finished work moved from `PLAN.md` to here** | `PLAN.md` had grown a "What exists" section, which is exactly the drift `CLAUDE.md`'s three-document table exists to prevent: the plan is *what we do next*, and a list of what shipped is *what we know*. `PLAN.md` is now forward-only — an item is deleted the moment it lands, rather than being marked done and left in place. | Settled |
 | D100 | 2026-08-20 | **Full-repo audit: every source and test file read, plus tooling** — ts-prune (dead exports), depcheck (dependencies), jscpd (duplication), and **Stryker mutation testing** over all of `src/` to answer "which tests never fail" with evidence rather than opinion | The user asked for a deep audit of dead code, duplication, weak tests and tech debt. Reading alone cannot find a test that passes when the code is broken; mutation testing can, and it also *found nothing where the suite is strong*, which is itself a result. Findings in §6; the prioritised work items are `PLAN.md` Track C. Stryker was installed only for the audit and reverted — adopting it permanently is a decision left open (Track C). | Settled |
 | D101 | 2026-08-20 | **BUG FOUND (P0): Browse Party Votes' "Voted in favour" filter never reaches the API** | `browse-party-votes.tsx` builds `listVotacoes({[how]: sigla})` where `how` is the dropdown id `"a_favor"` — but the client's parameter is camelCase `aFavor`, so the computed key silently misses and the request goes out **unfiltered**. "In favour" is the *default* position, so the command's default state shows the whole vote archive labelled as the party's in-favour votes — the confident-wrong-answer failure D80 exists to prevent. Verified empirically against the real client with a stubbed fetch. The `get-party-votes` **tool** uses `"aFavor"` and is correct, so tool and command disagree — the exact divergence the shared-`lib/` rule was meant to make impossible. Root cause: a computed object key bypasses TypeScript's excess-property checking, and the command tests assert only the `contra` and `abstencao` positions. | **Fixed (D103)** |
-| D106 | 2026-08-20 | **Track C closed.** C11's nits resolved by decision rather than change: `@types/node` stays at 22 — it matches `@raycast/api`'s own engine floor (`>=22.22.2`), and typing against a newer Node than the runtime guarantees invites using APIs the extension host may not have. `depcheck`'s flag on `@vitest/coverage-v8` is a false positive (loaded by `vitest --coverage`), recorded in §6.5 for the next dependency sweep. | Settled |
-| D105 | 2026-08-20 | **Mutation testing adopted as an opt-in check**: `npm run test:mutation` + a manual `workflow_dispatch` job, with Stryker installed on demand (pinned major) rather than added to devDependencies | It earned its place by finding the one defect class the coverage ratchet cannot see (D101), and by grading the C2 hardening (81.2% → 88.0%, §6.2). Not per-push: a full run costs ~10 minutes against a 12-second suite. Not in devDependencies: ~175 packages would slow every push's `npm ci` for a tool that runs occasionally — the on-demand install keeps the lockfile and the fast path untouched, at the accepted cost of resolving versions at run time. | Settled |
-| D104 | 2026-08-20 | **The stub's keep-list is "whatever our code *or @raycast/utils* executes", not "whatever our tests mention"** | The C7 trim removed `showToast`, `Toast` and `LaunchType` because no command uses them — and 19 failure-state tests broke at once: `usePromise`'s own error path calls them. The stub serves two clients, and the second one's imports are invisible to a grep over our sources. They are restored with a comment saying whose dependencies they are. The rest of the buzz inheritance (Form layer, LocalStorage, Keyboard, `useNavigation`, `Action.SubmitForm`, `Action.Open`, list sections — ~300 lines) is gone, and `environment.extensionName` no longer claims to be "buzz". | Settled |
-| D103 | 2026-08-20 | **D101 fixed via a shared `positionFilter()` in `lib/votes.ts`** — an explicit branch-by-branch mapping from the question vocabulary (`for` / `against` / `abstained`) to the client's parameters, consumed by *both* the command and the `get-party-votes` tool | Considered renaming the client params to the wire names instead (no translation to get wrong), but that breaks the client's camelCase convention (`dataInicio`, `aFavor`) for every caller to fix one site. A single tested mapping both consumers share is smaller and makes the tool/command divergence structurally impossible, which is what D77/D78 promised all along. The dropdown ids switched from wire names to the question vocabulary so no id can be mistaken for a parameter again. Regression tests pin the exact parameter for **all three** positions — with `toEqual`, since the failing shape was an *extra ignored key* that a subset match would pass. | Settled |
 | D102 | 2026-08-20 | Audit findings recorded here (§6); remediation queued as **`PLAN.md` Track C**, ordered C1 (the bug) → tests → duplication → hygiene | Keeps the lanes: what we *know* lands in this file, what we *do next* in the plan. Track C is deliberately numbered fresh rather than reusing the retired A-numbers, which older decisions (e.g. D95) still cite. | Settled |
+| D103 | 2026-08-20 | **D101 fixed via a shared `positionFilter()` in `lib/votes.ts`** — an explicit branch-by-branch mapping from the question vocabulary (`for` / `against` / `abstained`) to the client's parameters, consumed by *both* the command and the `get-party-votes` tool | Considered renaming the client params to the wire names instead (no translation to get wrong), but that breaks the client's camelCase convention (`dataInicio`, `aFavor`) for every caller to fix one site. A single tested mapping both consumers share is smaller and makes the tool/command divergence structurally impossible, which is what D77/D78 promised all along. The dropdown ids switched from wire names to the question vocabulary so no id can be mistaken for a parameter again. Regression tests pin the exact parameter for **all three** positions — with `toEqual`, since the failing shape was an *extra ignored key* that a subset match would pass. | Settled |
+| D104 | 2026-08-20 | **The stub's keep-list is "whatever our code *or @raycast/utils* executes", not "whatever our tests mention"** | The C7 trim removed `showToast`, `Toast` and `LaunchType` because no command uses them — and 19 failure-state tests broke at once: `usePromise`'s own error path calls them. The stub serves two clients, and the second one's imports are invisible to a grep over our sources. They are restored with a comment saying whose dependencies they are. The rest of the buzz inheritance (Form layer, LocalStorage, Keyboard, `useNavigation`, `Action.SubmitForm`, `Action.Open`, list sections — ~300 lines) is gone, and `environment.extensionName` no longer claims to be "buzz". | Settled |
+| D105 | 2026-08-20 | **Mutation testing adopted as an opt-in check**: `npm run test:mutation` + a manual `workflow_dispatch` job, with Stryker installed on demand (pinned major) rather than added to devDependencies | It earned its place by finding the one defect class the coverage ratchet cannot see (D101), and by grading the C2 hardening (81.2% → 88.0%, §6.2). Not per-push: a full run costs ~10 minutes against a 12-second suite. Not in devDependencies: ~175 packages would slow every push's `npm ci` for a tool that runs occasionally — the on-demand install keeps the lockfile and the fast path untouched, at the accepted cost of resolving versions at run time. | Settled |
+| D106 | 2026-08-20 | **Track C closed.** C11's nits resolved by decision rather than change: `@types/node` stays at 22 — it matches `@raycast/api`'s own engine floor (`>=22.22.2`), and typing against a newer Node than the runtime guarantees invites using APIs the extension host may not have. `depcheck`'s flag on `@vitest/coverage-v8` is a false positive (loaded by `vitest --coverage`), recorded in §6.5 for the next dependency sweep. | Settled |
+| D107 | 2026-08-21 | **Docs audit and rework** — `CLAUDE.md` and this file brought back in line with the tree. `CLAUDE.md`: the five-file table was captioned "four documents"; the layout tree predated `loadListPage` / `detailStateMarkdown`; the errors rule still read "in buzz"; the D104 stub keep-list lesson was missing from §3. Here: §3's blocker ids collided with `PLAN.md`'s Track B ids while meaning different things (context B2 was screenshots, plan B2 the `actp` question), so blockers are now **K-numbered** — B1→K1, B2→K2, B4→K3, the resolved title row retired to a footnote; O7's dangling "§3.1" pointer fixed; §6 marked resolved with per-subsection outcomes; D100–D106 put in numeric order (content untouched — reordering is not rewriting). | Two docs sharing an id namespace with different meanings, and a working agreement that miscounts its own documents, are exactly the drift that misleads a fresh session. The decision log itself stays append-only. | Settled |
 
 ### Open questions
 
@@ -195,23 +198,29 @@ stated explicitly — correct these rather than inherit them as fact.
 | ~~O6~~ | ~~Portuguese or English UI copy?~~ | **Closed 2026-08-18 (D28).** English copy, Portuguese keywords — the pattern raycast-publico already uses. | — |
 | ~~O8~~ | ~~`/votacoes`, `/peticoes`, `/comissoes` contracts~~ | **Closed 2026-08-18 (D18).** The full OpenAPI spec was supplied and vendored; all 16 endpoints are documented. | — |
 | O10 | Do per-deputy **vote positions** exist in `actp`, or only in `detalhe`'s raw HTML? | Narrowed by D89: everything *else* in the activity endpoint is now built. `actp` ("outras actividades em plenário (votos, etc.)") is the only candidate, and its element shape is undeclared. This is now a small question about one array rather than a blocker on a whole command. | one array |
-| O7 | What do the pre-existing iCloud `CLAUDE.md` / `context.md` contain? | They may hold decisions from local sessions that this log has never seen. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not file contents — see §3.1. Until recovered, this log may be missing history. | — |
+| O7 | What do the pre-existing iCloud `CLAUDE.md` / `context.md` contain? | They may hold decisions from local sessions that this log has never seen. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not file contents — see §3 K3. Until recovered, this log may be missing history. | — |
 
 ---
 
 ## 3. What is blocked
 
 Everything below needs something this environment cannot provide. **Two live
-blockers remain**, and both dissolve on the same networked machine: B1 and B2
-are one session's work. B3 is closed (D94); B4 is inert — a nice-to-have that
-gates nothing.
+blockers remain** (K1, K2), and both dissolve on the same networked machine —
+one session's work. K3 is inert — a nice-to-have that gates nothing.
+
+Blockers are **K-numbered** since D107: they used to share `B` ids with
+`PLAN.md`'s Track B while meaning different things, which was a trap. This
+table holds the *reasons*; the plan holds the *work*.
 
 | # | Blocker | Why it matters | Unblocks |
 |---|---|---|---|
-| B1 | **Nothing has ever run against the live API.** `api.openar.pt` is denied by the dev container's egress proxy (403 on CONNECT, re-tested three times). All 462 tests run against a stubbed `fetch`, so URL shape, envelope handling, pagination and the 429 path are verified against *our reading of the vendored spec* — not against openAR. | The single largest outstanding risk in the project. | `npm run smoke` on any networked machine (`PLAN.md` B1), or allowlisting `openar.pt` + `api.openar.pt` in the [environment settings](https://code.claude.com/docs/en/claude-code-on-the-web). |
-| B2 | **No screenshots.** `metadata/` needs images from a working local install, and the directory does not exist. | Raycast Store review requires them, so this gates submission outright — it is the last hard gate. | A machine that can run `npm run dev` (`PLAN.md` B3). |
-| ~~B3~~ | ~~**O9 unanswered** — the extension title~~ | **Resolved 2026-08-19 (D94).** The first real CI run showed the Title-Case complaint is a `warning`, not an error. The title stays. | — |
-| B4 | **O7 unrecovered** — the original iCloud `CLAUDE.md` / `context.md`. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not the files. | They may hold decisions from local sessions this log never saw. | Open each file in the Files app so it downloads fully, *then* share it — or paste the contents. |
+| K1 | **Nothing has ever run against the live API.** `api.openar.pt` is denied by the dev container's egress proxy (403 on CONNECT, re-tested three times). All 525 tests run against a stubbed `fetch`, so URL shape, envelope handling, pagination and the 429 path are verified against *our reading of the vendored spec* — not against openAR. | The single largest outstanding risk in the project. | `npm run smoke` on any networked machine (`PLAN.md` B1), or allowlisting `openar.pt` + `api.openar.pt` in the [environment settings](https://code.claude.com/docs/en/claude-code-on-the-web). |
+| K2 | **No screenshots.** `metadata/` needs images from a working local install, and the directory does not exist. | Raycast Store review requires them, so this gates submission outright — it is the last hard gate. | A machine that can run `npm run dev` (`PLAN.md` B3). |
+| K3 | **O7 unrecovered** — the original iCloud `CLAUDE.md` / `context.md`. The 2026-08-18 upload delivered macOS bookmark alias stubs (2.5 KB Apple binary plists), not the files. | They may hold decisions from local sessions this log never saw. | Open each file in the Files app so it downloads fully, *then* share it — or paste the contents. |
+
+One former blocker is resolved and retired from the table: the extension-title
+question (O9) closed when the first real CI run showed the Title-Case
+complaint is a `warning`, not an error (D94).
 
 **The API contract itself is no longer blocked.** The full OpenAPI 3.1 spec is
 vendored at `docs/openar-openapi.json` with `OPENAR-API.md` written from it
@@ -251,12 +260,16 @@ Where the two Raycast repos disagree — buzz colocates tests, publico uses
 
 ---
 
-## 6. The 2026-08-20 deep audit
+## 6. The 2026-08-20 deep audit — resolved
 
 Method (D100): every file in `src/` and `test/` read end to end; `ts-prune` for
 dead exports; `depcheck` for dependencies; `jscpd` for duplication; **Stryker
 mutation testing** across all of `src/` to find assertions that cannot fail.
-Remediation is `PLAN.md` Track C — this section is the evidence.
+
+**Every finding below is remediated** — Track C landed the same day
+(D103–D106) and was deleted from the plan per the forward-only rule. The
+section stays as evidence, and because §6.2's survivor bins are the reference
+future mutation runs are read against.
 
 ### 6.1 The defect (P0) — since fixed (D103)
 
@@ -370,6 +383,11 @@ condition ("100% explained, not 100% score") is met.
   the test's own comment ("18 keys come back; `deputado` is the subject") does
   not arithmetic its way to the 16 it asserts.
 
+**Resolved:** `VotacaoKey` deleted; the stub trimmed by ~300 lines (with the
+`showToast` lesson that trim taught recorded as D104, and the keep-list rule
+now in `CLAUDE.md` §3); `dadosLegis`'s exclusion is a documented choice in
+`activity.ts`, and the test's arithmetic comment now adds up.
+
 ### 6.4 Duplication (jscpd: 85 clones, 9.0% of lines)
 
 Ranked by how much a single extraction removes:
@@ -392,6 +410,16 @@ Ranked by how much a single extraction removes:
    response shape", 500)` nine times; `x === undefined ? undefined :
    clamp/truncate` in every list function.
 
+**Resolved:** items 1–4 became `lib/pagination.ts`' `loadListPage`,
+`test/fixtures.ts`, `lib/detail-markdown.ts`' `detailStateMarkdown`, and the
+selection fold into `useLegislatures`; item 5's error literal became the
+`unexpectedShape()` factory. A 2026-08-21 re-run reports 86 clones / 7.97% —
+but the composition changed: 67 of 86 are test-to-test, the per-command
+`vi.mock` preamble that vitest hoists per file (sharing it would couple
+tests for little gain), and most of the rest is the client's deliberately
+parallel param objects. The *drifting-copy* duplication the ranking targeted
+is gone; what remains is structural parallelism, accepted.
+
 ### 6.5 Drift and hygiene
 
 - **README's AI-tools table lists 4 of the 9 tools** — stale since D88 added
@@ -406,6 +434,12 @@ Ranked by how much a single extraction removes:
   eight tools rely on it implicitly.
 - `depcheck` flags `@vitest/coverage-v8` — false positive, it is loaded by
   `vitest --coverage`. `@types/node` is 22.x while CI runs Node 24.
+
+**Resolved:** the README lists all nine tools; the signature formatter is
+split as count + label; `pageSize` is a hook argument with a dependency entry
+everywhere; all nine tools pin D80 with a rejection test; the `@types/node`
+question closed by decision, not change (D106 — 22.x matches `@raycast/api`'s
+own engine floor).
 
 ### 6.6 What is *not* wrong (looked for, absent)
 

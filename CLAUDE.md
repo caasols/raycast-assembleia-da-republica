@@ -1,7 +1,7 @@
 # CLAUDE.md — working agreement
 
 Operating rules for any Claude session in this repo. Read this first, every
-session. Four tracked documents, four jobs — keep them in their lanes:
+session. Five tracked files, five jobs — keep them in their lanes:
 
 | File | Holds |
 |---|---|
@@ -108,13 +108,17 @@ src/
   lib/                      pure logic — no JSX, no Raycast UI imports
     openar-client.ts        the ONLY module that calls fetch
     query.ts                query building, clamping, the API's input limits
-    pagination.ts           Raycast's zero-based page ↔ openAR's one-based
+    pagination.ts           page arithmetic + loadListPage, the one paginated-
+                            fetch wrapper every scrolling list goes through
+    detail-markdown.ts      detailStateMarkdown — the loading/error/loaded
+                            markdown every pushed detail view goes through
     preferences.ts          reads the generated `Preferences` type
     errors.ts types.ts dates.ts
     <entity>.ts             presentation helpers: votes, initiatives, deputies…
   components/               shared React — UI *and* hooks
     request-empty-view.tsx  the three ways a list shows nothing
     use-parties.ts          /meta party lists, scoped per endpoint
+    use-legislatures.ts     legislature list + selection, resolved per launch
     <entity>-detail.tsx     pushed detail views
   tools/                    AI-extension tools, one per file
     <tool-name>.ts          default-exported async fn + Input type
@@ -143,8 +147,13 @@ that disagreed about what "approved" means would be worse than having no tool.
 - **One command per file**, filename matching the `name` in `package.json`.
 - **All network access goes through a single client module** in `src/lib/`.
   Commands never call `fetch` directly.
-- **Errors funnel through one helper** (`src/lib/errors.ts` in buzz) so a
-  caught `unknown` never renders as `[object Object]`.
+- **Errors funnel through one helper** (`src/lib/errors.ts`) so a caught
+  `unknown` never renders as `[object Object]`.
+- **Reuse the shared plumbing before writing new**: a scrolling list goes
+  through `loadListPage`, a pushed detail view through `detailStateMarkdown`,
+  a UI-id-to-parameter mapping through an explicit tested function like
+  `positionFilter` (D103). Each exists because six hand-rolled copies drifted
+  once already.
 - **Comment the *why*, not the *what*.** Match the density and voice of
   raycast-buzz — it explains non-obvious decisions and fidelity trade-offs
   inline, and that is the house style.
@@ -201,11 +210,18 @@ main `tsconfig.json` **excludes** the test files and declares `types` explicitly
 jest-dom matcher fails to resolve.
 
 **Extend the stub rather than weakening an assertion.** It has grown
-`List.Item.Detail`, `List.Dropdown`, `Detail`, `Cache`, pagination and icon
-`fallback` serialisation, each added because a real behaviour was otherwise
-invisible to a test. Stub-only helpers such as `__resetCaches` are imported from
-`../test/raycast-api-stub` directly — the real `@raycast/api` has no such export,
-and `tsc` checks against the real one.
+`List.Item.Detail`, `List.Dropdown`, `Detail`, `Cache`, pagination, and icon
+`fallback` and `keywords` serialisation, each added because a real behaviour
+was otherwise invisible to a test. Stub-only helpers such as `__resetCaches`
+are imported from `../test/raycast-api-stub` directly — the real `@raycast/api`
+has no such export, and `tsc` checks against the real one.
+
+**When trimming the stub, the keep-list is "whatever our code *or
+`@raycast/utils`* executes"**, not "whatever our tests mention". The 2026-08-20
+trim removed `showToast`/`Toast`/`LaunchType` because no command uses them —
+and 19 failure-state tests broke at once, because `usePromise`'s own error path
+calls them (D104). The second client's imports are invisible to a grep over our
+sources.
 
 **`test/setup.ts` resets the cache before every test.** `useCachedPromise` keeps
 a module-level `Cache` that outlives a test; two tests were once passing on the
@@ -280,5 +296,5 @@ Each of these has already cost time once.
   party's votes (`context.md` D101). When a UI id maps onto a client parameter,
   write the mapping out explicitly, and test *every* branch of it — the two
   branches that were tested worked; the untested one was the default.
-- **All four docs are tracked** (`context.md` D14/D18). The repo is private.
+- **All five docs are tracked** (`context.md` D14/D18). The repo is private.
   Keep credentials out regardless.

@@ -6,7 +6,7 @@ decisions and blockers live there too, and the working rules in `CLAUDE.md`.
 
 - **Next:** B1 — the audit's Track C is fully landed (context.md §6, D100–D106);
   everything that could be done without the author is done again
-- **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 B1)
+- **Outstanding risk:** nothing here has ever run against the live API (`context.md` §3 K1)
 - **Last updated:** 2026-08-20
 
 ---
