@@ -31,6 +31,11 @@ items: the second fetch of an initiative and of a petition should log a literal
 `304` (the ETag path has only ever seen a stubbed one), and the `actp:` line is
 B2's evidence. Read the whole output, not just the exit code.
 
+While the connection is open, also check two things for O11 (future agendas):
+does the live `/meta → estados` vocabulary include an "Agendamento"-type
+stage, and does a current initiative's `comissoesFases` carry a populated
+`dataAgendamentoPlenario`? Those two answers decide B5.
+
 ### B2 · Do per-deputy vote positions exist? *(read it off the B1 output)*
 `actp` is described as *"outras actividades em plenário (votos, etc.)"* and its
 element shape is undeclared, so it is the only place an individual vote
@@ -50,6 +55,14 @@ than an error state.
 
 ### B4 · `npm run publish`
 Last. Everything above is a precondition.
+
+### B5 · Browse Upcoming Debates — *conditional on B1's O11 answer*
+openAR has no agenda endpoint (`context.md` O11), so this exists only if the
+live `estados` vocabulary turns out to include an "Agendamento"-type stage:
+then `/iniciativas?estado=<that value>` is a one-request "scheduled for
+debate" list and this becomes an ordinary command reusing `loadListPage`. If
+the vocabulary has no such value, delete this item — future agendas would
+need a second data source (parlamento.pt), which D10 argues against.
 
 ---
 
