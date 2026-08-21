@@ -12,7 +12,9 @@ beforeEach(() => {
 describe("search-committees tool", () => {
   it("passes the query and legislature through", async () => {
     await tool({ query: "saúde", legislature: "XVII" });
-    expect(mocks.listComissoes).toHaveBeenCalledWith(expect.objectContaining({ q: "saúde", legislatura: "XVII" }));
+    expect(mocks.listComissoes).toHaveBeenCalledWith(
+      expect.objectContaining({ q: "saúde", legislatura: "XVII", sort: "asc", limit: 50 }),
+    );
   });
 
   it("returns the id, so a follow-up need not resolve the name again", async () => {
@@ -24,5 +26,11 @@ describe("search-committees tool", () => {
     });
     const result = await tool({});
     expect(result.committees[0]).toEqual({ id: 42, name: "Assuntos Constitucionais", acronym: "CACDLG" });
+  });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.listComissoes.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ query: "x" })).rejects.toThrow("openAR unreachable");
   });
 });

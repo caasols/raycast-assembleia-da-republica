@@ -3,8 +3,8 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { useState } from "react";
 import { OpenArError } from "./lib/errors";
-import type { Iniciativa } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({ useLegislatures: vi.fn(), getPageSize: vi.fn(), listIniciativas: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listIniciativas: mocks.listIniciativas }));
@@ -15,36 +15,24 @@ vi.mock("./components/use-legislatures", () => ({
 }));
 
 import Command from "./search-initiatives";
+import { initiative, page } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.useLegislatures.mockReturnValue({
-    legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
-    initialId: "XVII",
+  // Stateful like the real hook: the dropdown tests change the selection and
+  // expect a refetch, which a fixed return value cannot produce.
+  mocks.useLegislatures.mockImplementation(() => {
+    const [chosenId, setSelectedId] = useState<string | undefined>(undefined);
+    return {
+      legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
+      initialId: "XVII",
+      selectedId: chosenId ?? "XVII",
+      setSelectedId,
+    };
   });
   mocks.getPageSize.mockReturnValue(50);
 });
-
-function initiative(overrides: Partial<Iniciativa> = {}): Iniciativa {
-  return {
-    id: 42,
-    legislaturaId: "XVII",
-    numero: "1/XVII",
-    tipo: "J",
-    tipoDesc: "Projeto de Lei",
-    titulo: "Altera o Código do Trabalho",
-    epigrafe: null,
-    dataEntrada: "2026-03-04",
-    dataFim: null,
-    estado: "Lei (Publicação DR)",
-    linkTexto: "https://example.pt/texto.pdf",
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
-
-const page = (data: Iniciativa[], total = data.length) => ({ data, total, page: 1, limit: 50 });
 
 function search(text: string) {
   fireEvent.change(screen.getByTestId("search-bar"), { target: { value: text } });
@@ -73,6 +61,34 @@ describe("Search Initiatives", () => {
     await waitFor(() =>
       expect(mocks.listIniciativas).toHaveBeenLastCalledWith(expect.objectContaining({ q: "trabalho" })),
     );
+  });
+
+  it("makes each row findable by number, type and legislature", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([initiative()]));
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("1/XVII");
+    expect(keywords).toContain("Projeto de Lei");
+    expect(keywords).toContain("XVII");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([]));
+    const { unmount } = render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.listIniciativas.mockResolvedValue(page([initiative()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
+  });
+
+  it("names the failed search in the unmatched empty state", async () => {
+    mocks.listIniciativas.mockResolvedValue(page([]));
+    render(<Command />);
+    search("zzz");
+    await waitFor(() => expect(screen.getByTestId("empty-view").getAttribute("data-description")).toContain("zzz"));
   });
 
   it("trims the query, so trailing spaces do not become a different search", async () => {

@@ -67,4 +67,11 @@ describe("parseRetryAfterSeconds", () => {
     expect(parseRetryAfterSeconds("")).toBeUndefined();
     expect(parseRetryAfterSeconds("soon")).toBeUndefined();
   });
+
+  it("treats a whitespace-only header as absent, not as zero", () => {
+    // Without the trim, Number("   ") is 0 — "retry immediately", the opposite
+    // of "we were not told". Mutation testing showed the trim could be dropped
+    // with no test noticing.
+    expect(parseRetryAfterSeconds("   ")).toBeUndefined();
+  });
 });

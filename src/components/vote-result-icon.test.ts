@@ -27,8 +27,8 @@ describe("voteResultIcon", () => {
   });
 
   it("gives Prejudicado neither colour, being neither a pass nor a defeat", () => {
-    const icon = voteResultIcon(vote("Prejudicado"));
-    expect(icon.tintColor).not.toBe("Green");
-    expect(icon.tintColor).not.toBe("Red");
+    // Asserted exactly: "not green, not red" was also satisfied by an empty
+    // object, which renders no icon at all — mutation testing caught it.
+    expect(voteResultIcon(vote("Prejudicado"))).toEqual({ source: "MinusCircle", tintColor: "SecondaryText" });
   });
 });

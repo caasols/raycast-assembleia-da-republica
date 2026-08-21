@@ -3,8 +3,8 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { useState } from "react";
 import { OpenArError } from "./lib/errors";
-import type { Peticao } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({ useLegislatures: vi.fn(), getPageSize: vi.fn(), listPeticoes: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listPeticoes: mocks.listPeticoes }));
@@ -15,35 +15,25 @@ vi.mock("./components/use-legislatures", () => ({
 }));
 
 import Command from "./search-petitions";
+import { page, petition } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.useLegislatures.mockReturnValue({
-    legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
-    initialId: "XVII",
+  // Stateful like the real hook: the dropdown tests change the selection and
+  // expect a refetch, which a fixed return value cannot produce.
+  mocks.useLegislatures.mockImplementation(() => {
+    const [chosenId, setSelectedId] = useState<string | undefined>(undefined);
+    return {
+      legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
+      initialId: "XVII",
+      selectedId: chosenId ?? "XVII",
+      setSelectedId,
+    };
   });
   mocks.getPageSize.mockReturnValue(50);
 });
 
-function petition(overrides: Partial<Peticao> = {}): Peticao {
-  return {
-    id: 1,
-    legislaturaId: "XVII",
-    numero: "12/XVII",
-    assunto: "Pela reabilitação da linha do Tua",
-    autor: "Associação de Moradores",
-    dataEntrada: "2026-02-10",
-    assinaturas: 8421,
-    assinaturasInicial: 4,
-    situacao: "Admitida",
-    urlTexto: "https://example.pt/peticao.pdf",
-    dataDebate: null,
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
-const page = (data: Peticao[], total = data.length) => ({ data, total, page: 1, limit: 50 });
 const actionTitles = () => screen.getAllByTestId("action").map((a) => a.getAttribute("data-title"));
 
 describe("Search Petitions", () => {
@@ -65,6 +55,49 @@ describe("Search Petitions", () => {
     render(<Command />);
     fireEvent.change(screen.getByTestId("search-bar"), { target: { value: "  tua  " } });
     await waitFor(() => expect(mocks.listPeticoes).toHaveBeenLastCalledWith(expect.objectContaining({ q: "tua" })));
+  });
+
+  it("treats a whitespace-only query as no query, not a search for spaces", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([]));
+    render(<Command />);
+    fireEvent.change(screen.getByTestId("search-bar"), { target: { value: "   " } });
+    await waitFor(() => expect(mocks.listPeticoes).toHaveBeenCalledTimes(2));
+    expect(mocks.listPeticoes.mock.calls[1][0].q).toBeUndefined();
+  });
+
+  it("starts on the preference's legislature, newest petitions first", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listPeticoes).toHaveBeenCalled());
+    expect(mocks.listPeticoes.mock.calls[0][0]).toMatchObject({ legislatura: "XVII", sort: "desc" });
+  });
+
+  it("makes each row findable by number and status", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([petition()]));
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("12/XVII");
+    expect(keywords).toContain("Admitida");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([]));
+    const { unmount } = render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.listPeticoes.mockResolvedValue(page([petition()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
+  });
+
+  it("copies the subject, which is the petition's identity", async () => {
+    mocks.listPeticoes.mockResolvedValue(page([petition()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+    const copy = screen.getAllByTestId("action").find((a) => a.getAttribute("data-title") === "Copy Subject");
+    expect(copy?.getAttribute("data-content")).toBe("Pela reabilitação da linha do Tua");
   });
 
   it("sends no legislature filter when widened to all", async () => {

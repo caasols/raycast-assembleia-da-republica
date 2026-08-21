@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { hasMorePages, toApiPage } from "./pagination";
+import { describe, it, expect, vi } from "vitest";
+import { hasMorePages, loadListPage, toApiPage } from "./pagination";
 
 describe("toApiPage", () => {
   it("turns Raycast's first page into openAR's first page", () => {
@@ -45,5 +45,28 @@ describe("hasMorePages", () => {
     // all however large the page.
     expect(hasMorePages(1, 200, 230)).toBe(true);
     expect(hasMorePages(2, 200, 230)).toBe(false);
+  });
+});
+
+describe("loadListPage", () => {
+  it("hands the fetcher openAR's one-based page, not Raycast's zero-based one", async () => {
+    const fetch = vi.fn(async () => ({ data: ["row"], total: 1 }));
+    await loadListPage(0, 50, fetch);
+    // Page 0 would be clamped up to 1 server-side, so the first two scrolls
+    // would silently return the same rows.
+    expect(fetch).toHaveBeenCalledWith(1, 50);
+  });
+
+  it("returns the rows with hasMore derived from the envelope's total", async () => {
+    const result = await loadListPage(0, 50, async () => ({ data: ["a", "b"], total: 120 }));
+    expect(result).toEqual({ data: ["a", "b"], hasMore: true });
+  });
+
+  it("reports no more once the pages cover the total", async () => {
+    expect((await loadListPage(2, 50, async () => ({ data: [], total: 120 }))).hasMore).toBe(false);
+  });
+
+  it("lets a fetch failure propagate to the caller's error state", async () => {
+    await expect(loadListPage(0, 50, async () => Promise.reject(new Error("boom")))).rejects.toThrow("boom");
   });
 });

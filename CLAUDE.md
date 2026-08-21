@@ -1,7 +1,7 @@
 # CLAUDE.md — working agreement
 
 Operating rules for any Claude session in this repo. Read this first, every
-session. Four tracked documents, four jobs — keep them in their lanes:
+session. Five tracked files, five jobs — keep them in their lanes:
 
 | File | Holds |
 |---|---|
@@ -108,18 +108,23 @@ src/
   lib/                      pure logic — no JSX, no Raycast UI imports
     openar-client.ts        the ONLY module that calls fetch
     query.ts                query building, clamping, the API's input limits
-    pagination.ts           Raycast's zero-based page ↔ openAR's one-based
+    pagination.ts           page arithmetic + loadListPage, the one paginated-
+                            fetch wrapper every scrolling list goes through
+    detail-markdown.ts      detailStateMarkdown — the loading/error/loaded
+                            markdown every pushed detail view goes through
     preferences.ts          reads the generated `Preferences` type
     errors.ts types.ts dates.ts
     <entity>.ts             presentation helpers: votes, initiatives, deputies…
   components/               shared React — UI *and* hooks
     request-empty-view.tsx  the three ways a list shows nothing
     use-parties.ts          /meta party lists, scoped per endpoint
+    use-legislatures.ts     legislature list + selection, resolved per launch
     <entity>-detail.tsx     pushed detail views
   tools/                    AI-extension tools, one per file
     <tool-name>.ts          default-exported async fn + Input type
 test/
   raycast-api-stub.tsx      stand-in for @raycast/api under vitest
+  fixtures.ts               shared entity builders (vote, initiative, …)
   setup.ts                  jest-dom matchers + per-test cache reset
 scripts/smoke.ts            hits the real API, run manually
 docs/openar-openapi.json    vendored spec, the contract's source of truth
@@ -142,8 +147,13 @@ that disagreed about what "approved" means would be worse than having no tool.
 - **One command per file**, filename matching the `name` in `package.json`.
 - **All network access goes through a single client module** in `src/lib/`.
   Commands never call `fetch` directly.
-- **Errors funnel through one helper** (`src/lib/errors.ts` in buzz) so a
-  caught `unknown` never renders as `[object Object]`.
+- **Errors funnel through one helper** (`src/lib/errors.ts`) so a caught
+  `unknown` never renders as `[object Object]`.
+- **Reuse the shared plumbing before writing new**: a scrolling list goes
+  through `loadListPage`, a pushed detail view through `detailStateMarkdown`,
+  a UI-id-to-parameter mapping through an explicit tested function like
+  `positionFilter` (D103). Each exists because six hand-rolled copies drifted
+  once already.
 - **Comment the *why*, not the *what*.** Match the density and voice of
   raycast-buzz — it explains non-obvious decisions and fidelity trade-offs
   inline, and that is the house style.
@@ -178,7 +188,7 @@ code. Extend that stub when a command needs an API surface it doesn't yet cover.
 
 **Coverage thresholds are 100%** on statements, branches, functions and lines,
 so new uncovered code fails `npm run test:coverage` rather than quietly
-drifting. The project currently sits at that bar — **462 tests across 42 files**
+drifting. The project currently sits at that bar — **525 tests across 43 files**
 — so a drop is a regression, not a starting point to work up from. Exclude only
 files that emit no runtime code (e.g. a types-only `types.ts`), and say so in a
 comment where excluded.
@@ -200,15 +210,31 @@ main `tsconfig.json` **excludes** the test files and declares `types` explicitly
 jest-dom matcher fails to resolve.
 
 **Extend the stub rather than weakening an assertion.** It has grown
-`List.Item.Detail`, `List.Dropdown`, `Detail`, `Cache`, pagination and icon
-`fallback` serialisation, each added because a real behaviour was otherwise
-invisible to a test. Stub-only helpers such as `__resetCaches` are imported from
-`../test/raycast-api-stub` directly — the real `@raycast/api` has no such export,
-and `tsc` checks against the real one.
+`List.Item.Detail`, `List.Dropdown`, `Detail`, `Cache`, pagination, and icon
+`fallback` and `keywords` serialisation, each added because a real behaviour
+was otherwise invisible to a test. Stub-only helpers such as `__resetCaches`
+are imported from `../test/raycast-api-stub` directly — the real `@raycast/api`
+has no such export, and `tsc` checks against the real one.
+
+**When trimming the stub, the keep-list is "whatever our code *or
+`@raycast/utils`* executes"**, not "whatever our tests mention". The 2026-08-20
+trim removed `showToast`/`Toast`/`LaunchType` because no command uses them —
+and 19 failure-state tests broke at once, because `usePromise`'s own error path
+calls them (D104). The second client's imports are invisible to a grep over our
+sources.
 
 **`test/setup.ts` resets the cache before every test.** `useCachedPromise` keeps
 a module-level `Cache` that outlives a test; two tests were once passing on the
 *previous* test's data.
+
+**Mutation testing is the check that grades the tests themselves.** `npm run
+test:mutation` (Stryker, installed on demand so `npm ci` stays lean; config in
+`stryker.config.json`) mutates `src/` and reports which changes no test
+noticed. It is deliberately not part of the per-push CI — a full run costs ~10
+minutes — but a manual `Mutation` workflow exists, and the audit that
+introduced it caught a P0 bug 100% line coverage could not see (`context.md`
+§6.2, D101). Run it after test-heavy changes; the survivor bins in §6.2 say
+which findings to act on and which to ignore.
 
 **CI order is load-bearing: lint → build → typecheck → coverage.** Only
 `ray build` generates `raycast-env.d.ts` (verified — `ray lint` does not), and
@@ -263,5 +289,12 @@ Each of these has already cost time once.
 - **Not every `ray lint` complaint fails the build.** The Title-Case grumble
   about the extension title is a `warning`; the keyword cap was the error. Read
   the severity before rewriting copy to satisfy it.
-- **All four docs are tracked** (`context.md` D14/D18). The repo is private.
+- **A computed object key silently defeats TypeScript's excess-property
+  check.** `listVotacoes({[how]: sigla})` with `how = "a_favor"` compiled
+  cleanly against a params type whose field is `aFavor` — the filter vanished
+  and the default state of Browse Party Votes showed the whole archive as one
+  party's votes (`context.md` D101). When a UI id maps onto a client parameter,
+  write the mapping out explicitly, and test *every* branch of it — the two
+  branches that were tested worked; the untested one was the default.
+- **All five docs are tracked** (`context.md` D14/D18). The repo is private.
   Keep credentials out regardless.

@@ -109,6 +109,14 @@ export async function request(
 }
 
 /**
+ * The error every malformed-payload check raises — one message, one place,
+ * after the audit found the literal pasted nine times (context.md §6.4).
+ */
+function unexpectedShape(): OpenArError {
+  return new OpenArError("openAR returned an unexpected response shape", 500);
+}
+
+/**
  * Narrow an unknown payload to the listing envelope.
  *
  * The check is deliberately shallow — `data` being an array is what callers
@@ -120,7 +128,7 @@ export async function request(
 function asPaginated<T>(payload: unknown): Paginated<T> {
   const envelope = payload as Partial<Paginated<T>> | null;
   if (!envelope || !Array.isArray(envelope.data)) {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return {
     data: envelope.data,
@@ -243,7 +251,7 @@ export async function listIniciativas(
 export async function getMeta(legislatura?: string, signal?: AbortSignal): Promise<Meta> {
   const payload = (await request("/meta", { legislatura }, signal)) as Partial<Meta> | null;
   if (!payload) {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return {
     legislaturas: payload.legislaturas ?? [],
@@ -356,7 +364,7 @@ export async function listCarreiras(limit?: number, signal?: AbortSignal): Promi
     signal,
   )) as Partial<Carreiras> | null;
   if (!payload || !Array.isArray(payload.data)) {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return { data: payload.data, stats: payload.stats ?? null };
 }
@@ -407,7 +415,7 @@ export async function getIniciativa(
 ): Promise<IniciativaDetail> {
   const payload = (await request(`/iniciativas/${id}`, { include }, signal, true)) as IniciativaDetail | null;
   if (!payload || typeof payload.id !== "number") {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return payload;
 }
@@ -419,7 +427,7 @@ export async function getIniciativa(
 export async function getDeputado(id: number, signal?: AbortSignal): Promise<DeputadoDetail> {
   const payload = (await request(`/deputados/${id}`, {}, signal)) as DeputadoDetail | null;
   if (!payload || typeof payload.id !== "number") {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return {
     ...payload,
@@ -443,7 +451,7 @@ export async function getDeputadoAtividade(
 ): Promise<DeputadoAtividade> {
   const payload = (await request(`/deputados/${id}/atividade`, { legislatura }, signal)) as DeputadoAtividade | null;
   if (!payload || typeof payload !== "object") {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return payload;
 }
@@ -483,7 +491,7 @@ export async function getComissao(
     signal,
   )) as ComissaoDetail | null;
   if (!payload || !Array.isArray(payload.data)) {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return {
     ...payload,
@@ -506,7 +514,7 @@ export async function getPeticao(
   // `true`: this is the second of the two endpoints openAR sends weak ETags on.
   const payload = (await request(`/peticoes/${id}`, { include }, signal, true)) as PeticaoDetail | null;
   if (!payload || typeof payload.id !== "number") {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return payload;
 }
@@ -521,7 +529,7 @@ export async function getPeticao(
 export async function listLegislaturas(signal?: AbortSignal): Promise<Legislatura[]> {
   const payload = await request("/legislaturas", {}, signal);
   if (!Array.isArray(payload)) {
-    throw new OpenArError("openAR returned an unexpected response shape", 500);
+    throw unexpectedShape();
   }
   return payload as Legislatura[];
 }

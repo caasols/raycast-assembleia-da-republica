@@ -10,3 +10,5 @@ build/
 dist/
 coverage/
 raycast-env.d.ts
+.stryker-tmp/
+reports/

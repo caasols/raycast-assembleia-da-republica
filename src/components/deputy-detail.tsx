@@ -1,7 +1,7 @@
 import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { getDeputado } from "../lib/openar-client";
-import { errorMessage } from "../lib/errors";
+import { detailStateMarkdown } from "../lib/detail-markdown";
 import { deputyFullMarkdown } from "../lib/deputy-detail";
 import { DeputyActivity } from "./deputy-activity";
 
@@ -9,11 +9,7 @@ import { DeputyActivity } from "./deputy-activity";
 export function DeputyDetail({ id, name }: { id: number; name: string }) {
   const { isLoading, data, error, revalidate } = usePromise(async (deputyId: number) => getDeputado(deputyId), [id]);
 
-  const markdown = error
-    ? `# ${name}\n\n**Could not load this deputy.**\n\n${errorMessage(error)}`
-    : data
-      ? deputyFullMarkdown(data)
-      : `# ${name}\n\nLoading…`;
+  const markdown = detailStateMarkdown({ title: name, noun: "this deputy", error, data, render: deputyFullMarkdown });
 
   return (
     <Detail

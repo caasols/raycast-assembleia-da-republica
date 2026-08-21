@@ -1,19 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { careerDetailMarkdown, careerSpan, careerSubtitle } from "./careers";
-import type { Carreira, Carreiras } from "./types";
+import type { Carreiras } from "./types";
+import { career as fixtureCareer } from "../../test/fixtures";
 
-function career(overrides: Partial<Carreira> = {}): Carreira {
-  return {
-    id: 7,
-    nomeParlamentar: "António Filipe",
-    totalLegs: 11,
-    firstLegStart: "1991-10-31",
-    lastLegStart: "2024-03-26",
-    lastParty: "PCP",
-    legIds: ["VI", "VII", "VIII"],
-    ...overrides,
-  };
-}
+const career = fixtureCareer;
 
 const STATS: Carreiras["stats"] = { totalDeputies: 3012, singleTerm: 1204, avgLegs: 1.83 };
 

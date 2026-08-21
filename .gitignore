@@ -17,6 +17,10 @@ compiled_raycast_rust
 
 # test output
 coverage/
+# mutation testing (Stryker) work dirs — the config file IS tracked
+.stryker-tmp/
+reports/
+stryker.log
 
 # internal working docs: kept on disk, never published to the public repo
 docs/*

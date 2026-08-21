@@ -4,7 +4,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
-import type { Deputado } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({
   useLegislatures: vi.fn(),
@@ -25,6 +24,7 @@ vi.mock("./components/use-legislatures", () => ({
 }));
 
 import Command from "./browse-deputies";
+import { deputy, page } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -35,21 +35,6 @@ beforeEach(() => {
   // The hook owns the filtering now; the command only chooses the scope.
   mocks.useParties.mockReturnValue(["PS", "CH"]);
 });
-
-function deputy(overrides: Partial<Deputado> = {}): Deputado {
-  return {
-    id: 4321,
-    nomeParlamentar: "Pedro Nuno Santos",
-    nomeCompleto: "Pedro Nuno de Oliveira Santos",
-    grupoParlamentar: "PS",
-    circuloEleitoral: "Lisboa",
-    legislaturaId: "XVII",
-    situacao: "Efetivo",
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
-const page = (data: Deputado[], total = data.length) => ({ data, total, page: 1, limit: 100 });
 
 describe("Browse Deputies", () => {
   it("has a default export that renders a List", () => {
@@ -154,6 +139,35 @@ describe("Browse Deputies", () => {
     render(<Command />);
     fireEvent.change(screen.getByTestId("search-bar"), { target: { value: "  pedro  " } });
     await waitFor(() => expect(mocks.listDeputados).toHaveBeenLastCalledWith(expect.objectContaining({ q: "pedro" })));
+  });
+
+  it("treats a whitespace-only search as no search, not a search for spaces", async () => {
+    mocks.listDeputados.mockResolvedValue(page([]));
+    render(<Command />);
+    fireEvent.change(screen.getByTestId("search-bar"), { target: { value: "   " } });
+    await waitFor(() => expect(mocks.listDeputados).toHaveBeenCalledTimes(2));
+    expect(mocks.listDeputados.mock.calls[1][0].q).toBeUndefined();
+  });
+
+  it("makes each row findable by full name, group and constituency", async () => {
+    mocks.listDeputados.mockResolvedValue(page([deputy()]));
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("Pedro Nuno de Oliveira Santos");
+    expect(keywords).toContain("PS");
+    expect(keywords).toContain("Lisboa");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.listDeputados.mockResolvedValue(page([]));
+    const { unmount } = render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.listDeputados.mockResolvedValue(page([deputy()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
   });
 
   it("distinguishes an empty list from an unmatched search", async () => {

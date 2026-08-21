@@ -8,9 +8,14 @@ const activity = (o: Partial<DeputadoAtividade> = {}): DeputadoAtividade => ({
 });
 
 describe("ACTIVITY_CATEGORIES", () => {
-  it("covers every array the endpoint returns except the deputy itself", () => {
-    // 18 keys come back; `deputado` is the subject rather than an activity.
+  it("covers every activity array except the two deliberate exclusions", () => {
+    // 18 keys come back: `deputado` is the subject rather than an activity,
+    // and `dadosLegis` is excluded until live data reveals what a count of it
+    // would even mean — so 16 categories carry labels.
     expect(ACTIVITY_CATEGORIES).toHaveLength(16);
+    const keys = ACTIVITY_CATEGORIES.map((category) => category.key);
+    expect(keys).not.toContain("dadosLegis");
+    expect(keys).not.toContain("deputado");
   });
 
   it("leads with the categories a reader cares about most", () => {

@@ -1,11 +1,12 @@
 import { listVotacoes } from "../lib/openar-client";
-import { initiativeReference, resultLabel } from "../lib/votes";
+import { initiativeReference, positionFilter, resultLabel } from "../lib/votes";
+import type { VotePosition } from "../lib/votes";
 
 type Input = {
   /** Party sigla, e.g. "PS", "PSD", "CH", "IL". */
   party: string;
   /** How the party voted. Defaults to votes in favour. */
-  position?: "for" | "against" | "abstained";
+  position?: VotePosition;
   /** Legislature identifier, e.g. "XVII". Omit for every legislature. */
   legislature?: string;
 };
@@ -14,10 +15,10 @@ type Input = {
 export default async function tool(input: Input) {
   // The API filters by position itself, so this is one request rather than
   // fetching everything and filtering here — which the rate limit would punish.
-  const key = input.position === "against" ? "contra" : input.position === "abstained" ? "abstencao" : "aFavor";
-
+  // The position→parameter mapping is shared with Browse Party Votes (D103),
+  // so the tool and the command cannot answer the same question differently.
   const page = await listVotacoes({
-    [key]: input.party,
+    ...positionFilter(input.position ?? "for", input.party),
     legislatura: input.legislature,
     sort: "desc",
     limit: 25,

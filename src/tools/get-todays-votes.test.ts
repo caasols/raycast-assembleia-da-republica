@@ -1,36 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { VotacaoListItem } from "../lib/types";
 
 const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn(), todayInLisbon: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
 vi.mock("../lib/dates", () => ({ todayInLisbon: mocks.todayInLisbon }));
 
 import tool from "./get-todays-votes";
+import { vote } from "../../test/fixtures";
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.todayInLisbon.mockReturnValue("2026-08-19");
 });
 
-const VOTE: VotacaoListItem = {
-  id: "v1",
-  data: "2026-08-19",
-  resultado: "Aprovado",
-  unanime: false,
-  reuniao: null,
-  tipoReuniao: null,
-  descricao: null,
-  aFavor: ["PS", "PSD"],
-  contra: ["CH"],
-  abstencao: [],
-  ausencias: [],
-  detalhe: null,
-  iniciativaId: 42,
-  iniciativaTitulo: "Orçamento do Estado",
-  iniciativaNumero: "1/XVII",
-  iniciativaTipo: "P",
-  legislaturaId: "XVII",
-};
+const VOTE = vote({ data: "2026-08-19" });
 
 describe("get-todays-votes tool", () => {
   it("asks for exactly today, in Lisbon", async () => {
@@ -48,10 +30,10 @@ describe("get-todays-votes tool", () => {
     const result = await tool();
     expect(result).toMatchObject({ date: "2026-08-19", count: 1 });
     expect(result.votes[0]).toEqual({
-      initiative: "Orçamento do Estado",
+      initiative: "Orçamento do Estado para 2027",
       reference: "P 1/XVII",
       result: "Aprovado",
-      breakdown: "In favour: PS, PSD · Against: CH",
+      breakdown: "In favour: PS, PSD · Against: CH · Abstained: IL",
     });
   });
 

@@ -4,32 +4,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
-import type { Carreira } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listCarreiras: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listCarreiras: mocks.listCarreiras }));
 vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import Command from "./longest-serving-deputies";
+import { career } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.getPageSize.mockReturnValue(100);
 });
-
-function career(overrides: Partial<Carreira> = {}): Carreira {
-  return {
-    id: 7,
-    nomeParlamentar: "António Filipe",
-    totalLegs: 11,
-    firstLegStart: "1991-10-31",
-    lastLegStart: "2024-03-26",
-    lastParty: "PCP",
-    legIds: ["VI", "VII"],
-    ...overrides,
-  };
-}
 
 describe("Longest-Serving Deputies", () => {
   it("has a default export that renders a List", () => {
@@ -68,6 +55,26 @@ describe("Longest-Serving Deputies", () => {
     mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "11 legislatures"));
+  });
+
+  it("makes each row findable by party and legislature", async () => {
+    mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("PCP");
+    expect(keywords).toContain("VI");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.listCarreiras.mockResolvedValue({ data: [], stats: null });
+    const { unmount } = render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
   });
 
   it("puts the population comparison in the detail pane", async () => {

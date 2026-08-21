@@ -6,20 +6,23 @@ import { RequestEmptyView } from "./components/request-empty-view";
 import { voteResultIcon } from "./components/vote-result-icon";
 import { InitiativeDetail } from "./components/initiative-detail";
 import { useParties } from "./components/use-parties";
-import { useLegislatures } from "./components/use-legislatures";
-import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
+import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
+import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
+import type { VotePosition } from "./lib/votes";
 import { displayDate } from "./lib/dates";
-import { hasMorePages, toApiPage } from "./lib/pagination";
+import { loadListPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
 
-/** How a party voted, as the three filters `/votacoes` offers. */
-const POSITIONS = [
-  { id: "a_favor", title: "Voted in favour" },
-  { id: "contra", title: "Voted against" },
-  { id: "abstencao", title: "Abstained" },
-] as const;
-
-type PositionId = (typeof POSITIONS)[number]["id"];
+/**
+ * How a party voted. The ids are the question's vocabulary, not the API's —
+ * the translation to `/votacoes`' parameters lives in `positionFilter`, the
+ * one tested place, shared with the `get-party-votes` tool (D101/D103).
+ */
+const POSITIONS: readonly { id: VotePosition; title: string }[] = [
+  { id: "for", title: "Voted in favour" },
+  { id: "against", title: "Voted against" },
+  { id: "abstained", title: "Abstained" },
+];
 
 /**
  * Votes filtered by how one party voted.
@@ -40,24 +43,27 @@ export default function Command() {
   // comes from the Default Legislature preference alone.
   const { initialId: legislatura } = useLegislatures();
   const [party, setParty] = useState<string | undefined>(undefined);
-  const [position, setPosition] = useState<PositionId>("a_favor");
+  const [position, setPosition] = useState<VotePosition>("for");
 
+  // pageSize is an argument rather than closed over, so a changed preference
+  // takes effect without a relaunch.
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (sigla: string | undefined, how: PositionId, legislaturaId: string) => async (options: { page: number }) => {
-      if (!sigla) {
-        return { data: [], hasMore: false };
-      }
-      const apiPage = toApiPage(options.page);
-      const result = await listVotacoes({
-        [how]: sigla,
-        legislatura: legislaturaId === "" ? undefined : legislaturaId,
-        sort: "desc",
-        page: apiPage,
-        limit: pageSize,
-      });
-      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
-    },
-    [party, position, legislatura],
+    (sigla: string | undefined, how: VotePosition, legislaturaId: string, limit: number) =>
+      async (options: { page: number }) => {
+        if (!sigla) {
+          return { data: [], hasMore: false };
+        }
+        return loadListPage(options.page, limit, (page, pageLimit) =>
+          listVotacoes({
+            ...positionFilter(how, sigla),
+            legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
+            sort: "desc",
+            page,
+            limit: pageLimit,
+          }),
+        );
+      },
+    [party, position, legislatura, pageSize],
   );
 
   const votes = data ?? [];
@@ -79,7 +85,7 @@ export default function Command() {
             // job: filtering the rows already fetched.
             const [nextParty, nextPosition] = value.split("|");
             setParty(nextParty || undefined);
-            setPosition((nextPosition as PositionId) ?? "a_favor");
+            setPosition((nextPosition as VotePosition) ?? "for");
           }}
         >
           <List.Dropdown.Item value="" title="Choose a party…" />

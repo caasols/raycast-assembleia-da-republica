@@ -30,12 +30,17 @@ describe("RequestEmptyView", () => {
     );
     expect(view).toHaveAttribute("data-title", "Could not reach openAR");
     expect(view.getAttribute("data-description")).toContain("boom");
+    // The red warning is what tells a scanning eye this is a failure, not a
+    // quiet day — the copy alone does not carry that at a glance.
+    expect(view).toHaveAttribute("data-icon", "Warning Red");
   });
 
   it("passes on the wait openAR asked for", () => {
     const view = renderIn(<RequestEmptyView error={new OpenArError("slow down", 429, 45)} title="x" description="y" />);
     expect(view).toHaveAttribute("data-title", "Too many requests");
     expect(view.getAttribute("data-description")).toContain("45 seconds");
+    // Orange clock, not red warning: waiting fixes this one.
+    expect(view).toHaveAttribute("data-icon", "Clock Orange");
   });
 
   it("does not invent a wait when none was given", () => {

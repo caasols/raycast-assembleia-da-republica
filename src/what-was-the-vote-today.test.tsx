@@ -4,45 +4,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
-import type { VotacaoListItem } from "./lib/types";
 
 const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
 
 import Command from "./what-was-the-vote-today";
+import { page, vote } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
 });
-
-function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
-  return {
-    id: "v1",
-    data: "2026-08-18",
-    resultado: "Aprovado",
-    unanime: false,
-    reuniao: null,
-    tipoReuniao: "RP",
-    descricao: null,
-    aFavor: ["PS", "PSD"],
-    contra: ["CH"],
-    abstencao: ["IL"],
-    ausencias: [],
-    detalhe: null,
-    iniciativaId: 42,
-    iniciativaTitulo: "Orçamento do Estado para 2027",
-    iniciativaNumero: "1/XVII",
-    iniciativaTipo: "P",
-    legislaturaId: "XVII",
-    ...overrides,
-  };
-}
-
-function page(data: VotacaoListItem[]) {
-  return { data, total: data.length, page: 1, limit: 200 };
-}
 
 describe("Browse Today's Votes", () => {
   // Guards the failure this repo shipped once: the command file was 0 bytes,
@@ -74,6 +47,28 @@ describe("Browse Today's Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("list-item")).toHaveAttribute("data-subtitle", "P 1/XVII"));
+  });
+
+  it("makes each row findable by number, result and party", async () => {
+    // Raycast filters on keywords; without these a user typing "PS" or the
+    // initiative number would not narrow the list to this vote.
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    const keywords = item.getAttribute("data-keywords");
+    expect(keywords).toContain("1/XVII");
+    expect(keywords).toContain("Aprovado");
+    expect(keywords).toContain("PS");
+    expect(keywords).toContain("CH");
+  });
+
+  it("copies a summary that names the vote, its result and the breakdown", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
+    const copy = screen.getAllByTestId("action").find((a) => a.getAttribute("data-title") === "Copy Vote Summary");
+    expect(copy?.getAttribute("data-content")).toContain("Orçamento do Estado para 2027 — Aprovado.");
+    expect(copy?.getAttribute("data-content")).toContain("In favour: PS, PSD");
   });
 
   it("marks unanimity in the accessory, not just the result", async () => {

@@ -4,9 +4,9 @@ import { useState } from "react";
 import { deputadoPhotoUrl, listDeputados } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { useParties } from "./components/use-parties";
-import { useLegislatures } from "./components/use-legislatures";
+import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { DeputyDetail } from "./components/deputy-detail";
-import { hasMorePages, toApiPage } from "./lib/pagination";
+import { loadListPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
 import { deputyDetailMarkdown, deputySubtitle } from "./lib/deputies";
 
@@ -21,21 +21,22 @@ export default function Command() {
   const [searchText, setSearchText] = useState("");
   const [party, setParty] = useState("");
 
+  // pageSize is an argument rather than closed over, so a changed preference
+  // takes effect without a relaunch.
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (query: string, sigla: string, legislaturaId: string) => async (options: { page: number }) => {
-      const apiPage = toApiPage(options.page);
-      const result = await listDeputados({
-        legislatura: legislaturaId === "" ? undefined : legislaturaId,
-        q: query.trim() === "" ? undefined : query.trim(),
-        grupo: sigla === "" ? undefined : sigla,
-        situacao: SITTING,
-        sort: "asc",
-        page: apiPage,
-        limit: pageSize,
-      });
-      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
-    },
-    [searchText, party, legislatura],
+    (query: string, sigla: string, legislaturaId: string, limit: number) => async (options: { page: number }) =>
+      loadListPage(options.page, limit, (page, pageLimit) =>
+        listDeputados({
+          legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
+          q: query.trim() === "" ? undefined : query.trim(),
+          grupo: sigla === "" ? undefined : sigla,
+          situacao: SITTING,
+          sort: "asc",
+          page,
+          limit: pageLimit,
+        }),
+      ),
+    [searchText, party, legislatura, pageSize],
   );
 
   const deputies = data ?? [];

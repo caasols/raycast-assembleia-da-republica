@@ -1,29 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary, VOTE_SIDES } from "./votes";
-import type { VotacaoListItem } from "./types";
+import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary, VOTE_SIDES } from "./votes";
+import { vote } from "../../test/fixtures";
 
-function vote(overrides: Partial<VotacaoListItem> = {}): VotacaoListItem {
-  return {
-    id: "v1",
-    data: "2026-08-18",
-    resultado: "Aprovado",
-    unanime: false,
-    reuniao: null,
-    tipoReuniao: "RP",
-    descricao: null,
-    aFavor: ["PS", "PSD"],
-    contra: ["CH"],
-    abstencao: ["IL"],
-    ausencias: [],
-    detalhe: null,
-    iniciativaId: 42,
-    iniciativaTitulo: "Orçamento do Estado para 2027",
-    iniciativaNumero: "1/XVII",
-    iniciativaTipo: "P",
-    legislaturaId: "XVII",
-    ...overrides,
-  };
-}
+describe("positionFilter", () => {
+  // Asserted with toEqual, not toMatchObject: the bug this guards against
+  // (D101) was an extra, ignored key — a subset match would pass right through
+  // it. Every position is pinned because the one that broke was the only one
+  // no test asserted.
+  it("maps 'for' onto the client's aFavor parameter", () => {
+    expect(positionFilter("for", "PS")).toEqual({ aFavor: "PS" });
+  });
+
+  it("maps 'against' onto contra", () => {
+    expect(positionFilter("against", "CH")).toEqual({ contra: "CH" });
+  });
+
+  it("maps 'abstained' onto abstencao", () => {
+    expect(positionFilter("abstained", "IL")).toEqual({ abstencao: "IL" });
+  });
+});
 
 describe("VOTE_SIDES", () => {
   it("keeps absences distinct from the three voting positions", () => {
@@ -103,6 +98,16 @@ describe("voteDetailMarkdown", () => {
   it("says so explicitly when no breakdown was recorded", () => {
     const markdown = voteDetailMarkdown(vote({ aFavor: [], contra: [], abstencao: [], ausencias: [] }));
     expect(markdown).toContain("_No party breakdown was recorded for this vote._");
+  });
+
+  it("does not claim a missing breakdown when only some sides are empty", () => {
+    const markdown = voteDetailMarkdown(vote({ contra: [], abstencao: [], ausencias: [] }));
+    expect(markdown).toContain("### In favour");
+    expect(markdown).not.toContain("No party breakdown");
+  });
+
+  it("renders nothing — not the string 'null' — for a vote with no description", () => {
+    expect(voteDetailMarkdown(vote({ descricao: null }))).not.toContain("null");
   });
 
   it("never renders openAR's raw HTML detail, which is unsanitised third-party markup", () => {

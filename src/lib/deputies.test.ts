@@ -1,20 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { deputyDetailMarkdown, deputySubtitle } from "./deputies";
-import type { Deputado } from "./types";
-
-function deputy(overrides: Partial<Deputado> = {}): Deputado {
-  return {
-    id: 4321,
-    nomeParlamentar: "Pedro Nuno Santos",
-    nomeCompleto: "Pedro Nuno de Oliveira Santos",
-    grupoParlamentar: "PS",
-    circuloEleitoral: "Lisboa",
-    legislaturaId: "XVII",
-    situacao: "Efetivo",
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
+import { deputy } from "../../test/fixtures";
 
 describe("deputySubtitle", () => {
   it("pairs group and constituency", () => {

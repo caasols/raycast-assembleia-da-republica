@@ -1,7 +1,7 @@
 import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { getIniciativa } from "../lib/openar-client";
-import { errorMessage } from "../lib/errors";
+import { detailStateMarkdown } from "../lib/detail-markdown";
 import { initiativeFullMarkdown } from "../lib/initiative-detail";
 import { initiativeLabel } from "../lib/initiatives";
 
@@ -18,13 +18,13 @@ export function InitiativeDetail({ id, title }: { id: number; title: string }) {
     [id],
   );
 
-  // The pushed view opens instantly with the title the caller already had,
-  // rather than a blank pane, and fills in as the request lands.
-  const markdown = error
-    ? `# ${title}\n\n**Could not load this initiative.**\n\n${errorMessage(error)}`
-    : data
-      ? initiativeFullMarkdown(data)
-      : `# ${title}\n\nLoading…`;
+  const markdown = detailStateMarkdown({
+    title,
+    noun: "this initiative",
+    error,
+    data,
+    render: initiativeFullMarkdown,
+  });
 
   return (
     <Detail

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({ listDeputados: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ listDeputados: mocks.listDeputados }));
 
 import tool from "./search-deputies";
+import { deputy, page } from "../../test/fixtures";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -15,7 +16,12 @@ describe("search-deputies tool", () => {
     await tool({ name: "Pedro" });
     // Without a legislature the question is almost always about who is in
     // parliament now — the 230 seats this shortcut selects.
-    expect(mocks.listDeputados.mock.calls[0][0]).toMatchObject({ q: "Pedro", situacao: "ativo" });
+    expect(mocks.listDeputados.mock.calls[0][0]).toMatchObject({
+      q: "Pedro",
+      situacao: "ativo",
+      sort: "asc",
+      limit: 50,
+    });
   });
 
   it("drops the sitting filter when asked about a past legislature", async () => {
@@ -29,23 +35,7 @@ describe("search-deputies tool", () => {
   });
 
   it("returns identity and affiliation for each deputy", async () => {
-    mocks.listDeputados.mockResolvedValue({
-      data: [
-        {
-          id: 4321,
-          nomeParlamentar: "Pedro Nuno Santos",
-          nomeCompleto: "Pedro Nuno de Oliveira Santos",
-          grupoParlamentar: "PS",
-          circuloEleitoral: "Lisboa",
-          legislaturaId: "XVII",
-          situacao: "Efetivo",
-          updatedAt: "2026-08-01T00:00:00Z",
-        },
-      ],
-      total: 1,
-      page: 1,
-      limit: 50,
-    });
+    mocks.listDeputados.mockResolvedValue(page([deputy()]));
     const result = await tool({});
     expect(result.deputies[0]).toEqual({
       id: 4321,
@@ -55,5 +45,11 @@ describe("search-deputies tool", () => {
       constituency: "Lisboa",
       legislature: "XVII",
     });
+  });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.listDeputados.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ name: "x" })).rejects.toThrow("openAR unreachable");
   });
 });

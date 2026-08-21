@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mocks = vi.hoisted(() => ({ getDeputado: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ getDeputado: mocks.getDeputado }));
 import tool from "./get-deputy";
+import { initiative } from "../../test/fixtures";
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -32,7 +33,9 @@ const DEPUTY = {
   ],
   bio: null,
   stats: { total: 40, aprovadas: 12, por_tipo: null },
-  iniciativas: [],
+  // Non-empty on purpose: with an empty list the recentInitiatives mapping was
+  // the one line in the suite mutation testing found completely uncovered.
+  iniciativas: [initiative({ id: 9, titulo: "Uma lei", numero: "9/XVII" })],
 };
 
 describe("get-deputy tool", () => {
@@ -47,6 +50,7 @@ describe("get-deputy tool", () => {
     const result = await tool({ id: 4321 });
     expect(result).toMatchObject({ initiativesAuthored: 40, initiativesApproved: 12 });
     expect(result.mandates).toEqual(["XVII · PS · Lisboa (Efetivo)"]);
+    expect(result.recentInitiatives).toEqual([{ id: 9, title: "Uma lei", entered: "2026-03-04" }]);
   });
 
   it("returns nulls rather than zeroes when the API sent no stats", async () => {
@@ -55,5 +59,11 @@ describe("get-deputy tool", () => {
     const result = await tool({ id: 4321 });
     expect(result.initiativesAuthored).toBeNull();
     expect(result.initiativesApproved).toBeNull();
+  });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.getDeputado.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ id: 4321 })).rejects.toThrow("openAR unreachable");
   });
 });

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
 
 import tool from "./get-party-votes";
+import { page, vote } from "../../test/fixtures";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -15,7 +16,9 @@ describe("get-party-votes tool", () => {
     // One request rather than fetching everything and filtering here, which the
     // 100 req/min budget would punish.
     await tool({ party: "PS" });
-    expect(mocks.listVotacoes.mock.calls[0][0]).toMatchObject({ aFavor: "PS" });
+    // Newest votes first, and a bounded page — the answer is "recent votes",
+    // not the archive.
+    expect(mocks.listVotacoes.mock.calls[0][0]).toMatchObject({ aFavor: "PS", sort: "desc", limit: 25 });
 
     await tool({ party: "CH", position: "against" });
     expect(mocks.listVotacoes.mock.calls[1][0]).toMatchObject({ contra: "CH" });
@@ -38,33 +41,14 @@ describe("get-party-votes tool", () => {
   });
 
   it("returns the full breakdown, not just the party asked about", async () => {
-    mocks.listVotacoes.mockResolvedValue({
-      data: [
-        {
-          id: "v1",
-          data: "2026-08-19",
-          resultado: "Aprovado",
-          unanime: false,
-          reuniao: null,
-          tipoReuniao: null,
-          descricao: null,
-          aFavor: ["PS"],
-          contra: ["CH"],
-          abstencao: ["IL"],
-          ausencias: [],
-          detalhe: null,
-          iniciativaId: 1,
-          iniciativaTitulo: "Uma lei",
-          iniciativaNumero: "1/XVII",
-          iniciativaTipo: "J",
-          legislaturaId: "XVII",
-        },
-      ],
-      total: 1,
-      page: 1,
-      limit: 25,
-    });
+    mocks.listVotacoes.mockResolvedValue(page([vote({ data: "2026-08-19" })], 1, 25));
     const result = await tool({ party: "PS" });
-    expect(result.votes[0]).toMatchObject({ inFavour: ["PS"], against: ["CH"], abstained: ["IL"] });
+    expect(result.votes[0]).toMatchObject({ inFavour: ["PS", "PSD"], against: ["CH"], abstained: ["IL"] });
+  });
+  it("lets an API failure propagate, so the model cannot mistake silence for data", async () => {
+    // D80: a tool that swallowed this would let the model answer confidently
+    // about parliament from nothing — the worst outcome this extension has.
+    mocks.listVotacoes.mockRejectedValue(new Error("openAR unreachable"));
+    await expect(tool({ party: "PS" })).rejects.toThrow("openAR unreachable");
   });
 });

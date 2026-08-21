@@ -1,4 +1,5 @@
 import { List } from "@raycast/api";
+import { ALL_LEGISLATURES } from "./use-legislatures";
 
 /**
  * The legislature filter, as a search-bar accessory.
@@ -17,7 +18,7 @@ export function LegislatureDropdown({
 }) {
   return (
     <List.Dropdown tooltip="Legislature" value={value} onChange={onChange}>
-      <List.Dropdown.Item value="" title="All legislatures" />
+      <List.Dropdown.Item value={ALL_LEGISLATURES} title="All legislatures" />
       {[...legislatures].reverse().map((legislature) => (
         <List.Dropdown.Item key={legislature.id} value={legislature.id} title={legislature.nome || legislature.id} />
       ))}

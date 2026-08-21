@@ -60,18 +60,6 @@ export interface VotacaoListItem extends Votacao {
 }
 
 /**
- * The identity of a vote.
- *
- * A vote id is unique *per initiative*, not globally — `/votacoes/{id}`
- * requires `iniciativa_id` and 400s without it. Passing a bare `id` between
- * views cannot resolve back to a vote, so the pair travels together.
- */
-export interface VotacaoKey {
-  id: string;
-  iniciativaId: number;
-}
-
-/**
  * The nine single-letter initiative types, as `/iniciativas?tipo=` accepts
  * them. `/meta` reports which are actually present in the data, which is a
  * smaller set — this is the vocabulary, not the menu.

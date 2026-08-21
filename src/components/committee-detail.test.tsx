@@ -4,13 +4,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "../lib/errors";
-import type { Iniciativa } from "../lib/types";
 
 const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), getComissao: vi.fn() }));
 vi.mock("../lib/openar-client", () => ({ getComissao: mocks.getComissao }));
 vi.mock("../lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
 import { CommitteeDetail } from "./committee-detail";
+import { initiative } from "../../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -18,20 +18,7 @@ beforeEach(() => {
   mocks.getPageSize.mockReturnValue(100);
 });
 
-const INITIATIVE: Iniciativa = {
-  id: 1,
-  legislaturaId: "XVII",
-  numero: "1/XVII",
-  tipo: "J",
-  tipoDesc: "Projeto de Lei",
-  titulo: "Altera o Código do Trabalho",
-  epigrafe: null,
-  dataEntrada: "2026-03-04",
-  dataFim: null,
-  estado: "Lei (Publicação DR)",
-  linkTexto: null,
-  updatedAt: "2026-08-01T00:00:00Z",
-};
+const INITIATIVE = initiative();
 const committee = (data = [INITIATIVE]) => ({
   id: 42,
   sigla: "CACDLG",
@@ -80,6 +67,17 @@ describe("CommitteeDetail", () => {
     render(<CommitteeDetail id={42} name="CACDLG" />);
     await waitFor(() => expect(screen.getByTestId("list-item")).toBeInTheDocument());
     expect(screen.queryAllByTestId("action").map((a) => a.getAttribute("data-title"))).toContain("Show Details");
+  });
+
+  it("opens the detail pane only when there are rows to show in it", async () => {
+    mocks.getComissao.mockResolvedValue(committee([]));
+    const { unmount } = render(<CommitteeDetail id={42} name="CACDLG" />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "false"));
+    unmount();
+
+    mocks.getComissao.mockResolvedValue(committee());
+    render(<CommitteeDetail id={42} name="CACDLG" />);
+    await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
   });
 
   it("names the committee in the empty state", async () => {

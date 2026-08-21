@@ -1,0 +1,30 @@
+name: Mutation
+
+# Manual only, on purpose. Mutation testing is the check that grades the
+# tests themselves — it found the audit's P0 bug class where 100% coverage
+# could not (context.md §6.2) — but a full run costs ~10 minutes and would
+# roughly double every push's CI time for a signal that only moves when
+# tests or logic change shape. Run it before a release, after a test-heavy
+# change, or whenever the suite's strength is in question. A `schedule`
+# trigger is the documented next step if drift ever bites.
+on:
+  workflow_dispatch:
+
+jobs:
+  mutate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Stryker is installed on demand (pinned major) rather than kept in
+      # devDependencies, so the per-push CI job's `npm ci` stays lean —
+      # ~175 packages it would otherwise install on every push.
+      - run: npm run test:mutation

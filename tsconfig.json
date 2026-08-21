@@ -1,6 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "include": ["src/**/*", "raycast-env.d.ts"],
+  // scripts/ is included so `npm run typecheck` covers smoke.ts too — tsx
+  // executes it untyped, so nothing else would ever typecheck it.
+  "include": ["src/**/*", "scripts/**/*", "raycast-env.d.ts"],
   // Tests are checked separately by tsconfig.test.json: they need the DOM lib,
   // which the extension itself must not have, since it does not run in a browser.
   "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"],

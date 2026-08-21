@@ -1,24 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initiativeDetailMarkdown, initiativeLabel } from "./initiatives";
-import type { Iniciativa } from "./types";
-
-function initiative(overrides: Partial<Iniciativa> = {}): Iniciativa {
-  return {
-    id: 42,
-    legislaturaId: "XVII",
-    numero: "1/XVII",
-    tipo: "J",
-    tipoDesc: "Projeto de Lei",
-    titulo: "Altera o Código do Trabalho",
-    epigrafe: null,
-    dataEntrada: "2026-03-04",
-    dataFim: null,
-    estado: "Lei (Publicação DR)",
-    linkTexto: "https://example.pt/texto.pdf",
-    updatedAt: "2026-08-01T00:00:00Z",
-    ...overrides,
-  };
-}
+import { initiative } from "../../test/fixtures";
 
 describe("initiativeLabel", () => {
   it("uses the human-readable type, not the single-letter code", () => {

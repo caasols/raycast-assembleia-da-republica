@@ -4,11 +4,11 @@ import { useState } from "react";
 import { listIniciativas } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { LegislatureDropdown } from "./components/legislature-dropdown";
-import { useLegislatures } from "./components/use-legislatures";
+import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { InitiativeDetail } from "./components/initiative-detail";
 import { initiativeDetailMarkdown, initiativeLabel } from "./lib/initiatives";
 import { displayDate } from "./lib/dates";
-import { hasMorePages, toApiPage } from "./lib/pagination";
+import { loadListPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
 
 /**
@@ -23,27 +23,26 @@ import { getPageSize } from "./lib/preferences";
 export default function Command() {
   const pageSize = getPageSize();
   const [searchText, setSearchText] = useState("");
-  const { legislatures, initialId } = useLegislatures();
-  // undefined until the list loads, so the preference's "current" can
-  // resolve before the user's own choice takes over.
-  const [legislature, setLegislature] = useState<string | undefined>(undefined);
-  const selectedLegislature = legislature ?? initialId;
+  // The "preference until the user chooses" rule lives in the hook, not here.
+  const { legislatures, selectedId: selectedLegislature, setSelectedId: setLegislature } = useLegislatures();
 
+  // pageSize is an argument rather than closed over: useCachedPromise re-runs
+  // when its dependencies change, so a changed preference takes effect here
+  // instead of waiting for a relaunch.
   const { isLoading, data, error, revalidate, pagination } = useCachedPromise(
-    (query: string, legislaturaId: string) => async (options: { page: number }) => {
-      const apiPage = toApiPage(options.page);
-      const result = await listIniciativas({
-        legislatura: legislaturaId === "" ? undefined : legislaturaId,
-        // Empty search is a valid request: it returns the most recent
-        // initiatives, which is a better landing state than a blank screen.
-        q: query.trim() === "" ? undefined : query.trim(),
-        sort: "desc",
-        page: apiPage,
-        limit: pageSize,
-      });
-      return { data: result.data, hasMore: hasMorePages(apiPage, pageSize, result.total) };
-    },
-    [searchText, selectedLegislature],
+    (query: string, legislaturaId: string, limit: number) => async (options: { page: number }) =>
+      loadListPage(options.page, limit, (page, pageLimit) =>
+        listIniciativas({
+          legislatura: legislaturaId === ALL_LEGISLATURES ? undefined : legislaturaId,
+          // Empty search is a valid request: it returns the most recent
+          // initiatives, which is a better landing state than a blank screen.
+          q: query.trim() === "" ? undefined : query.trim(),
+          sort: "desc",
+          page,
+          limit: pageLimit,
+        }),
+      ),
+    [searchText, selectedLegislature, pageSize],
   );
 
   const initiatives = data ?? [];

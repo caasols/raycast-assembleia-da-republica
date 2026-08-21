@@ -42,6 +42,19 @@ describe("DeputyActivity", () => {
     );
   });
 
+  it("titles the pane with the deputy and the word Activity, since it is pushed from their record", async () => {
+    mocks.getDeputadoAtividade.mockResolvedValue({ iniciativas: [{}] });
+    render(<DeputyActivity id={7} name="António Filipe" />);
+    await waitFor(() => expect(detail()).toHaveAttribute("data-navigation-title", "António Filipe — Activity"));
+  });
+
+  it("offers Retry only when the load failed", async () => {
+    mocks.getDeputadoAtividade.mockResolvedValue({ iniciativas: [{}] });
+    render(<DeputyActivity id={7} name="X" />);
+    await waitFor(() => expect(detail().getAttribute("data-markdown")).toContain("initiatives authored"));
+    expect(screen.getAllByTestId("action").map((a) => a.getAttribute("data-title"))).not.toContain("Retry");
+  });
+
   it("can retry a failed load", async () => {
     mocks.getDeputadoAtividade.mockRejectedValue(new OpenArError("boom", 502));
     render(<DeputyActivity id={7} name="X" />);
