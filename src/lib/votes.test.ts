@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary, VOTE_SIDES } from "./votes";
+import {
+  initiativeReference,
+  positionFilter,
+  resultLabel,
+  voteDetailMarkdown,
+  voteSummary,
+  voteTally,
+  VOTE_SIDES,
+} from "./votes";
 import { vote } from "../../test/fixtures";
 
 describe("positionFilter", () => {
@@ -119,5 +127,64 @@ describe("voteDetailMarkdown", () => {
     const markdown = voteDetailMarkdown(vote({ detalhe: "<script>alert(1)</script><b>PS</b>" }));
     expect(markdown).not.toContain("<script>");
     expect(markdown).not.toContain("<b>");
+  });
+});
+
+describe("voteTally", () => {
+  it("counts the three sides, in favour first", () => {
+    expect(voteTally(vote({ aFavor: ["PS", "PSD"], contra: ["CH"], abstencao: ["IL"] }))?.text).toBe("2\u00B71\u00B71");
+  });
+
+  it("spells the sides out in a tooltip, because the numbers alone are cryptic", () => {
+    expect(voteTally(vote({ aFavor: ["PS", "PSD"], contra: ["CH"], abstencao: ["IL"] }))?.tooltip).toBe(
+      "2 in favour, 1 against, 1 abstained",
+    );
+  });
+
+  it("distinguishes a landslide from a squeaker, which the row's icon cannot", () => {
+    // The whole reason the tally exists: both of these render as a green tick.
+    const landslide = voteTally(vote({ aFavor: ["PS", "PSD", "BE", "IL"], contra: [], abstencao: [] }));
+    const squeaker = voteTally(vote({ aFavor: ["PS", "PSD"], contra: ["CH", "IL"], abstencao: [] }));
+    expect(landslide?.text).toBe("4\u00B70\u00B70");
+    expect(squeaker?.text).toBe("2\u00B72\u00B70");
+  });
+
+  it("ignores absences, which are not a position on the vote", () => {
+    expect(voteTally(vote({ aFavor: ["PS"], contra: [], abstencao: [], ausencias: ["CH", "IL"] }))?.text).toBe(
+      "1\u00B70\u00B70",
+    );
+  });
+
+  it("returns nothing at all when no breakdown was recorded, rather than 0\u00B70\u00B70", () => {
+    expect(voteTally(vote({ aFavor: [], contra: [], abstencao: [], ausencias: [] }))).toBeNull();
+  });
+});
+
+describe("the detail heading", () => {
+  it("leaves a short title alone", () => {
+    const markdown = voteDetailMarkdown(vote({ iniciativaTitulo: "Lei de Bases da Saúde" }));
+    expect(markdown.split("\n")[0]).toBe("# Lei de Bases da Saúde");
+    expect(markdown).not.toContain("\u2026");
+  });
+
+  it("truncates a legislative title on a word boundary, so it cannot swallow the pane", () => {
+    // Real title from openAR: 150 characters, and as an h1 it filled the whole
+    // detail pane and pushed the party bar off the bottom.
+    const long =
+      "Assegura a execução dos Regulamentos (UE) 2024/1349 e 2024/1356, relativos ao procedimento de regresso na fronteira e ao procedimento de triagem";
+    const heading = voteDetailMarkdown(vote({ iniciativaTitulo: long })).split("\n")[0];
+    expect(heading).toBe("# Assegura a execução dos Regulamentos (UE) 2024/1349 e 2024/1356, relativos ao\u2026");
+    expect(heading.length).toBeLessThanOrEqual("# ".length + 81);
+    // Cut between words: what survives is a prefix of the original, and the
+    // character the cut landed on in the original is a space.
+    const body = heading.slice("# ".length, -1);
+    expect(long.startsWith(body)).toBe(true);
+    expect(long[body.length]).toBe(" ");
+  });
+
+  it("cuts mid-word only when the first 80 characters contain no space at all", () => {
+    const unbroken = "A".repeat(120);
+    const heading = voteDetailMarkdown(vote({ iniciativaTitulo: unbroken })).split("\n")[0];
+    expect(heading).toBe(`# ${"A".repeat(80)}\u2026`);
   });
 });

@@ -86,17 +86,30 @@ describe("Browse Votes", () => {
     expect(params.limit).toBe(50);
   });
 
-  it("renders one row per vote, titled by the initiative", async () => {
+  it("renders one row per vote, titled by the reference rather than the initiative", async () => {
+    // The titles are long enough that every row truncated to the same stub, so
+    // the reference is what actually tells two rows apart.
     mocks.listVotacoes.mockResolvedValue(page([vote(), vote({ id: "v2", iniciativaTitulo: "Lei de Bases da Saúde" })]));
     render(<Command />);
     await waitFor(() => expect(screen.getAllByTestId("list-item")).toHaveLength(2));
-    expect(screen.getAllByTestId("list-item")[0]).toHaveAttribute("data-title", "Orçamento do Estado para 2027");
+    expect(screen.getAllByTestId("list-item")[0]).toHaveAttribute("data-title", "P 1/XVII");
   });
 
-  it("shows the initiative reference as the subtitle", async () => {
+  it("falls back to the initiative title if a vote carries no reference at all", async () => {
+    // A blank title would render an unclickable row.
+    mocks.listVotacoes.mockResolvedValue(page([vote({ iniciativaTipo: "", iniciativaNumero: "" })]));
+    render(<Command />);
+    await waitFor(() =>
+      expect(screen.getByTestId("list-item")).toHaveAttribute("data-title", "Orçamento do Estado para 2027"),
+    );
+  });
+
+  it("puts the margin beside the reference, on the left, not out with the date", async () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
-    await waitFor(() => expect(screen.getByTestId("list-item")).toHaveAttribute("data-subtitle", "P 1/XVII"));
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    expect(item).toHaveAttribute("data-title", "P 1/XVII");
+    expect(item).toHaveAttribute("data-subtitle", "2\u00B71\u00B71");
   });
 
   it("makes each row findable by number, result and party", async () => {
@@ -106,6 +119,10 @@ describe("Browse Votes", () => {
     render(<Command />);
     const item = await waitFor(() => screen.getByTestId("list-item"));
     const keywords = item.getAttribute("data-keywords");
+    // The title left the row, so filtering by what the vote is ABOUT now
+    // depends entirely on it being a keyword. Without this, the change would
+    // silently break search.
+    expect(keywords).toContain("Orçamento do Estado para 2027");
     expect(keywords).toContain("1/XVII");
     expect(keywords).toContain("Aprovado");
     expect(keywords).toContain("PS");
@@ -121,29 +138,48 @@ describe("Browse Votes", () => {
     expect(copy?.getAttribute("data-content")).toContain("In favour: PS, PSD");
   });
 
-  it("marks unanimity in the accessory, not just the result", async () => {
-    mocks.listVotacoes.mockResolvedValue(page([vote({ unanime: true })]));
+  it("leaves the date as the only right-hand column", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "18 August 2026"));
+  });
+
+  it("keeps the tooltip on the margin after moving it left, since the numbers are cryptic alone", async () => {
+    // `subtitle` accepts { value, tooltip } exactly like `title`, so moving the
+    // tally out of the accessories does not have to cost its explanation.
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
     await waitFor(() =>
       expect(screen.getByTestId("list-item")).toHaveAttribute(
-        "data-accessories",
-        "18 August 2026 Aprovado (unanimous)",
+        "data-subtitle-tooltip",
+        "2 in favour, 1 against, 1 abstained",
       ),
     );
   });
 
-  it("dates every row, since the list now spans years rather than one day", async () => {
-    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+  it("omits the margin entirely when no breakdown was recorded", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote({ aFavor: [], contra: [], abstencao: [], ausencias: [] })]));
     render(<Command />);
-    await waitFor(() =>
-      expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "18 August 2026 Aprovado"),
-    );
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    expect(item.getAttribute("data-subtitle")).toBeFalsy();
+    expect(item).toHaveAttribute("data-accessories", "18 August 2026");
   });
 
-  it("falls back to the result alone when a vote carries no date", async () => {
+  it("still says a vote was unanimous, in the detail pane the row no longer has room for", async () => {
+    // The result label left the row with the title. The icon carries approved
+    // or rejected, but only the detail pane can say "unanimous".
+    mocks.listVotacoes.mockResolvedValue(page([vote({ unanime: true })]));
+    render(<Command />);
+    const detail = await waitFor(() => screen.getByTestId("item-detail"));
+    expect(detail.getAttribute("data-markdown")).toContain("Aprovado (unanimous)");
+  });
+
+  it("drops the date cleanly when a vote carries none, leaving the margin on the left", async () => {
     mocks.listVotacoes.mockResolvedValue(page([vote({ data: null })]));
     render(<Command />);
-    await waitFor(() => expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "Aprovado"));
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    expect(item.getAttribute("data-accessories")).toBe("");
+    expect(item).toHaveAttribute("data-subtitle", "2\u00B71\u00B71");
   });
 
   it("tints an approved vote green and a rejected one red, so a day is scannable", async () => {

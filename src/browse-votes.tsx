@@ -8,7 +8,7 @@ import { InitiativeDetail } from "./components/initiative-detail";
 import { VotePartyMetadata } from "./components/vote-party-tags";
 import { LegislatureDropdown } from "./components/legislature-dropdown";
 import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
-import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
+import { initiativeReference, resultLabel, voteDetailMarkdown, voteSummary, voteTally } from "./lib/votes";
 import { loadListPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
 
@@ -77,40 +77,61 @@ export default function Command() {
           description="openAR recorded no plenary votes for this legislature."
         />
       )}
-      {votes.map((vote) => (
-        // Vote ids are unique per initiative rather than globally, so the key
-        // is the pair — two initiatives can each carry a vote called "1".
-        <List.Item
-          key={`${vote.iniciativaId}:${vote.id}`}
-          icon={voteResultIcon(vote)}
-          title={vote.iniciativaTitulo}
-          subtitle={initiativeReference(vote)}
-          keywords={[vote.iniciativaNumero, vote.resultado, ...vote.aFavor, ...vote.contra]}
-          // Both, now that the list spans years rather than one day: the date
-          // because a row is meaningless without it, and the result label
-          // because the icon's colour cannot say "unanimous".
-          accessories={
-            vote.data ? [{ text: displayDate(vote.data) }, { text: resultLabel(vote) }] : [{ text: resultLabel(vote) }]
-          }
-          detail={<List.Item.Detail markdown={voteDetailMarkdown(vote)} metadata={<VotePartyMetadata vote={vote} />} />}
-          actions={
-            <ActionPanel>
-              {/* Every vote row carries its initiative's id, so the whole
+      {votes.map((vote) => {
+        const tally = voteTally(vote);
+        return (
+          // Vote ids are unique per initiative rather than globally, so the key
+          // is the pair — two initiatives can each carry a vote called "1".
+          <List.Item
+            key={`${vote.iniciativaId}:${vote.id}`}
+            icon={voteResultIcon(vote)}
+            // Reference, not title. The initiative titles are long enough that
+            // every row truncated to the same "Assegura ..." stub, which told you
+            // nothing and pushed the date out of the pane. Icon plus reference
+            // plus date is what actually distinguishes one row from the next; the
+            // full title is one keystroke away in the detail pane.
+            //
+            // Falls back to the title if a vote somehow carries no type OR number,
+            // because a row with a blank title is unclickable.
+            title={initiativeReference(vote) || vote.iniciativaTitulo}
+            // The margin sits beside the reference rather than out on the right
+            // with the date: both describe the vote, and grouping them left
+            // leaves the date as the only right-hand column, which reads as a
+            // table instead of three clusters floating apart. Raycast offers no
+            // spacing or alignment control, so WHICH SIDE a field sits on is the
+            // only lever there is.
+            subtitle={tally ? { value: tally.text, tooltip: tally.tooltip } : undefined}
+            // The title left the row, so it MUST be a keyword: Raycast filters on
+            // title and keywords, and dropping it would silently stop searching
+            // by what the vote is actually about.
+            keywords={[vote.iniciativaTitulo, vote.iniciativaNumero, vote.resultado, ...vote.aFavor, ...vote.contra]}
+            // Margin then date. The icon says whether it passed; the tally says by
+            // how much, which a green tick cannot distinguish between 9-0 and 5-4.
+            // Tooltipped rather than labelled, so the row stays three glanceable
+            // things wide.
+            accessories={vote.data ? [{ text: displayDate(vote.data) }] : []}
+            detail={
+              <List.Item.Detail markdown={voteDetailMarkdown(vote)} metadata={<VotePartyMetadata vote={vote} />} />
+            }
+            actions={
+              <ActionPanel>
+                {/* Every vote row carries its initiative's id, so the whole
                   record is one push away rather than a separate search. */}
-              <Action.Push
-                title="Show Initiative"
-                icon={Icon.Sidebar}
-                target={<InitiativeDetail id={vote.iniciativaId} title={vote.iniciativaTitulo} />}
-              />
-              <Action.CopyToClipboard
-                title="Copy Vote Summary"
-                content={`${vote.iniciativaTitulo} — ${resultLabel(vote)}. ${voteSummary(vote)}`}
-              />
-              <Action.CopyToClipboard title="Copy Initiative Title" content={vote.iniciativaTitulo} />
-            </ActionPanel>
-          }
-        />
-      ))}
+                <Action.Push
+                  title="Show Initiative"
+                  icon={Icon.Sidebar}
+                  target={<InitiativeDetail id={vote.iniciativaId} title={vote.iniciativaTitulo} />}
+                />
+                <Action.CopyToClipboard
+                  title="Copy Vote Summary"
+                  content={`${vote.iniciativaTitulo} — ${resultLabel(vote)}. ${voteSummary(vote)}`}
+                />
+                <Action.CopyToClipboard title="Copy Initiative Title" content={vote.iniciativaTitulo} />
+              </ActionPanel>
+            }
+          />
+        );
+      })}
     </List>
   );
 }

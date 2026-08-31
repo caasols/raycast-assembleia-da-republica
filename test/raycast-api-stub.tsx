@@ -156,10 +156,10 @@ function iconAttr(icon: unknown): string | undefined {
 
 function ListItem(props: {
   title?: string;
-  subtitle?: string;
+  subtitle?: string | { value?: string | null; tooltip?: string | null };
   actions?: ReactNode;
   detail?: ReactNode;
-  accessories?: { text?: string; date?: Date; tag?: unknown; icon?: unknown }[];
+  accessories?: { text?: string; date?: Date; tag?: unknown; icon?: unknown; tooltip?: string }[];
   icon?: unknown;
   // The stub does no native filtering, so keywords are serialised rather than
   // matched against: mutation testing showed every command's keywords could be
@@ -171,10 +171,19 @@ function ListItem(props: {
     <div
       data-testid="list-item"
       data-title={props.title}
-      data-subtitle={props.subtitle}
+      data-subtitle={typeof props.subtitle === "object" ? (props.subtitle?.value ?? "") : props.subtitle}
+      // The real subtitle can carry its own tooltip, and for the vote tally
+      // that tooltip is the only thing explaining what the numbers mean.
+      data-subtitle-tooltip={typeof props.subtitle === "object" ? (props.subtitle?.tooltip ?? "") : undefined}
       data-icon={iconAttr(props.icon)}
       data-keywords={props.keywords?.join(" ")}
       data-accessories={props.accessories?.map((a) => a.text ?? (a.date ? a.date.toISOString() : "")).join(" ")}
+      // The vote tally renders as bare numbers; its tooltip is the only thing
+      // that says what they mean, so a test has to be able to see it.
+      data-accessory-tooltips={props.accessories
+        ?.map((a) => a.tooltip ?? "")
+        .filter(Boolean)
+        .join(" | ")}
     >
       {props.actions}
       {props.detail}
