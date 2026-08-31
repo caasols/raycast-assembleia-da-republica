@@ -1,7 +1,7 @@
 /**
  * Presentation helpers for the longest-serving-deputies ranking.
  */
-import type { Carreira, Carreiras } from "./types";
+import type { Carreira } from "./types";
 import { displayDate } from "./dates";
 
 /** Party and span, the two facts that give a career its shape. */
@@ -25,7 +25,7 @@ export function careerSpan(career: Carreira): string | null {
   return first === last || !last ? first : `${first}–${last}`;
 }
 
-export function careerDetailMarkdown(career: Carreira, stats: Carreiras["stats"]): string {
+export function careerDetailMarkdown(career: Carreira): string {
   const lines = [`# ${career.nomeParlamentar}`, "", `**${career.totalLegs} legislatures**`];
 
   const facts: string[] = [];
@@ -44,17 +44,6 @@ export function careerDetailMarkdown(career: Carreira, stats: Carreiras["stats"]
 
   if (career.legIds.length > 0) {
     lines.push("", "### Legislatures", career.legIds.join(", "));
-  }
-
-  if (stats) {
-    // The aggregate covers every deputy ever, not just this page, which is what
-    // makes the comparison meaningful rather than a ranking artefact.
-    lines.push(
-      "",
-      "### For comparison",
-      `- Across all ${stats.totalDeputies.toLocaleString("en-GB")} deputies, the average is ${stats.avgLegs.toFixed(1)} legislatures`,
-      `- ${stats.singleTerm.toLocaleString("en-GB")} served only one`,
-    );
   }
 
   return lines.join("\n");

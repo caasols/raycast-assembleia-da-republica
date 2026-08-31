@@ -77,14 +77,14 @@ describe("Longest-Serving Deputies", () => {
     await waitFor(() => expect(screen.getByTestId("list")).toHaveAttribute("data-showing-detail", "true"));
   });
 
-  it("puts the population comparison in the detail pane", async () => {
+  it("shows no population comparison even when the API sends stats (D113)", async () => {
     mocks.listCarreiras.mockResolvedValue({
       data: [career()],
       stats: { totalDeputies: 3012, singleTerm: 1204, avgLegs: 1.83 },
     });
     render(<Command />);
     const detail = await waitFor(() => screen.getByTestId("item-detail"));
-    expect(detail.getAttribute("data-markdown")).toContain("Across all 3,012 deputies");
+    expect(detail.getAttribute("data-markdown")).not.toContain("For comparison");
   });
 
   it("still renders rows when the API sent no aggregate stats", async () => {

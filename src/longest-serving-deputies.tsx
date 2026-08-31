@@ -9,9 +9,9 @@ import { DeputyDetail } from "./components/deputy-detail";
 /**
  * Deputies ranked by how many legislatures they have served.
  *
- * One endpoint, one list — `/deputados/carreiras` does the ranking server-side
- * and returns aggregate statistics for the whole population alongside the page,
- * so the comparison in each row costs nothing extra.
+ * One endpoint, one list — `/deputados/carreiras` does the ranking server-side.
+ * The response also carries population-level statistics; the detail pane no
+ * longer shows them (D113), so they are read but not rendered.
  */
 export default function Command() {
   // Not a page — this ranking is a top-N — but it is the same "how many
@@ -23,7 +23,6 @@ export default function Command() {
   const { isLoading, data, error, revalidate } = usePromise(async (size: number) => listCarreiras(size), [rankingSize]);
 
   const careers = data?.data ?? [];
-  const stats = data?.stats ?? null;
 
   return (
     <List isLoading={isLoading} isShowingDetail={careers.length > 0} searchBarPlaceholder="Filter by name">
@@ -45,7 +44,7 @@ export default function Command() {
           subtitle={careerSubtitle(career)}
           keywords={[career.lastParty, ...career.legIds].filter((k): k is string => Boolean(k))}
           accessories={[{ text: `${career.totalLegs} legislatures` }]}
-          detail={<List.Item.Detail markdown={careerDetailMarkdown(career, stats)} />}
+          detail={<List.Item.Detail markdown={careerDetailMarkdown(career)} />}
           actions={
             <ActionPanel>
               {/* The ranking names deputies and carries their ids, so ending

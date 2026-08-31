@@ -1,11 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { careerDetailMarkdown, careerSpan, careerSubtitle } from "./careers";
-import type { Carreiras } from "./types";
 import { career as fixtureCareer } from "../../test/fixtures";
 
 const career = fixtureCareer;
-
-const STATS: Carreiras["stats"] = { totalDeputies: 3012, singleTerm: 1204, avgLegs: 1.83 };
 
 describe("careerSpan", () => {
   it("renders first and last years as a range", () => {
@@ -38,39 +35,32 @@ describe("careerSubtitle", () => {
 
 describe("careerDetailMarkdown", () => {
   it("leads with the name and the headline count", () => {
-    const markdown = careerDetailMarkdown(career(), STATS);
+    const markdown = careerDetailMarkdown(career());
     expect(markdown).toMatch(/^# António Filipe/);
     expect(markdown).toContain("**11 legislatures**");
   });
 
   it("lists party and both dates", () => {
-    const markdown = careerDetailMarkdown(career(), STATS);
+    const markdown = careerDetailMarkdown(career());
     expect(markdown).toContain("**Most recent group:** PCP");
     expect(markdown).toContain("**First served:** 31 October 1991");
     expect(markdown).toContain("**Most recently:** 26 March 2024");
   });
 
   it("lists the legislatures served", () => {
-    expect(careerDetailMarkdown(career(), STATS)).toContain("### Legislatures\nVI, VII, VIII");
+    expect(careerDetailMarkdown(career())).toContain("### Legislatures\nVI, VII, VIII");
   });
 
   it("omits the legislature list when there is none", () => {
-    expect(careerDetailMarkdown(career({ legIds: [] }), STATS)).not.toContain("### Legislatures");
+    expect(careerDetailMarkdown(career({ legIds: [] }))).not.toContain("### Legislatures");
   });
 
-  it("compares against every deputy, not just the returned page", () => {
-    const markdown = careerDetailMarkdown(career(), STATS);
-    expect(markdown).toContain("Across all 3,012 deputies");
-    expect(markdown).toContain("average is 1.8 legislatures");
-    expect(markdown).toContain("1,204 served only one");
-  });
-
-  it("omits the comparison when the API sent no stats", () => {
-    expect(careerDetailMarkdown(career(), null)).not.toContain("### For comparison");
+  it("carries no population comparison: it was removed as noise (D113)", () => {
+    expect(careerDetailMarkdown(career())).not.toContain("For comparison");
   });
 
   it("omits facts the record does not carry", () => {
-    const markdown = careerDetailMarkdown(career({ lastParty: null, firstLegStart: null, lastLegStart: null }), null);
+    const markdown = careerDetailMarkdown(career({ lastParty: null, firstLegStart: null, lastLegStart: null }));
     expect(markdown).not.toContain("**Most recent group:**");
     expect(markdown).not.toContain("**First served:**");
   });
