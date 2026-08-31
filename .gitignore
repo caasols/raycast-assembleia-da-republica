@@ -17,19 +17,30 @@ compiled_raycast_rust
 
 # test output
 coverage/
-# mutation testing (Stryker) work dirs — the config file IS tracked
+# mutation testing (Stryker) work dirs - the config file IS tracked
 .stryker-tmp/
 reports/
 stryker.log
 
-# internal working docs: kept on disk, never published to the public repo
+# The agent working agreement and the decision log: local-only, never published.
+# D109 reversed D14 and returned both to this file. They stay on disk with their
+# full content; git simply stops tracking them. Note that this does NOT remove
+# them from history: both are still present in every commit up to `ba8139e`.
+CLAUDE.md
+context.md
+
+# internal working docs and agent scratch: kept on disk, never published.
+# docs/ is where superpowers skills, brainstorms, plans and research notes land,
+# so the whole directory is ignored and the vendored spec is negated back in as
+# the single deliberate exception (see context.md D18).
 docs/*
 !docs/openar-openapi.json
 PROJECT_BRIEF.md
 
-# CLAUDE.md and context.md are deliberately TRACKED (see context.md D14): they are
-# the agent working agreement and the decision log, and both are worthless if
-# they die with an ephemeral dev container. They contain no secrets.
+# agent tooling scratch
+.superpowers/
+.claude/scratch/
+graphify-out/
 
 # build output
 dist/
@@ -47,3 +58,10 @@ yarn-error.log*
 
 # misc
 .DS_Store
+
+# python helpers (graphify and friends)
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
