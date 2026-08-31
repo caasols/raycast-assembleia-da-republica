@@ -86,17 +86,9 @@ export function voteDetailMarkdown(vote: VotacaoListItem): string {
     lines.push("", vote.descricao);
   }
 
-  for (const side of VOTE_SIDES) {
-    if (vote[side].length > 0) {
-      lines.push("", `### ${SIDE_LABELS[side]}`, vote[side].join(", "));
-    }
-  }
-
-  // A vote where every side is empty is possible in the data; saying so beats
-  // rendering a heading with nothing under it.
-  if (VOTE_SIDES.every((side) => vote[side].length === 0)) {
-    lines.push("", "_No party breakdown was recorded for this vote._");
-  }
-
+  // The party breakdown is deliberately NOT here any more. It moved to
+  // `VotePartyMetadata`, which draws every party in a fixed left-to-right order
+  // tinted by the side it took (D118) — a colour markdown cannot carry, and a
+  // shape three prose lists could not make scannable.
   return lines.join("\n");
 }

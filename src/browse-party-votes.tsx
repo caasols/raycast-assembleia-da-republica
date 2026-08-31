@@ -5,6 +5,7 @@ import { listVotacoes } from "./lib/openar-client";
 import { RequestEmptyView } from "./components/request-empty-view";
 import { voteResultIcon } from "./components/vote-result-icon";
 import { InitiativeDetail } from "./components/initiative-detail";
+import { VotePartyMetadata } from "./components/vote-party-tags";
 import { useParties } from "./components/use-parties";
 import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
@@ -122,7 +123,7 @@ export default function Command() {
           title={vote.iniciativaTitulo}
           subtitle={initiativeReference(vote)}
           accessories={[{ text: vote.data ? displayDate(vote.data) : resultLabel(vote) }]}
-          detail={<List.Item.Detail markdown={voteDetailMarkdown(vote)} />}
+          detail={<List.Item.Detail markdown={voteDetailMarkdown(vote)} metadata={<VotePartyMetadata vote={vote} />} />}
           actions={
             <ActionPanel>
               {/* Every vote row carries its initiative's id, so the whole

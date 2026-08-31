@@ -79,12 +79,14 @@ describe("voteDetailMarkdown", () => {
     expect(voteDetailMarkdown(vote())).toContain("**Aprovado** · P 1/XVII");
   });
 
-  it("gives each side that voted its own heading", () => {
+  it("leaves the party breakdown to the metadata tags, which can carry a colour", () => {
+    // D118 moved it out of markdown. Asserting its ABSENCE here is what stops
+    // the breakdown quietly reappearing in both places at once.
     const markdown = voteDetailMarkdown(vote({ ausencias: ["PAN"] }));
-    expect(markdown).toContain("### In favour\nPS, PSD");
-    expect(markdown).toContain("### Against\nCH");
-    expect(markdown).toContain("### Abstained\nIL");
-    expect(markdown).toContain("### Absent\nPAN");
+    expect(markdown).not.toContain("### In favour");
+    expect(markdown).not.toContain("### Against");
+    expect(markdown).not.toContain("### Abstained");
+    expect(markdown).not.toContain("### Absent");
   });
 
   it("omits headings for sides nobody took", () => {
@@ -95,14 +97,17 @@ describe("voteDetailMarkdown", () => {
     expect(voteDetailMarkdown(vote({ descricao: "Votação na generalidade" }))).toContain("Votação na generalidade");
   });
 
-  it("says so explicitly when no breakdown was recorded", () => {
+  it("still names the vote and its result when no breakdown was recorded", () => {
+    // The "not recorded" message now lives in the metadata label; the markdown
+    // must not go blank as a result.
     const markdown = voteDetailMarkdown(vote({ aFavor: [], contra: [], abstencao: [], ausencias: [] }));
-    expect(markdown).toContain("_No party breakdown was recorded for this vote._");
+    expect(markdown).toContain("Orçamento do Estado para 2027");
+    expect(markdown).toContain("Aprovado");
   });
 
-  it("does not claim a missing breakdown when only some sides are empty", () => {
-    const markdown = voteDetailMarkdown(vote({ contra: [], abstencao: [], ausencias: [] }));
-    expect(markdown).toContain("### In favour");
+  it("keeps the description, which is the one thing markdown still owns here", () => {
+    const markdown = voteDetailMarkdown(vote({ descricao: "Requerimento oral, apresentado pelo PSD" }));
+    expect(markdown).toContain("Requerimento oral, apresentado pelo PSD");
     expect(markdown).not.toContain("No party breakdown");
   });
 

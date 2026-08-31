@@ -15,10 +15,10 @@
   "license": "MIT",
   "commands": [
     {
-      "name": "what-was-the-vote-today",
-      "title": "Browse Today's Votes",
+      "name": "browse-votes",
+      "title": "Browse Votes",
       "subtitle": "Assembleia da República",
-      "description": "Browse today's plenary votes — the result of each one and how every party voted",
+      "description": "Browse plenary votes newest first — the result of each one and how every party voted",
       "mode": "view",
       "keywords": [
         "votações",
@@ -28,11 +28,11 @@
         "voto",
         "votos",
         "hoje",
+        "histórico",
         "plenário",
         "plenario",
         "parlamento",
-        "assembleia",
-        "ar"
+        "assembleia"
       ]
     },
     {

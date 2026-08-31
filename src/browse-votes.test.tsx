@@ -2,22 +2,40 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { useState } from "react";
 import { OpenArError } from "./lib/errors";
 
-const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn() }));
+const mocks = vi.hoisted(() => ({ listVotacoes: vi.fn(), useLegislatures: vi.fn(), getPageSize: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listVotacoes: mocks.listVotacoes }));
+vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
+vi.mock("./components/use-legislatures", () => ({
+  useLegislatures: mocks.useLegislatures,
+  ALL_LEGISLATURES: "",
+}));
 
-import Command from "./what-was-the-vote-today";
+import Command from "./browse-votes";
 import { page, vote } from "../test/fixtures";
 
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
+  mocks.getPageSize.mockReturnValue(50);
+  // Stateful like the real hook: the dropdown test changes the selection and
+  // expects a refetch, which a fixed return value cannot produce.
+  mocks.useLegislatures.mockImplementation(() => {
+    const [chosenId, setSelectedId] = useState<string | undefined>(undefined);
+    return {
+      legislatures: [{ id: "XVII", nome: "XVII Legislatura" }],
+      initialId: "XVII",
+      selectedId: chosenId ?? "XVII",
+      setSelectedId,
+    };
+  });
 });
 
-describe("Browse Today's Votes", () => {
+describe("Browse Votes", () => {
   // Guards the failure this repo shipped once: the command file was 0 bytes,
   // `ray build` reported success, and the command was dead on invocation.
   it("has a default export that renders a List", async () => {
@@ -26,14 +44,46 @@ describe("Browse Today's Votes", () => {
     expect(screen.getByTestId("list")).toBeInTheDocument();
   });
 
-  it("asks for exactly today, both ends of the range", async () => {
+  it("browses the archive rather than one day: no date bounds are sent", async () => {
+    // The whole point of D116. Sending either bound pins the list to a window,
+    // and parliament sits on ~54 days a year, so a date-bounded default is
+    // empty ~85% of the time. Newest-first over the archive is the openAR
+    // website's own behaviour.
     mocks.listVotacoes.mockResolvedValue(page([]));
     render(<Command />);
     await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalled());
     const params = mocks.listVotacoes.mock.calls[0][0];
-    expect(params.dataInicio).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    // A single day, not an open-ended range that would return the whole archive.
-    expect(params.dataFim).toBe(params.dataInicio);
+    expect(params.dataInicio).toBeUndefined();
+    expect(params.dataFim).toBeUndefined();
+    expect(params.sort).toBe("desc");
+  });
+
+  it("filters by the legislature the dropdown is on", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalled());
+    expect(mocks.listVotacoes.mock.calls[0][0].legislatura).toBe("XVII");
+  });
+
+  it("drops the legislature filter when the dropdown is set to all", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    fireEvent.change(screen.getByTestId("dropdown"), { target: { value: "" } });
+    await waitFor(() => {
+      const last = mocks.listVotacoes.mock.calls[mocks.listVotacoes.mock.calls.length - 1][0];
+      expect(last.legislatura).toBeUndefined();
+    });
+  });
+
+  it("pages through the archive rather than capping at one request", async () => {
+    // 36,391 votes exist; a single request cannot show them.
+    mocks.listVotacoes.mockResolvedValue(page([vote()], 500));
+    render(<Command />);
+    await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalled());
+    const params = mocks.listVotacoes.mock.calls[0][0];
+    expect(params.page).toBe(1);
+    expect(params.limit).toBe(50);
   });
 
   it("renders one row per vote, titled by the initiative", async () => {
@@ -75,8 +125,25 @@ describe("Browse Today's Votes", () => {
     mocks.listVotacoes.mockResolvedValue(page([vote({ unanime: true })]));
     render(<Command />);
     await waitFor(() =>
-      expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "Aprovado (unanimous)"),
+      expect(screen.getByTestId("list-item")).toHaveAttribute(
+        "data-accessories",
+        "18 August 2026 Aprovado (unanimous)",
+      ),
     );
+  });
+
+  it("dates every row, since the list now spans years rather than one day", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() =>
+      expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "18 August 2026 Aprovado"),
+    );
+  });
+
+  it("falls back to the result alone when a vote carries no date", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote({ data: null })]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "Aprovado"));
   });
 
   it("tints an approved vote green and a rejected one red, so a day is scannable", async () => {
@@ -98,12 +165,18 @@ describe("Browse Today's Votes", () => {
     expect(item.getAttribute("data-icon")).not.toContain("Red");
   });
 
-  it("puts the party breakdown in the detail pane", async () => {
+  it("puts the party breakdown in the detail pane as tinted tags, in fixed order", async () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
-    const detail = await waitFor(() => screen.getByTestId("item-detail"));
-    expect(detail.getAttribute("data-markdown")).toContain("### In favour\nPS, PSD");
-    expect(detail.getAttribute("data-markdown")).toContain("### Against\nCH");
+    await waitFor(() => expect(screen.getByTestId("tag-list")).toBeInTheDocument());
+    const tags = screen.getAllByTestId("tag").map((t) => [t.getAttribute("data-text"), t.getAttribute("data-color")]);
+    // Fixture: PS+PSD for, CH against, IL abstained. Left to right, not by side.
+    expect(tags).toEqual([
+      ["PS", "Green"],
+      ["IL", "Yellow"],
+      ["PSD", "Green"],
+      ["CH", "Red"],
+    ]);
   });
 
   it("opens the detail pane only when there is something to show in it", async () => {
@@ -127,11 +200,11 @@ describe("Browse Today's Votes", () => {
     await waitFor(() => expect(screen.getAllByTestId("list-item")).toHaveLength(2));
   });
 
-  it("says parliament did not vote, rather than implying a failure, on a quiet day", async () => {
+  it("says the filter found nothing, rather than implying a failure", async () => {
     mocks.listVotacoes.mockResolvedValue(page([]));
     render(<Command />);
     const empty = await waitFor(() => screen.getByTestId("empty-view"));
-    expect(empty).toHaveAttribute("data-title", "No votes today");
+    expect(empty).toHaveAttribute("data-title", "No votes");
     expect(empty.getAttribute("data-description")).toContain("no plenary votes");
   });
 

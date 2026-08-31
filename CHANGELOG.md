@@ -4,8 +4,8 @@
 
 Seven commands over the [openAR](https://openar.pt) API:
 
-- `Browse Today's Votes` — today's plenary votes with the full party breakdown,
-  anchored to Lisbon's sitting day
+- `Browse Votes` — every plenary vote, newest first, with the full party
+  breakdown and a legislature filter
 - `Browse Party Votes` — votes filtered by how a chosen party voted
 - `Search Initiatives` — legislative initiatives by title, with full-text links
 - `Search Petitions` — petitions by subject, with signature counts

@@ -116,7 +116,7 @@ silently returns edge data rather than erroring.
 
 ## 8. `/votacoes` — the one that matters
 
-Backs `what-was-the-vote-today`.
+Backs `browse-votes`.
 
 **Params:** `legislatura`, `resultado`, `unanime`, `iniciativa` (IniId), `tipo`,
 `grupo`, `a_favor`, `contra`, `abstencao`, `data_inicio`, `data_fim`, `sort`

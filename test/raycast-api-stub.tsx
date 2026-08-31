@@ -201,10 +201,41 @@ function ListEmptyView(props: { title?: string; description?: string; actions?: 
  * can assert the markdown a row would show without driving selection, which
  * jsdom cannot reproduce.
  */
-function ListItemDetail(props: { markdown?: string; isLoading?: boolean }) {
+function ListItemDetail(props: { markdown?: string; isLoading?: boolean; metadata?: ReactNode }) {
   return (
-    <div data-testid="item-detail" data-markdown={props.markdown} data-loading={String(Boolean(props.isLoading))} />
+    <div data-testid="item-detail" data-markdown={props.markdown} data-loading={String(Boolean(props.isLoading))}>
+      {props.metadata}
+    </div>
   );
+}
+
+/**
+ * `List.Item.Detail.Metadata` and its `TagList`. Added for the vote bar, which
+ * is the first thing here that needs structured, *coloured* detail rather than
+ * markdown: a tag's colour is the whole point, and markdown cannot carry one.
+ *
+ * Each tag exposes its text and colour as attributes so a test can assert that
+ * a party is tinted for the side it actually took — the assertion that matters,
+ * and the one a markdown-only stub could not make.
+ */
+function MetadataTagListItem(props: { text: string; color?: unknown }) {
+  return <span data-testid="tag" data-text={props.text} data-color={String(props.color ?? "")} />;
+}
+
+function MetadataTagList(props: { title: string; children?: ReactNode }) {
+  return (
+    <div data-testid="tag-list" data-title={props.title}>
+      {props.children}
+    </div>
+  );
+}
+
+function MetadataLabel(props: { title: string; text?: string }) {
+  return <div data-testid="metadata-label" data-title={props.title} data-text={props.text} />;
+}
+
+function DetailMetadata(props: { children?: ReactNode }) {
+  return <div data-testid="metadata">{props.children}</div>;
 }
 
 /**
@@ -320,6 +351,10 @@ export function List(props: {
   );
 }
 
+MetadataTagList.Item = MetadataTagListItem;
+DetailMetadata.TagList = MetadataTagList;
+DetailMetadata.Label = MetadataLabel;
+ListItemDetail.Metadata = DetailMetadata;
 ListItem.Detail = ListItemDetail;
 ListDropdown.Item = ListDropdownItem;
 ListDropdown.Section = ListDropdownSection;

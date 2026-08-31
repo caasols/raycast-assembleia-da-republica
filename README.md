@@ -21,8 +21,10 @@ or other binary installed** — every endpoint is public.
 
 ## Features
 
-- See today's plenary votes, each with the full party breakdown — in favour,
-  against, abstained, absent
+- Browse every plenary vote, newest first, each showing where every party stood
+  as one colour-coded row in a fixed left-to-right order, so a vote reads as a
+  shape rather than as three lists. Parliament sits on roughly 54 days a year,
+  so the list opens on the most recent sitting day rather than on today
 - Filter votes by how a specific party voted, so "everything Chega voted
   against" is one request
 - Search legislative initiatives by title and open the full text
@@ -40,7 +42,7 @@ or other binary installed** — every endpoint is public.
 
 | Command                           | Description                                     |
 | --------------------------------- | ----------------------------------------------- |
-| `Browse Today's Votes`            | Today's plenary votes and how every party voted |
+| `Browse Votes`                    | Every plenary vote, newest first, and how every party voted |
 | `Browse Party Votes`              | Votes filtered by how one party voted           |
 | `Search Initiatives`              | Bills, resolutions and proposals, by title      |
 | `Search Petitions`                | Petitions to parliament, by subject             |
