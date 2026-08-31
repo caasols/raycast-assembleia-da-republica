@@ -9,7 +9,7 @@ petitions and committees from the
 [Assembleia da República](https://www.parlamento.pt/) — the Portuguese
 parliament — directly from your command bar.
 
-<!-- Hero screenshot lands here once metadata/ exists (PLAN.md B3). -->
+<!-- Hero screenshot lands here once metadata/ exists. -->
 
 Portugal's parliamentary record is public, but reaching it means opening a
 browser and navigating a portal. This extension answers the quick-lookup
@@ -52,7 +52,7 @@ Every list row pushes into a detail view — an initiative's full passage with
 its per-stage votes, a deputy's mandates and biography, a petition's committee
 trail — so no command is a dead end.
 
-<!-- Per-command screenshots land here once metadata/ exists (PLAN.md B3). -->
+<!-- Per-command screenshots land here once metadata/ exists. -->
 
 ## AI tools
 
@@ -131,8 +131,9 @@ plain DOM. Tests therefore drive real command code rather than mocks of it.
 There is also a smoke test that runs against the live API. It is read-only and
 needs no credentials: it drives the real client through every endpoint the
 extension uses, logging each response status — including whether the two ETag
-endpoints really answer `304` on revalidation — so it catches the vendored
-OpenAPI contract drifting from what the server actually returns. Steps collect
+endpoints really answer `304` on revalidation — so it catches the published
+OpenAPI contract at `api.openar.pt/openapi.json` drifting from what the server
+actually returns. Steps collect
 failures rather than stopping at the first one:
 
 ```bash

@@ -38,7 +38,7 @@ import { errorMessage, OpenArError } from "../src/lib/errors";
 
 // Every request's status is logged by wrapping fetch, because the one thing
 // the client deliberately hides is the thing this script must show: whether
-// the second fetch of an ETag endpoint really came back 304 (PLAN.md B1).
+// the second fetch of an ETag endpoint really came back 304.
 const realFetch = globalThis.fetch;
 globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
   const response = await realFetch(...args);
@@ -173,7 +173,7 @@ async function main() {
       for (const entry of activityCounts(activity)) {
         console.log(`  ${entry.count} ${entry.label.toLowerCase()}`);
       }
-      // O10 / PLAN.md B2: actp is the only place a per-deputy vote position
+      // actp is the only place a per-deputy vote position
       // could live, and its element shape is undeclared in the spec. Print the
       // evidence for a human to read — this script does not interpret it.
       const actp = activity.actp ?? [];

@@ -23,11 +23,15 @@ reports/
 stryker.log
 
 # The agent working agreement and the decision log: local-only, never published.
-# D109 reversed D14 and returned both to this file. They stay on disk with their
+# D109 reversed D14 and returned them to this file; D114 added PLAN.md, which
+# D115 then retired outright — its roadmap is now context.md §7. PLAN.md stays
+# listed so a stray copy cannot drift from §7 or reach the public repo.
+# These stay on disk with their
 # full content; git simply stops tracking them. Note that this does NOT remove
 # them from history: both are still present in every commit up to `ba8139e`.
 CLAUDE.md
 context.md
+PLAN.md
 
 # internal working docs and agent scratch: kept on disk, never published.
 # The WHOLE of docs/ is ignored, the vendored OpenAPI spec included: D111 retired
