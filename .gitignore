@@ -30,11 +30,10 @@ CLAUDE.md
 context.md
 
 # internal working docs and agent scratch: kept on disk, never published.
-# docs/ is where superpowers skills, brainstorms, plans and research notes land,
-# so the whole directory is ignored and the vendored spec is negated back in as
-# the single deliberate exception (see context.md D18).
-docs/*
-!docs/openar-openapi.json
+# The WHOLE of docs/ is ignored, the vendored OpenAPI spec included: D111 retired
+# D18's exception for it. The spec is published live at
+# https://api.openar.pt/openapi.json, so it is fetched rather than committed.
+docs/
 PROJECT_BRIEF.md
 
 # agent tooling scratch

@@ -1,9 +1,13 @@
-# openAR API — vendored reference
+# openAR API reference
 
-Human-readable companion to **`docs/openar-openapi.json`**, the complete
-OpenAPI 3.1 spec (`info.version` 0.1.0), vendored 2026-08-18 because
-`api.openar.pt` is blocked by the dev environment's egress proxy
-(`context.md` §3).
+Human-readable companion to the complete OpenAPI 3.1 spec (`info.version`
+0.1.0), published live at `https://api.openar.pt/openapi.json`. The spec is
+no longer committed: `docs/` is gitignored in full (D111). Fetch a working
+copy when the prose here is ambiguous:
+
+```bash
+mkdir -p docs && curl -s https://api.openar.pt/openapi.json -o docs/openar-openapi.json
+```
 
 **The JSON is the source of truth.** This file exists to surface the traps that
 a schema alone doesn't make obvious. Where they disagree, the JSON wins.
@@ -20,7 +24,7 @@ a schema alone doesn't make obvious. Where they disagree, the JSON wins.
 |---|---|
 | **Base URL** | **`https://api.openar.pt/v1`** |
 | Local dev server | `http://localhost:3000/v1` |
-| Spec | `docs/openar-openapi.json` · live at `api.openar.pt/openapi.json` |
+| Spec | `https://api.openar.pt/openapi.json` (not committed; `docs/` is gitignored) |
 | **Licence** | **MIT** (`https://opensource.org/licenses/MIT`) |
 | Contact | `https://openar.pt` |
 | Auth | **None.** All endpoints public. |

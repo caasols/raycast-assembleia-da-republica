@@ -1,7 +1,7 @@
 /**
  * The single place this extension talks to openAR. Commands never call `fetch`.
  *
- * Hand-written rather than generated from docs/openar-openapi.json, matching
+ * Hand-written rather than generated from the OpenAPI spec, matching
  * both reference extensions: the surface used here is small, and the parts
  * worth getting right — clamping, the 429 contract, validating that a response
  * is shaped as promised — are not what a generator produces.

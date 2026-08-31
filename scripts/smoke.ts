@@ -3,7 +3,7 @@
  *
  * Deliberately not part of `npm test` — it needs network, and it asserts
  * against live parliamentary data that changes daily. Its job is the one unit
- * tests cannot do: catch the vendored contract in docs/openar-openapi.json
+ * tests cannot do: catch the published contract at api.openar.pt/openapi.json
  * drifting from what the server actually returns. It drives the real client
  * through every endpoint the extension uses, so a bug in URL building or
  * envelope handling shows up here too.

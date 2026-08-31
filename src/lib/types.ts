@@ -1,7 +1,7 @@
 /**
  * Types for the openAR responses this extension actually consumes.
  *
- * Hand-written rather than generated from docs/openar-openapi.json: the
+ * Hand-written rather than generated from the OpenAPI spec: the
  * extension touches a handful of the spec's 16 endpoints, generated types for
  * all of them would be dead weight, and the traps worth encoding here — the
  * compound vote key, the per-endpoint casing of `resultado` — are exactly the
