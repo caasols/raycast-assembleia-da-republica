@@ -82,6 +82,19 @@ describe("Browse Party Votes", () => {
     expect(params).not.toHaveProperty("a_favor");
   });
 
+  it("keeps the chosen party selected in the dropdown", async () => {
+    // The dropdown's items carry a composite `sigla|position` value, so the
+    // controlled `value` must be that same composite. Holding the sigla alone
+    // matches no item, and Raycast then renders the placeholder instead of the
+    // selection: the party appears unselectable however many times you pick it.
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("CH|against");
+    await waitFor(() => expect(mocks.listVotacoes).toHaveBeenCalled());
+    expect(screen.getByTestId("dropdown")).toHaveValue("CH|against");
+  });
+
   it("uses the API's own filter rather than fetching everything and filtering here", async () => {
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);

@@ -79,7 +79,10 @@ export default function Command() {
       searchBarAccessory={
         <List.Dropdown
           tooltip="Party"
-          value={party ?? ""}
+          // Both axes, because that is what the items are keyed by. Holding
+          // `party` alone matched no item, so Raycast fell back to rendering
+          // the placeholder and the party never looked selected (D112).
+          value={party ? `${party}|${position}` : ""}
           onChange={(value) => {
             // The dropdown carries both axes so the search bar keeps its own
             // job: filtering the rows already fetched.
