@@ -1,37 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { careerDetailMarkdown, careerSpan, careerSubtitle } from "./careers";
+import { careerDetailMarkdown, rankingCoverage } from "./careers";
 import { career as fixtureCareer } from "../../test/fixtures";
 
 const career = fixtureCareer;
-
-describe("careerSpan", () => {
-  it("renders first and last years as a range", () => {
-    expect(careerSpan(career())).toBe("1991–2024");
-  });
-
-  it("collapses a single-legislature career to one year", () => {
-    expect(careerSpan(career({ firstLegStart: "2024-03-26", lastLegStart: "2024-03-26" }))).toBe("2024");
-  });
-
-  it("falls back to the first year when the last is missing", () => {
-    expect(careerSpan(career({ lastLegStart: null }))).toBe("1991");
-  });
-
-  it("returns null when there is no start date at all", () => {
-    expect(careerSpan(career({ firstLegStart: null }))).toBeNull();
-  });
-});
-
-describe("careerSubtitle", () => {
-  it("pairs the party with the span", () => {
-    expect(careerSubtitle(career())).toBe("PCP · 1991–2024");
-  });
-
-  it("drops whichever half is missing", () => {
-    expect(careerSubtitle(career({ lastParty: null }))).toBe("1991–2024");
-    expect(careerSubtitle(career({ firstLegStart: null, lastLegStart: null }))).toBe("PCP");
-  });
-});
 
 describe("careerDetailMarkdown", () => {
   it("leads with the name and the headline count", () => {
@@ -63,5 +34,32 @@ describe("careerDetailMarkdown", () => {
     const markdown = careerDetailMarkdown(career({ lastParty: null, firstLegStart: null, lastLegStart: null }));
     expect(markdown).not.toContain("**Most recent group:**");
     expect(markdown).not.toContain("**First served:**");
+  });
+});
+
+describe("rankingCoverage", () => {
+  it("names the depth reached, derived from the data rather than hardcoded", () => {
+    const careers = [career({ totalLegs: 12 }), career({ id: 2, totalLegs: 4 })];
+    const text = rankingCoverage(careers, { totalDeputies: 2586, singleTerm: 1466, avgLegs: 1.9 });
+    expect(text).toContain("top 2 by legislatures served, down to 4");
+  });
+
+  it("gives the size of the population the ranking is a slice of", () => {
+    const text = rankingCoverage([career()], { totalDeputies: 2586, singleTerm: 1466, avgLegs: 1.9 });
+    expect(text).toContain("openAR ranks 2,586 deputies in all");
+  });
+
+  it("points at the command that can actually search every deputy", () => {
+    // /deputados takes a real `q`; this endpoint does not. Saying so is the
+    // difference between a dead end and a redirect.
+    expect(rankingCoverage([career()], null)).toContain("Use Browse Deputies to search every deputy by name.");
+  });
+
+  it("omits the population sentence when openAR sent no stats", () => {
+    expect(rankingCoverage([career()], null)).not.toContain("in all");
+  });
+
+  it("says plainly that nothing came back, rather than quoting a coverage of zero", () => {
+    expect(rankingCoverage([], null)).toBe("openAR returned no career data.");
   });
 });

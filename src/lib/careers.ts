@@ -1,29 +1,8 @@
 /**
  * Presentation helpers for the longest-serving-deputies ranking.
  */
-import type { Carreira } from "./types";
+import type { Carreira, Carreiras } from "./types";
 import { displayDate } from "./dates";
-
-/** Party and span, the two facts that give a career its shape. */
-export function careerSubtitle(career: Carreira): string {
-  const span = careerSpan(career);
-  return [career.lastParty, span].filter(Boolean).join(" · ");
-}
-
-/**
- * The years a deputy's service spans, from first to most recent legislature.
- *
- * Years only: the API gives the *start dates of legislatures*, not of mandates,
- * so anything more precise would imply accuracy the data does not have.
- */
-export function careerSpan(career: Carreira): string | null {
-  const first = career.firstLegStart?.slice(0, 4);
-  const last = career.lastLegStart?.slice(0, 4);
-  if (!first) {
-    return null;
-  }
-  return first === last || !last ? first : `${first}–${last}`;
-}
 
 export function careerDetailMarkdown(career: Carreira): string {
   const lines = [`# ${career.nomeParlamentar}`, "", `**${career.totalLegs} legislatures**`];
@@ -47,4 +26,32 @@ export function careerDetailMarkdown(career: Carreira): string {
   }
 
   return lines.join("\n");
+}
+
+/**
+ * What the ranking actually covers, said out loud.
+ *
+ * `/deputados/carreiras` is hard-capped at 200 rows server-side and ignores
+ * `page` entirely (measured 2026-09-01: `limit=500` and `limit=3000` both
+ * return 200, and `page=2` returns page 1). It also takes no `q`, so the search
+ * bar can only ever filter what was fetched.
+ *
+ * That makes silence dangerous: a deputy outside the cap produces "no results",
+ * which reads as "this person never sat in parliament" rather than "this list
+ * does not go that deep". This sentence is what turns the second meaning back
+ * on, and it derives the cutoff from the data rather than hardcoding it,
+ * because the boundary moves as careers lengthen.
+ */
+export function rankingCoverage(careers: Carreira[], stats: Carreiras["stats"]): string {
+  if (careers.length === 0) {
+    return "openAR returned no career data.";
+  }
+
+  const cutoff = careers[careers.length - 1].totalLegs;
+  const total = stats ? `openAR ranks ${stats.totalDeputies.toLocaleString("en-GB")} deputies in all. ` : "";
+  return (
+    `Search covers the top ${careers.length} by legislatures served, down to ${cutoff}. ` +
+    total +
+    "Use Browse Deputies to search every deputy by name."
+  );
 }

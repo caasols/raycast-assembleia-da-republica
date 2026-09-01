@@ -2,13 +2,14 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import { OpenArError } from "./lib/errors";
 
 const mocks = vi.hoisted(() => ({ getPageSize: vi.fn(), listCarreiras: vi.fn() }));
 vi.mock("./lib/openar-client", () => ({ listCarreiras: mocks.listCarreiras }));
 vi.mock("./lib/preferences", () => ({ getPageSize: mocks.getPageSize }));
 
+import { launchCommand } from "../test/raycast-api-stub";
 import Command from "./longest-serving-deputies";
 import { career } from "../test/fixtures";
 
@@ -25,13 +26,57 @@ describe("Longest-Serving Deputies", () => {
     expect(screen.getByTestId("list")).toBeInTheDocument();
   });
 
-  it("asks for as many ranked deputies as the user chose", async () => {
+  it("carries no subtitle, so the name gets the width", async () => {
+    // The party and year span used to live here and truncated every name to
+    // "1. José C...". Both are in the detail pane; the party is still a keyword.
+    mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
+    render(<Command />);
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    expect(item.getAttribute("data-subtitle")).toBeFalsy();
+    expect(item.getAttribute("data-keywords")).toContain("PCP");
+  });
+
+  it("always asks for the API's maximum, whatever the page-size preference says", async () => {
+    // D122. The search bar filters only what was fetched, because the endpoint
+    // takes no `q`, so fetch size decides whether a search can succeed. Letting
+    // a paging preference set it made a deputy at rank 51 unfindable with no
+    // visible reason. 25 is set here and must be ignored.
     mocks.getPageSize.mockReturnValue(25);
     mocks.listCarreiras.mockResolvedValue({ data: [], stats: null });
     render(<Command />);
-    await waitFor(() => expect(mocks.listCarreiras).toHaveBeenCalledWith(25));
+    await waitFor(() => expect(mocks.listCarreiras).toHaveBeenCalledWith(200));
+    expect(mocks.getPageSize).not.toHaveBeenCalled();
   });
 
+  it("states the scope in the search bar, before a search can mislead", async () => {
+    // The endpoint takes no `q`, so the bar filters only what was fetched. A
+    // deputy deeper than the cap would answer "no results", which reads as
+    // "never sat in parliament" unless the scope is said up front (D122).
+    mocks.listCarreiras.mockResolvedValue({
+      data: [career({ totalLegs: 9 }), career({ id: 2, totalLegs: 4 })],
+      stats: { totalDeputies: 2586, singleTerm: 1466, avgLegs: 1.9 },
+    });
+    render(<Command />);
+    await waitFor(() =>
+      expect(screen.getByTestId("search-bar")).toHaveAttribute("placeholder", "Filter the top 2 by name"),
+    );
+  });
+
+  it("falls back to a plain placeholder before anything has loaded", async () => {
+    mocks.listCarreiras.mockResolvedValue({ data: [], stats: null });
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("search-bar")).toHaveAttribute("placeholder", "Filter by name"));
+  });
+  it("offers every row a way out to the command that can search all 2,586", async () => {
+    // Not on an empty state: RequestEmptyView is a wrapper, and whether Raycast
+    // shows a wrapper EmptyView once items exist is unverified here. On a row it
+    // is reachable however the user got stuck.
+    mocks.listCarreiras.mockResolvedValue({ data: [career()], stats: null });
+    render(<Command />);
+    const action = await waitFor(() => screen.getByText("Search All Deputies"));
+    fireEvent.click(action);
+    expect(launchCommand).toHaveBeenCalledWith({ name: "browse-deputies", type: "userInitiated" });
+  });
   it("numbers the ranking, since the rank is positional rather than a field", async () => {
     mocks.listCarreiras.mockResolvedValue({
       data: [career(), career({ id: 8, nomeParlamentar: "Maria Silva", totalLegs: 9 })],

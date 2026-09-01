@@ -37,6 +37,13 @@ export const Color = new Proxy({}, { get: (_t, name) => String(name) }) as Recor
  */
 export const LaunchType = { UserInitiated: "userInitiated", Background: "background" };
 
+/**
+ * `launchCommand`, used by the deputy ranking to hand a user off to Browse
+ * Deputies when their search falls outside the API's 200-row cap. Recorded
+ * rather than executed so a test can assert WHICH command would open.
+ */
+export const launchCommand = vi.fn(async (_options: { name: string; type: string }) => {});
+
 export const Toast = {
   Style: { Success: "success", Failure: "failure", Animated: "animated" },
 };
