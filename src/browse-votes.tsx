@@ -105,10 +105,8 @@ export default function Command() {
             // title and keywords, and dropping it would silently stop searching
             // by what the vote is actually about.
             keywords={[vote.iniciativaTitulo, vote.iniciativaNumero, vote.resultado, ...vote.aFavor, ...vote.contra]}
-            // Margin then date. The icon says whether it passed; the tally says by
-            // how much, which a green tick cannot distinguish between 9-0 and 5-4.
-            // Tooltipped rather than labelled, so the row stays three glanceable
-            // things wide.
+            // The date is the only right-hand column; the margin sits left, with
+            // the reference.
             accessories={vote.data ? [{ text: displayDate(vote.data) }] : []}
             detail={
               <List.Item.Detail markdown={voteDetailMarkdown(vote)} metadata={<VotePartyMetadata vote={vote} />} />

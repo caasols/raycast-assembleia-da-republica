@@ -8,7 +8,14 @@ import { InitiativeDetail } from "./components/initiative-detail";
 import { VotePartyMetadata } from "./components/vote-party-tags";
 import { useParties } from "./components/use-parties";
 import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
-import { initiativeReference, positionFilter, resultLabel, voteDetailMarkdown, voteSummary } from "./lib/votes";
+import {
+  initiativeReference,
+  positionFilter,
+  resultLabel,
+  voteDetailMarkdown,
+  voteSummary,
+  voteTally,
+} from "./lib/votes";
 import type { VotePosition } from "./lib/votes";
 import { displayDate } from "./lib/dates";
 import { loadListPage } from "./lib/pagination";
@@ -116,32 +123,44 @@ export default function Command() {
           }
         />
       )}
-      {votes.map((vote) => (
-        <List.Item
-          key={`${vote.iniciativaId}:${vote.id}`}
-          icon={voteResultIcon(vote)}
-          title={vote.iniciativaTitulo}
-          subtitle={initiativeReference(vote)}
-          accessories={[{ text: vote.data ? displayDate(vote.data) : resultLabel(vote) }]}
-          detail={<List.Item.Detail markdown={voteDetailMarkdown(vote)} metadata={<VotePartyMetadata vote={vote} />} />}
-          actions={
-            <ActionPanel>
-              {/* Every vote row carries its initiative's id, so the whole
+      {votes.map((vote) => {
+        const tally = voteTally(vote);
+        return (
+          <List.Item
+            key={`${vote.iniciativaId}:${vote.id}`}
+            icon={voteResultIcon(vote)}
+            // Same row as Browse Votes (D124): reference, margin, date. The two
+            // commands list the same entity from the same endpoint, so a reader
+            // moving between them should not have to relearn the row.
+            title={initiativeReference(vote) || vote.iniciativaTitulo}
+            subtitle={tally ? { value: tally.text, tooltip: tally.tooltip } : undefined}
+            // This list had NO keywords at all, so its only searchable text was
+            // the title. Moving the title off the row would have silently ended
+            // filtering here, which is exactly what D121 is about.
+            keywords={[vote.iniciativaTitulo, vote.iniciativaNumero, vote.resultado, ...vote.aFavor, ...vote.contra]}
+            accessories={vote.data ? [{ text: displayDate(vote.data) }] : []}
+            detail={
+              <List.Item.Detail markdown={voteDetailMarkdown(vote)} metadata={<VotePartyMetadata vote={vote} />} />
+            }
+            actions={
+              <ActionPanel>
+                {/* Every vote row carries its initiative's id, so the whole
                   record is one push away rather than a separate search. */}
-              <Action.Push
-                title="Show Initiative"
-                icon={Icon.Sidebar}
-                target={<InitiativeDetail id={vote.iniciativaId} title={vote.iniciativaTitulo} />}
-              />
-              <Action.CopyToClipboard
-                title="Copy Vote Summary"
-                content={`${vote.iniciativaTitulo} — ${resultLabel(vote)}. ${voteSummary(vote)}`}
-              />
-              <Action.CopyToClipboard title="Copy Initiative Title" content={vote.iniciativaTitulo} />
-            </ActionPanel>
-          }
-        />
-      ))}
+                <Action.Push
+                  title="Show Initiative"
+                  icon={Icon.Sidebar}
+                  target={<InitiativeDetail id={vote.iniciativaId} title={vote.iniciativaTitulo} />}
+                />
+                <Action.CopyToClipboard
+                  title="Copy Vote Summary"
+                  content={`${vote.iniciativaTitulo} — ${resultLabel(vote)}. ${voteSummary(vote)}`}
+                />
+                <Action.CopyToClipboard title="Copy Initiative Title" content={vote.iniciativaTitulo} />
+              </ActionPanel>
+            }
+          />
+        );
+      })}
     </List>
   );
 }

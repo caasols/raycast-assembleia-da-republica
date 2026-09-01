@@ -168,24 +168,60 @@ describe("Browse Party Votes", () => {
     expect(mocks.listVotacoes.mock.calls[0][0].legislatura).toBeUndefined();
   });
 
-  it("renders the votes it gets back", async () => {
+  it("renders the votes it gets back, in the same row shape as Browse Votes", async () => {
+    // D124: same entity, same endpoint, same row. Reference, margin, date.
     mocks.listVotacoes.mockResolvedValue(page([vote()]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
     choose("PS|for");
     const item = await waitFor(() => screen.getByTestId("list-item"));
-    expect(item).toHaveAttribute("data-title", "Orçamento do Estado para 2027");
+    expect(item).toHaveAttribute("data-title", "P 1/XVII");
+    expect(item).toHaveAttribute("data-subtitle", "2\u00B71\u00B71");
     expect(item).toHaveAttribute("data-accessories", "18 August 2026");
   });
 
-  it("falls back to the result when a vote carries no date", async () => {
-    mocks.listVotacoes.mockResolvedValue(page([vote({ data: null, unanime: true })]));
+  it("falls back to the initiative title if a vote carries no reference at all", async () => {
+    // A blank title would render an unclickable row.
+    mocks.listVotacoes.mockResolvedValue(page([vote({ iniciativaTipo: "", iniciativaNumero: "" })]));
     render(<Command />);
     await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
     choose("PS|for");
     await waitFor(() =>
-      expect(screen.getByTestId("list-item")).toHaveAttribute("data-accessories", "Aprovado (unanimous)"),
+      expect(screen.getByTestId("list-item")).toHaveAttribute("data-title", "Orçamento do Estado para 2027"),
     );
+  });
+
+  it("shows no margin when a vote carries no recorded breakdown", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote({ aFavor: [], contra: [], abstencao: [], ausencias: [] })]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("PS|for");
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    expect(item.getAttribute("data-subtitle")).toBeFalsy();
+  });
+
+  it("keeps the initiative title searchable, now that it has left the row", async () => {
+    // This list had no keywords at all before D124, so the title was its only
+    // searchable text. Moving it off the row without this would have silently
+    // ended filtering here (D121).
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("PS|for");
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    expect(item.getAttribute("data-keywords")).toContain("Orçamento do Estado para 2027");
+  });
+
+  it("drops the date cleanly when a vote carries none, leaving the margin on the left", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([vote({ data: null, unanime: true })]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("PS|for");
+    const item = await waitFor(() => screen.getByTestId("list-item"));
+    expect(item.getAttribute("data-accessories")).toBe("");
+    expect(item).toHaveAttribute("data-subtitle", "2\u00B71\u00B71");
+    // Unanimity left the row with the result label; the detail pane still says it.
+    expect(screen.getByTestId("item-detail").getAttribute("data-markdown")).toContain("Aprovado (unanimous)");
   });
 
   it("goes back to the prompt when the party is cleared", async () => {
