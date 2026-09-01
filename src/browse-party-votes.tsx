@@ -10,6 +10,7 @@ import { useParties } from "./components/use-parties";
 import { ALL_LEGISLATURES, useLegislatures } from "./components/use-legislatures";
 import {
   initiativeReference,
+  partyFilterLabel,
   positionFilter,
   resultLabel,
   voteDetailMarkdown,
@@ -82,7 +83,11 @@ export default function Command() {
     <List
       isLoading={isLoading}
       isShowingDetail={votes.length > 0}
-      searchBarPlaceholder="Filter these votes"
+      // The filter, in words. Without it this list is indistinguishable from
+      // Browse Votes: the rows are deliberately identical, and the dropdown
+      // shows only the sigla once collapsed, so nothing on screen says which
+      // party or which position is being shown (D125).
+      searchBarPlaceholder={party ? partyFilterLabel(position, party) : "Pick a party and a position"}
       pagination={pagination}
       searchBarAccessory={
         <List.Dropdown

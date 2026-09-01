@@ -6,6 +6,7 @@ import {
   voteDetailMarkdown,
   voteSummary,
   voteTally,
+  partyFilterLabel,
   VOTE_SIDES,
 } from "./votes";
 import { vote } from "../../test/fixtures";
@@ -186,5 +187,16 @@ describe("the detail heading", () => {
     const unbroken = "A".repeat(120);
     const heading = voteDetailMarkdown(vote({ iniciativaTitulo: unbroken })).split("\n")[0];
     expect(heading).toBe(`# ${"A".repeat(80)}\u2026`);
+  });
+});
+
+describe("partyFilterLabel", () => {
+  it("says which party and which side the list is showing", () => {
+    expect(partyFilterLabel("for", "L")).toBe("Votes where L voted in favour");
+    expect(partyFilterLabel("against", "CH")).toBe("Votes where CH voted against");
+  });
+
+  it("phrases abstention as abstaining, not as voting abstained", () => {
+    expect(partyFilterLabel("abstained", "PAN")).toBe("Votes where PAN abstained");
   });
 });

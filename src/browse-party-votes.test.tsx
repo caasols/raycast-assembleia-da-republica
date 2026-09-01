@@ -168,6 +168,27 @@ describe("Browse Party Votes", () => {
     expect(mocks.listVotacoes.mock.calls[0][0].legislatura).toBeUndefined();
   });
 
+  it("names the active filter in the search bar, since the rows cannot show it", async () => {
+    // The rows are deliberately identical to Browse Votes and the dropdown
+    // shows only the sigla once collapsed, so this is the only thing on screen
+    // saying what is being listed (D125).
+    mocks.listVotacoes.mockResolvedValue(page([vote()]));
+    render(<Command />);
+    await waitFor(() => expect(screen.getByTestId("dropdown")).toBeInTheDocument());
+    choose("CH|against");
+    await waitFor(() =>
+      expect(screen.getByTestId("search-bar")).toHaveAttribute("placeholder", "Votes where CH voted against"),
+    );
+  });
+
+  it("asks for a party before claiming to filter by one", async () => {
+    mocks.listVotacoes.mockResolvedValue(page([]));
+    render(<Command />);
+    await waitFor(() =>
+      expect(screen.getByTestId("search-bar")).toHaveAttribute("placeholder", "Pick a party and a position"),
+    );
+  });
+
   it("renders the votes it gets back, in the same row shape as Browse Votes", async () => {
     // D124: same entity, same endpoint, same row. Reference, margin, date.
     mocks.listVotacoes.mockResolvedValue(page([vote()]));

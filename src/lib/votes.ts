@@ -150,3 +150,28 @@ export function voteDetailMarkdown(vote: VotacaoListItem): string {
   // shape three prose lists could not make scannable.
   return lines.join("\n");
 }
+
+/**
+ * The active filter, in words, for the search bar.
+ *
+ * Browse Party Votes' whole point is a server-side filter (`positionFilter`)
+ * that Browse Votes cannot send, but since both lists render the same row, the
+ * two look identical on screen. The dropdown does not rescue it either: the
+ * position lives in a `List.Dropdown.Section` title, which Raycast shows only
+ * while the dropdown is open, so the collapsed control reads just "L" (D125).
+ *
+ * Saying it in the placeholder puts the filter where it is always visible.
+ *
+ * "abstained" takes its own phrasing rather than a shared template, because
+ * "voted abstained" is not English.
+ */
+export function partyFilterLabel(position: VotePosition, sigla: string): string {
+  switch (position) {
+    case "against":
+      return `Votes where ${sigla} voted against`;
+    case "abstained":
+      return `Votes where ${sigla} abstained`;
+    default:
+      return `Votes where ${sigla} voted in favour`;
+  }
+}
