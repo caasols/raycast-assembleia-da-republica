@@ -422,10 +422,14 @@ export async function getIniciativa(
 
 /**
  * One deputy, with mandates, biography, authorship stats and their 20 most
- * recent initiatives. No `include` parameter — this endpoint returns the lot.
+ * recent initiatives. `include` is required in practice: openAR added it to
+ * this endpoint after the client was written, and omitting it now returns only
+ * the scalar fields, so every deputy rendered with zero mandates and no error.
+ * `cargos` and `situacoes` are left out because nothing renders them.
  */
 export async function getDeputado(id: number, signal?: AbortSignal): Promise<DeputadoDetail> {
-  const payload = (await request(`/deputados/${id}`, {}, signal)) as DeputadoDetail | null;
+  const include = "mandatos,bio,stats,iniciativas";
+  const payload = (await request(`/deputados/${id}`, { include }, signal)) as DeputadoDetail | null;
   if (!payload || typeof payload.id !== "number") {
     throw unexpectedShape();
   }
