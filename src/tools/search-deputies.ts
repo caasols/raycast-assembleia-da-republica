@@ -1,4 +1,4 @@
-import { listDeputados } from "../lib/openar-client";
+import { currentLegislature, listDeputados, listLegislaturas } from "../lib/openar-client";
 
 type Input = {
   /** Part of the deputy's parliamentary name. */
@@ -14,12 +14,21 @@ type Input = {
 
 /** AI tool: find deputies. */
 export default async function tool(input: Input) {
+  // Without a legislature the question is almost always about who is in
+  // parliament now. `situacao=ativo` alone does not answer that: it matches
+  // every seat ever held, so it must be paired with the current legislature,
+  // resolved from live data so it cannot go stale at the next election.
+  let legislatura = input.legislature;
+  if (!legislatura) {
+    legislatura = currentLegislature(await listLegislaturas())?.id;
+    if (!legislatura) {
+      throw new Error("openAR lists no legislature in progress, so the sitting deputies cannot be determined");
+    }
+  }
   const page = await listDeputados({
     q: input.name,
     grupo: input.party,
-    legislatura: input.legislature,
-    // Without a legislature the question is almost always about who is in
-    // parliament now, which is exactly the 230 seats this shortcut selects.
+    legislatura,
     situacao: input.legislature ? undefined : "ativo",
     sort: "asc",
     limit: 50,

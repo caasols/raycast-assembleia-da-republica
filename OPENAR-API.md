@@ -12,7 +12,9 @@ mkdir -p docs && curl -s https://api.openar.pt/openapi.json -o docs/openar-opena
 **The JSON is the source of truth.** This file exists to surface the traps that
 a schema alone doesn't make obvious. Where they disagree, the JSON wins.
 
-> **Status: complete.** All 16 endpoints are documented. This supersedes the
+> **Status: complete.** All 16 endpoints are documented, plus a 17th
+> (`/deputados/{id}/intervencoes`) that appeared later and is listed but not
+> used. This supersedes the
 > earlier partial capture transcribed from a truncated PDF — which, among other
 > things, had the base URL wrong (§1).
 
@@ -100,9 +102,10 @@ silently returns edge data rather than erroring.
 | `GET` | `/legislaturas/{id}` | One legislature + totals |
 | `GET` | `/deputados` | List deputies |
 | `GET` | `/deputados/carreiras` | Ranking by legislatures served |
-| `GET` | `/deputados/{id}` | Deputy detail |
+| `GET` | `/deputados/{id}` | Deputy detail (supports `include`, **required**: see §9) |
 | `GET` | `/deputados/{id}/foto` | 302 → CDN photo |
-| `GET` | `/deputados/{id}/atividade` | Full parliamentary activity |
+| `GET` | `/deputados/{id}/atividade` | Full parliamentary activity (supports `include`; omitting it returns every section) |
+| `GET` | `/deputados/{id}/intervencoes` | A deputy's plenary interventions, paginated. Added after the client was written; unused |
 | `GET` | `/iniciativas` | List initiatives |
 | `GET` | `/iniciativas/{id}` | Initiative detail (supports `include`) |
 | `GET` | `/votacoes` | **List plenary votes** |
@@ -110,7 +113,7 @@ silently returns edge data rather than erroring.
 | `GET` | `/peticoes` | List petitions |
 | `GET` | `/peticoes/{id}` | Petition detail (supports `include`) |
 | `GET` | `/comissoes` | List committees |
-| `GET` | `/comissoes/{id}` | Committee + its initiatives |
+| `GET` | `/comissoes/{id}` | Committee + its initiatives (supports `include` for per-initiative relations; omitting it returns the summary) |
 
 ---
 
@@ -190,6 +193,21 @@ Rules worth knowing:
 - An unknown key returns **400 with the list of valid keys**.
 - `intervencoesdebates` is flagged as the heaviest relation — opt in deliberately.
 
+### `/deputados/{id}` works the other way round
+
+Found on 2026-11-02, the first time the client ran against the live API.
+`/deputados/{id}` gained an `include` parameter after the client was written,
+and **omitting it returns only the scalar fields**: no `mandatos`, `bio`,
+`stats` or `iniciativas`. The spec's own wording: *"Omitir devolve só os campos
+escalares."* The keys are `mandatos`, `cargos`, `situacoes`, `bio`, `stats`,
+`iniciativas`, and `*` for all of them.
+
+This is the opposite of `/iniciativas/{id}`, where omitting `include` returns
+everything. The rule that holds for both is the one in §16: **always send
+`include`**. Here it is needed to get the data at all, not just to keep the
+payload small. The spec's `info.version` stayed at `0.1.0` through the change,
+so the version number does not reveal it.
+
 `/peticoes/{id}` works identically: top-level `comissoes`, `documentos`,
 `publicacoes`, `relacionadas`; `comissoes.*` sub-relations with the same
 short-form rule, `comissoes.documentos` being the exception.
@@ -227,7 +245,10 @@ Bare array, oldest → newest. Fields: `id` (`Constituinte` or `I`–`XVII`),
 `updated_since`, `sort` (default `asc`), `page`, `limit`.
 
 `situacao=ativo` is a shortcut for *Efetivo + Efetivo Temporário + Efetivo
-Definitivo* — **the 230 sitting seats**.
+Definitivo*. **It means the 230 sitting seats only together with the current
+`legislatura`.** On its own it matches everyone who ever held such a seat:
+2,306 rows on 2026-11-02, retired deputies included, each shown with their most
+recent matching mandate (see deduplication below).
 
 **Deduplication:** *"Um deputado aparece uma só vez, com os dados do mandato
 mais recente que corresponde aos filtros."* One row per person, not per mandate.
@@ -242,7 +263,8 @@ mais recente que corresponde aos filtros."* One row per person, not per mandate.
 > distinct types — they are not interchangeable.
 
 Returns `mandatos`, `cargos`, `situacoes`, `bio`, `stats`, and the 20 most
-recent authored `iniciativas`.
+recent authored `iniciativas`, **but only the ones named in `include`**.
+Without it the response has the scalar fields alone (§9).
 
 `bio.legislaturas[].partidoSigla` is the **electoral party or coalition**
 (e.g. `PPD/PSD.CDS-PP`) and is **distinct from the parliamentary group** in
@@ -323,7 +345,8 @@ Feed these into P2 (client design):
 3. **Per-endpoint group lists** (§10) — no single shared group filter.
 4. **Compound key for votes** — `(id, iniciativaId)`, always.
 5. **Typed constants for `resultado`** — the casing differs per endpoint (§8).
-6. **Always send `include`** on detail calls, or pay hundreds of KB (§9).
+6. **Always send `include`** on detail calls, or pay hundreds of KB, or, on
+   `/deputados/{id}`, get no relations at all (§9).
 7. **Debounce search; honour `Retry-After`.** 100/min dies under type-ahead.
 8. **Wire ETags early** on the two detail endpoints — cheap 304s.
 9. **Two deputy ids**, and party ≠ parliamentary group (§12).

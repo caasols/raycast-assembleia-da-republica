@@ -313,7 +313,10 @@ export interface ListDeputadosParams {
   /** A party sigla only — the institutional authors are rejected here. */
   grupo?: string;
   q?: string;
-  /** `ativo` is a shortcut for the 230 sitting seats. */
+  /**
+   * `ativo` selects the 230 sitting seats only together with the current
+   * `legislatura`. On its own it matches every seat ever held (2,306 rows).
+   */
   situacao?: string;
   sort?: "asc" | "desc";
   page?: number;
@@ -422,10 +425,14 @@ export async function getIniciativa(
 
 /**
  * One deputy, with mandates, biography, authorship stats and their 20 most
- * recent initiatives. No `include` parameter — this endpoint returns the lot.
+ * recent initiatives. `include` is required in practice: openAR added it to
+ * this endpoint after the client was written, and omitting it now returns only
+ * the scalar fields, so every deputy rendered with zero mandates and no error.
+ * `cargos` and `situacoes` are left out because nothing renders them.
  */
 export async function getDeputado(id: number, signal?: AbortSignal): Promise<DeputadoDetail> {
-  const payload = (await request(`/deputados/${id}`, {}, signal)) as DeputadoDetail | null;
+  const include = "mandatos,bio,stats,iniciativas";
+  const payload = (await request(`/deputados/${id}`, { include }, signal)) as DeputadoDetail | null;
   if (!payload || typeof payload.id !== "number") {
     throw unexpectedShape();
   }

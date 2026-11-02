@@ -567,11 +567,13 @@ describe("getIniciativa", () => {
 });
 
 describe("getDeputado", () => {
-  it("requests the deputy by id, with no include parameter", async () => {
+  it("requests the deputy by id, always naming the relations it renders", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: 7, mandatos: [], iniciativas: [] }));
     await getDeputado(7);
     expect(requestedUrl().pathname).toBe("/v1/deputados/7");
-    expect(requestedUrl().searchParams.get("include")).toBeNull();
+    // Since late 2026 openAR returns only the scalar fields when include is
+    // omitted, so without it every deputy silently showed zero mandates.
+    expect(requestedUrl().searchParams.get("include")).toBe("mandatos,bio,stats,iniciativas");
   });
 
   it("defaults the collections so a view can map over them unguarded", async () => {
