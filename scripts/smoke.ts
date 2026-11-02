@@ -73,12 +73,13 @@ async function main() {
     console.log(`  ${meta.legislaturas.length} legislaturas, ${meta.grupos.length} grupos, ${meta.tipos.length} tipos`);
   });
 
-  await step("/legislaturas — the one endpoint with no envelope", async () => {
+  const current = await step("/legislaturas — the one endpoint with no envelope", async () => {
     const legislaturas = await listLegislaturas();
     // dataFim === null identifies the current legislature, rather than
     // hardcoding "XVII" and going stale at the next election.
-    const current = currentLegislature(legislaturas);
-    console.log(`  ${legislaturas.length} total, current = ${current?.id ?? "none found"}`);
+    const found = currentLegislature(legislaturas);
+    console.log(`  ${legislaturas.length} total, current = ${found?.id ?? "none found"}`);
+    return found;
   });
 
   await step("/votacoes — what the first command renders, plus page arithmetic", async () => {
@@ -140,19 +141,37 @@ async function main() {
     skip("/peticoes/{id}", "no petition id — the list step failed");
   }
 
-  const deputados = await step("/deputados — the sitting members", async () => {
-    const result = await listDeputados({ situacao: "ativo", limit: 3 });
-    console.log(`  ${result.total} ativos (expect 230), showing ${result.data.length}`);
-    return result;
-  });
+  // `situacao=ativo` alone matches every seat ever held (2,306 rows when first
+  // run); only with the current legislature does it mean the sitting members.
+  // The first run printed that 2,306 under "expect 230" and passed, so the
+  // count is now asserted rather than printed.
+  let firstDeputado: { id: number } | undefined;
+  if (current) {
+    const deputados = await step("/deputados — the sitting members", async () => {
+      const result = await listDeputados({ legislatura: current.id, situacao: "ativo", limit: 3 });
+      console.log(`  ${result.total} sitting in ${current.id}, showing ${result.data.length}`);
+      if (result.total !== 230) {
+        throw new Error(`expected the 230 sitting seats, got ${result.total}`);
+      }
+      return result;
+    });
+    firstDeputado = deputados?.data[0];
+  } else {
+    skip("/deputados", "no current legislature — the /legislaturas step failed");
+  }
 
-  const firstDeputado = deputados?.data[0];
   if (firstDeputado) {
     await step(`/deputados/${firstDeputado.id} — one deputy's full record`, async () => {
       const detail = await getDeputado(firstDeputado.id);
       console.log(
         `  ${detail.nomeParlamentar} — ${detail.mandatos.length} mandatos, ${detail.iniciativas.length} recent initiatives`,
       );
+      // A sitting deputy holds at least the current mandate. Zero means the
+      // relations were not returned: openAR drops them when `include` is
+      // missing, and the client defaults them to [], so nothing else errors.
+      if (detail.mandatos.length === 0) {
+        throw new Error("a sitting deputy came back with no mandates — is include being sent?");
+      }
     });
   } else {
     skip("/deputados/{id}", "no deputy id — the list step failed");
