@@ -13,8 +13,8 @@
  * endpoint must not hide the state of the other twelve. A step whose
  * prerequisite failed is skipped with a reason; any failure exits 1.
  *
- * NOTE: this cannot run inside the remote dev containers — api.openar.pt is
- * blocked by the egress proxy (context.md §3 K1). Run it locally.
+ * NOTE: this cannot run inside remote dev containers whose egress proxy
+ * blocks api.openar.pt. Run it on a machine with normal network access.
  */
 import {
   BASE_URL,

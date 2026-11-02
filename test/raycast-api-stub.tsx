@@ -12,9 +12,9 @@
  * which hides the empty view as soon as there are results.
  *
  * The stub covers only the API surface this extension actually uses, and grows
- * when a command needs more (CLAUDE.md §3) — it began as raycast-buzz's copy
- * and the 2026-08-20 audit trimmed the inherited Form/LocalStorage/Keyboard/
- * toast surface nothing here ever drove (context.md §6.3, PLAN C7).
+ * when a command needs more. It began as raycast-buzz's copy, and a 2026-08-20
+ * audit trimmed the inherited Form/LocalStorage/Keyboard/toast surface nothing
+ * here ever drove.
  */
 import { Children, isValidElement, useState } from "react";
 import type { ReactNode } from "react";

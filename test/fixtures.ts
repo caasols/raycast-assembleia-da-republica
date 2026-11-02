@@ -1,6 +1,6 @@
 /**
  * Shared test fixtures — the entities more than two test files were pasting
- * as full literals (the audit's largest clone family, context.md §6.4).
+ * as full literals (the largest family of duplicated code an audit found).
  *
  * Each builder returns a complete, realistic record and takes overrides, so a
  * test states only the fields it is actually about. Defaults are canonical:
