@@ -12,8 +12,8 @@ export type VotePosition = "for" | "against" | "abstained";
  * The `/votacoes` filter for one party's position, written out branch by
  * branch on purpose. A computed key (`{[key]: sigla}`) bypasses TypeScript's
  * excess-property checking, which is exactly how the "in favour" filter once
- * vanished into an ignored `a_favor` while the params type wanted `aFavor` —
- * an unfiltered archive shown as a party's votes (context.md D101). The
+ * vanished into an ignored `a_favor` while the params type wanted `aFavor`,
+ * and the whole archive was shown as one party's votes. The
  * command and the AI tool both go through here, so they cannot drift apart.
  */
 export function positionFilter(

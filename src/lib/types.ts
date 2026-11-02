@@ -288,9 +288,11 @@ export interface PeticaoDetail extends Peticao {
  * no properties: their shape is only knowable from live data, so pretending to
  * know it would be inventing a contract.
  *
- * `actp` is described as "outras actividades em plenário (votos, etc.)" and is
- * the *only* place a per-deputy vote position might live. Whether it does is
- * unverified — see `context.md` O10. Nothing here depends on it.
+ * `actp` is described as "outras actividades em plenário (votos, etc.)", which
+ * made it the only candidate for per-deputy vote positions. Checked against
+ * live data on 2026-11-02: its entries are *votos* (motions the deputy filed)
+ * with no position field, so positions are not published here. Nothing here
+ * depends on it.
  */
 export interface DeputadoAtividade {
   deputado?: { id: number; nomeParlamentar: string };

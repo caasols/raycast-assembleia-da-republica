@@ -38,7 +38,7 @@ jobs:
       # src/lib/preferences.ts. `ray lint` does not generate it, so typechecking
       # first would fail on a clean checkout. Deliberately not trusted on its
       # own either: `ray build` once compiled a 0-byte command file and reported
-      # success (context.md §4) — the tests below are what prove the commands work.
+      # success, so the tests below are what prove the commands work.
       - run: npm run build
 
       # Both tsconfigs: the extension without the DOM lib, the tests with it.

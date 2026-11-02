@@ -29,8 +29,8 @@ import type { QueryValue } from "./query";
 
 /**
  * The `/v1` is load-bearing. It lives in the spec's `servers[0].url`, not in
- * the documented paths, so requests against the bare host 404 — a mistake this
- * project's own notes made once already (context.md D19).
+ * the documented paths, so requests against the bare host 404. An early
+ * transcription of the API reference got this wrong, so it is easy to miss.
  */
 export const BASE_URL = "https://api.openar.pt/v1";
 
@@ -109,8 +109,8 @@ export async function request(
 }
 
 /**
- * The error every malformed-payload check raises — one message, one place,
- * after the audit found the literal pasted nine times (context.md §6.4).
+ * The error every malformed-payload check raises: one message in one place,
+ * since an audit found the same literal pasted nine times.
  */
 function unexpectedShape(): OpenArError {
   return new OpenArError("openAR returned an unexpected response shape", 500);
