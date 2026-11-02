@@ -19,9 +19,9 @@ deputy's profile and activity, a committee, a petition — and every command
 filters by legislature, back to 1976.
 
 **Nine AI tools**, so Raycast AI can answer parliamentary questions without
-opening a command: today's votes, party votes, and search over initiatives,
-petitions, deputies and committees, plus detail lookups for an initiative, a
-deputy and a deputy's activity. They share the same helpers the commands use, so
+opening a command: the latest sitting day's votes, party votes, and search over
+initiatives, petitions, deputies and committees, plus detail lookups for an
+initiative, a deputy and a deputy's activity. They share the same helpers the commands use, so
 a tool and a command cannot disagree about what "approved" means.
 
 Preferences for page size and default legislature.

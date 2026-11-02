@@ -203,9 +203,9 @@
   ],
   "tools": [
     {
-      "name": "get-todays-votes",
-      "title": "Get Today's Votes",
-      "description": "Get the plenary votes the Portuguese parliament held today, with each result and how every party voted."
+      "name": "get-recent-votes",
+      "title": "Get Recent Votes",
+      "description": "Get the plenary votes from the Portuguese parliament's most recent sitting day, which is today if it sat today, with each result and how every party voted. Returns both the sitting date and today's date."
     },
     {
       "name": "search-initiatives",
