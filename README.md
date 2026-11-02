@@ -62,7 +62,7 @@ Raycast's AI can query parliament directly, without opening a command:
 
 | Tool                 | Answers                                                |
 | -------------------- | ------------------------------------------------------ |
-| `Get Today's Votes`  | "What did parliament vote on today?"                   |
+| `Get Recent Votes`   | "What has parliament been voting on?"                  |
 | `Search Initiatives` | "Find bills about labour law in the XVII legislature"  |
 | `Get Party Votes`    | "What has Chega voted against recently?"               |
 | `Search Deputies`    | "Who represents Porto for the PS?"                     |
