@@ -313,7 +313,10 @@ export interface ListDeputadosParams {
   /** A party sigla only — the institutional authors are rejected here. */
   grupo?: string;
   q?: string;
-  /** `ativo` is a shortcut for the 230 sitting seats. */
+  /**
+   * `ativo` selects the 230 sitting seats only together with the current
+   * `legislatura`. On its own it matches every seat ever held (2,306 rows).
+   */
   situacao?: string;
   sort?: "asc" | "desc";
   page?: number;

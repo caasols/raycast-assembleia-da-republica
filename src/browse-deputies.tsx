@@ -10,7 +10,11 @@ import { loadListPage } from "./lib/pagination";
 import { getPageSize } from "./lib/preferences";
 import { deputyDetailMarkdown, deputySubtitle } from "./lib/deputies";
 
-/** `situacao=ativo` is the API's shortcut for the 230 sitting seats. */
+/**
+ * `situacao=ativo` means the 230 sitting seats only alongside the current
+ * legislature, which the default preference supplies. Under "All legislatures"
+ * it matches every seat ever held.
+ */
 const SITTING = "ativo";
 export default function Command() {
   const pageSize = getPageSize();
